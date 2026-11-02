@@ -20,3 +20,6 @@ next-env.d.ts
 
 # データ（SQLite・写真・録音）
 data/
+
+# 開発用の証明書
+certificates/

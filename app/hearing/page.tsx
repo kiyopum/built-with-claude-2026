@@ -1,9 +1,11 @@
 "use client";
 
 // 画面1：ヒアリング（パートナー用）
-// いまは「文字で入れる」まで。録音ボタン・カメラは次の段階で同じ欄に流し込む。
+// 録音ボタンをど真ん中に。話した言葉はその場で下の欄に入り、手で直せる。録音ファイルも一緒に送る。
+// カメラは後の段階で付ける。
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useVoiceInput } from "@/lib/useVoiceInput";
 
 type Shop = { id: number; name: string; category: string; area: string };
 type Question = { question: string; why: string };
@@ -18,6 +20,7 @@ export default function HearingPage() {
   const [transcript, setTranscript] = useState("");
   const [busy, setBusy] = useState<"" | "questions" | "drafts">("");
   const [error, setError] = useState("");
+  const voice = useVoiceInput((text) => setTranscript((t) => (t ? t.replace(/\s*$/, "\n") : "") + text));
 
   async function loadShops(selectId?: number) {
     const r = await fetch("/api/shops");
@@ -62,11 +65,20 @@ export default function HearingPage() {
   async function send() {
     if (!shopId) return;
     setError("");
+    if (voice.recording) voice.stop();
     setBusy("drafts");
-    const r = await fetch("/api/hearings", { method: "POST", body: JSON.stringify({ shopId, transcript }) });
+    const fd = new FormData();
+    fd.append("shopId", String(shopId));
+    fd.append("transcript", transcript);
+    voice.recordings.forEach((rec, i) => {
+      const ext = rec.blob.type.includes("mp4") ? "m4a" : "webm";
+      fd.append("audio", rec.blob, `rec-${i + 1}.${ext}`);
+    });
+    const r = await fetch("/api/hearings", { method: "POST", body: fd });
     const j = await r.json();
     setBusy("");
     if (!r.ok) return setError(j.error);
+    voice.clearRecordings();
     router.push("/drafts");
   }
 
@@ -158,15 +170,52 @@ export default function HearingPage() {
         )}
       </section>
 
-      {/* 3) 聞いた内容 */}
-      <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        <div className="text-sm font-bold text-leaf">3) 聞いた内容</div>
-        <textarea
-          className="w-full min-h-56 rounded-xl border border-black/15 p-3 text-base leading-relaxed"
-          placeholder="店主さんのお話をここに入れます（録音ボタンは次の版で付きます）"
-          value={transcript}
-          onChange={(e) => setTranscript(e.target.value)}
-        />
+      {/* 3) 聞いた内容（録音ボタンがど真ん中） */}
+      <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-4">
+        <div className="text-sm font-bold text-leaf">3) お話を聞く</div>
+
+        <div className="flex flex-col items-center gap-2 py-2">
+          <button
+            onClick={voice.recording ? voice.stop : voice.start}
+            disabled={busy !== ""}
+            aria-label={voice.recording ? "録音を止める" : "録音を始める"}
+            className={`w-32 h-32 rounded-full grid place-items-center text-white shadow-lg transition disabled:opacity-50 ${
+              voice.recording ? "bg-red-600 animate-pulse" : "bg-carrot"
+            }`}
+          >
+            {voice.recording ? (
+              <span className="w-10 h-10 rounded-md bg-white" />
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-14 h-14" fill="currentColor" aria-hidden>
+                <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
+              </svg>
+            )}
+          </button>
+          <div className="text-sm font-bold">
+            {voice.recording
+              ? `録音中 ${Math.floor(voice.seconds / 60)}:${String(voice.seconds % 60).padStart(2, "0")}　押すと止まります`
+              : voice.recordings.length
+                ? "押すと続きを録音します"
+                : "押して録音を始める"}
+          </div>
+          {voice.recordings.length > 0 && (
+            <div className="text-xs text-black/50">
+              録音 {voice.recordings.length} 件（合計 {Math.round(voice.recordings.reduce((a, r) => a + r.seconds, 0) / 60 * 10) / 10} 分）。送信するとまとめて保存します
+            </div>
+          )}
+        </div>
+
+        {voice.warning && <p className="rounded-xl bg-amber-50 text-amber-800 p-3 text-sm">{voice.warning}</p>}
+
+        <div>
+          <textarea
+            className="w-full min-h-56 rounded-xl border border-black/15 p-3 text-base leading-relaxed"
+            placeholder="話した言葉がここに入ります。聞き間違いは手で直せます。録音できないときは、ここに直接書いてください。"
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+          />
+          {voice.interim && <p className="text-sm text-black/40 px-1">…{voice.interim}</p>}
+        </div>
       </section>
 
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}

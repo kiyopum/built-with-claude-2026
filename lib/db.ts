@@ -31,6 +31,15 @@ function open(): DatabaseSync {
       created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
 
+    CREATE TABLE IF NOT EXISTS hearing_audio (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      hearing_id INTEGER NOT NULL REFERENCES hearings(id),
+      file TEXT NOT NULL,
+      mime TEXT NOT NULL,
+      bytes INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+
     CREATE TABLE IF NOT EXISTS drafts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       hearing_id INTEGER NOT NULL REFERENCES hearings(id),
