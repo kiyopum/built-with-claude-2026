@@ -10,3 +10,13 @@ __pycache__/
 .venv/
 venv/
 node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.vercel
+
+# データ（SQLite・写真・録音）
+data/
