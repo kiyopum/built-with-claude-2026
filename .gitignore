@@ -1,0 +1,12 @@
+# APIキーなど秘密の設定（GitHubに上げない）
+.env
+.env.*
+!.env.example
+
+# 自動でできるファイル
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
