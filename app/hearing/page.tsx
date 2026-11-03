@@ -8,7 +8,13 @@ import { useRouter } from "next/navigation";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 
 type Shop = { id: number; name: string; category: string; area: string };
-type Question = { question: string; why: string };
+type Question = { group: "お店" | "商品" | "表示・法律"; question: string; why: string };
+
+const GROUP_STYLE = {
+  お店: "bg-black/5 text-black/60",
+  商品: "bg-leaf/10 text-leaf",
+  "表示・法律": "bg-red-50 text-red-700",
+};
 
 export default function HearingPage() {
   const router = useRouter();
@@ -161,6 +167,7 @@ export default function HearingPage() {
                   {i + 1}
                 </span>
                 <div>
+                  <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold mb-1 ${GROUP_STYLE[q.group] ?? ""}`}>{q.group}</span>
                   <div className="font-medium">{q.question}</div>
                   <div className="text-xs text-black/50">{q.why}</div>
                 </div>
@@ -225,7 +232,7 @@ export default function HearingPage() {
         onClick={send}
         disabled={!shopId || !transcript.trim() || busy !== ""}
       >
-        {busy === "drafts" ? "Claude が商品ページを作っています…（30秒ほど）" : "送信して商品の下書きを作る"}
+        {busy === "drafts" ? "Claude が法律に照らして、商品ページを作っています…（1分ほど）" : "送信して商品の下書きを作る"}
       </button>
     </div>
   );

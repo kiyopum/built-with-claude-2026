@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { getDb, type Shop } from "@/lib/db";
 import { generateDrafts } from "@/lib/claude";
+import { getResearch } from "@/lib/research";
 
 const AUDIO_DIR = path.join(process.cwd(), "data", "audio");
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024; // 1件 50MB まで
@@ -22,9 +23,16 @@ export async function POST(req: Request) {
   if (!transcript?.trim()) return Response.json({ error: "ヒアリング内容が空です" }, { status: 400 });
 
   try {
-    const products = await generateDrafts(shop, transcript.trim());
+    // 1) 国の公式サイトで調べた法律（質問リストを作った時点で裏で調べ始めている）→ 2) それに沿って商品ドラフトと判定を作る
+    const t0 = Date.now();
+    const research = await getResearch(shop);
+    const t1 = Date.now();
+    const products = await generateDrafts(shop, transcript.trim(), research);
+    console.log(`[hearing] 法律の調査を待った時間 ${((t1 - t0) / 1000).toFixed(1)}秒 / 下書き作成 ${((Date.now() - t1) / 1000).toFixed(1)}秒`);
     const hearingId = Number(
-      db.prepare("INSERT INTO hearings (shop_id, transcript) VALUES (?, ?)").run(shop.id, transcript.trim()).lastInsertRowid,
+      db
+        .prepare("INSERT INTO hearings (shop_id, transcript, legal_research) VALUES (?, ?, ?)")
+        .run(shop.id, transcript.trim(), JSON.stringify(research)).lastInsertRowid,
     );
     // 録音ファイルを保存（文字起こしの聞き間違いを、あとで元の音で確かめられるように）
     fs.mkdirSync(AUDIO_DIR, { recursive: true });
@@ -37,11 +45,11 @@ export async function POST(req: Request) {
     }
 
     const ins = db.prepare(
-      `INSERT INTO drafts (hearing_id, shop_id, name, description, price_yen, recommend_reason, target_customer)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO drafts (hearing_id, shop_id, name, description, price_yen, recommend_reason, target_customer, legal_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     for (const p of products) {
-      ins.run(hearingId, shop.id, p.name, p.description, p.price_yen, p.recommend_reason, p.target_customer);
+      ins.run(hearingId, shop.id, p.name, p.description, p.price_yen, p.recommend_reason, p.target_customer, JSON.stringify(p.legal));
     }
     return Response.json({ hearingId, count: products.length, audioCount: audios.length });
   } catch (e) {

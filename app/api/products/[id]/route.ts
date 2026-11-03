@@ -5,11 +5,15 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const { id } = await ctx.params;
   const p = getDb()
     .prepare(
-      `SELECT d.id, d.name, d.description, d.price_yen, d.recommend_reason, d.target_customer,
+      `SELECT d.id, d.name, d.description, d.price_yen, d.recommend_reason, d.target_customer, d.legal_json,
               s.name AS shop_name, s.area AS shop_area
        FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ? AND d.status = 'published'`,
     )
     .get(Number(id)) as Partial<Draft> | undefined;
   if (!p) return Response.json({ error: "この商品は公開されていません" }, { status: 404 });
-  return Response.json({ product: p });
+  // お客さまには、法律の判定ではなく「商品の表示（分かっているものだけ）」を見せる
+  const legal = p.legal_json ? (JSON.parse(p.legal_json) as { label_items?: { name: string; value: string | null }[] }) : null;
+  const labels = (legal?.label_items ?? []).filter((l) => l.value);
+  delete p.legal_json;
+  return Response.json({ product: { ...p, labels } });
 }

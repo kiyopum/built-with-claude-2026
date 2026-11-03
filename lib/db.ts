@@ -67,6 +67,7 @@ function open(): DatabaseSync {
       owner_yen INTEGER NOT NULL,       -- 店主の取り分
       ymm_yen INTEGER NOT NULL,         -- YMM の取り分（パートナー分を引いた残り）
       partner_yen INTEGER NOT NULL,     -- パートナーの取り分
+      fee_yen INTEGER NOT NULL DEFAULT 0, -- 決済手数料（YMM の1割の中から払う）
       ymm_rate REAL NOT NULL,           -- 計算に使った料率（あとで料率を変えても過去の注文は変わらない）
       partner_share REAL NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
@@ -77,8 +78,10 @@ function open(): DatabaseSync {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+    -- 分け方（2026-11-03 きよさん決定・C案）：売上の1割が YMM。そこから決済手数料を先に引き、残りをパートナーと YMM で分ける
     INSERT OR IGNORE INTO settings (key, value) VALUES ('ymm_rate', '0.10');
-    -- YMM の取り分のうちパートナーに回す割合。【仮の値】きよさんに確認してから決める
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('stripe_fee_rate', '0.036');
+    -- 手数料を引いた残りのうちパートナーに回す割合。金額設定は練り直し中（三方良しになる値を検討）
     INSERT OR IGNORE INTO settings (key, value) VALUES ('partner_share', '0.50');
   `);
 
@@ -86,6 +89,14 @@ function open(): DatabaseSync {
   const cols = (db.prepare("PRAGMA table_info(drafts)").all() as { name: string }[]).map((c) => c.name);
   if (!cols.includes("stripe_product_id")) db.exec("ALTER TABLE drafts ADD COLUMN stripe_product_id TEXT");
   if (!cols.includes("stripe_price_id")) db.exec("ALTER TABLE drafts ADD COLUMN stripe_price_id TEXT");
+  if (!cols.includes("legal_json")) db.exec("ALTER TABLE drafts ADD COLUMN legal_json TEXT");
+  const hcols = (db.prepare("PRAGMA table_info(hearings)").all() as { name: string }[]).map((c) => c.name);
+  if (!hcols.includes("legal_research")) db.exec("ALTER TABLE hearings ADD COLUMN legal_research TEXT");
+  const scols = (db.prepare("PRAGMA table_info(shops)").all() as { name: string }[]).map((c) => c.name);
+  if (!scols.includes("legal_research")) db.exec("ALTER TABLE shops ADD COLUMN legal_research TEXT");
+  if (!scols.includes("legal_researched_at")) db.exec("ALTER TABLE shops ADD COLUMN legal_researched_at TEXT");
+  const ocols = (db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name);
+  if (!ocols.includes("fee_yen")) db.exec("ALTER TABLE orders ADD COLUMN fee_yen INTEGER NOT NULL DEFAULT 0");
 
   // デモ用のダミーの店（架空）。1件もなければ入れる。
   const count = db.prepare("SELECT COUNT(*) AS n FROM shops").get() as { n: number };
@@ -120,11 +131,12 @@ export type Draft = {
   revision_note: string;
   stripe_product_id: string | null;
   stripe_price_id: string | null;
+  legal_json: string | null;
   created_at: string;
   updated_at: string;
 };
 
-export function getSetting(key: "ymm_rate" | "partner_share"): number {
+export function getSetting(key: "ymm_rate" | "partner_share" | "stripe_fee_rate"): number {
   const row = getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;
   return Number(row?.value ?? 0);
 }

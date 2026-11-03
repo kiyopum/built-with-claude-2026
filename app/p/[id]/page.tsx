@@ -13,6 +13,7 @@ type Product = {
   target_customer: string;
   shop_name: string;
   shop_area: string;
+  labels: { name: string; value: string }[];
 };
 
 function ProductPageInner() {
@@ -61,6 +62,20 @@ function ProductPageInner() {
         <div className="font-bold text-carrot">こんな方に</div>
         <div>{p.target_customer}</div>
       </div>
+
+      {p.labels.length > 0 && (
+        <table className="w-full text-sm bg-white rounded-xl border border-black/5 overflow-hidden">
+          <caption className="text-left font-bold pb-1">商品情報</caption>
+          <tbody>
+            {p.labels.map((l, i) => (
+              <tr key={i} className="border-t border-black/5">
+                <th className="text-left font-normal text-black/60 p-2 w-28 align-top">{l.name}</th>
+                <td className="p-2">{l.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       <div className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
         <div className="flex items-center justify-between">

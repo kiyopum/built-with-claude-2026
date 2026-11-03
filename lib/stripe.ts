@@ -31,11 +31,15 @@ export async function ensureStripePrice(d: Draft): Promise<string> {
   return price.id;
 }
 
-// 取り分の計算：売上の1割が YMM、そのうちの設定割合がパートナー、残りが店主。1円未満は切り捨て。
-export function splitAmount(amount: number, ymmRate: number, partnerShare: number) {
+// 取り分の計算（C案）：
+//   売上の1割が YMM の取り分。そこから決済手数料（3.6%）を先に払い、残りをパートナーと YMM で分ける。残り9割が店主。
+//   手数料を先に引くので、いくら売れても YMM が手数料で赤字にならない。1円未満は切り捨て（手数料は四捨五入）。
+export function splitAmount(amount: number, ymmRate: number, feeRate: number, partnerShare: number) {
   const ymmGross = Math.floor(amount * ymmRate);
-  const partner = Math.floor(ymmGross * partnerShare);
-  return { owner: amount - ymmGross, ymm: ymmGross - partner, partner };
+  const fee = Math.round(amount * feeRate);
+  const rest = Math.max(ymmGross - fee, 0);
+  const partner = Math.floor(rest * partnerShare);
+  return { owner: amount - ymmGross, fee, partner, ymm: rest - partner };
 }
 
 // 支払いが終わった決済を、注文として1回だけ記録する（Webhook と完了ページの両方から呼ばれても二重にならない）
@@ -53,11 +57,12 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
   const amount = session.amount_total ?? d.price_yen * quantity;
   const ymmRate = getSetting("ymm_rate");
   const partnerShare = getSetting("partner_share");
-  const s = splitAmount(amount, ymmRate, partnerShare);
+  const feeRate = getSetting("stripe_fee_rate");
+  const s = splitAmount(amount, ymmRate, feeRate, partnerShare);
   db.prepare(
     `INSERT OR IGNORE INTO orders
-     (stripe_session_id, draft_id, shop_id, quantity, amount_yen, owner_yen, ymm_yen, partner_yen, ymm_rate, partner_share)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(session.id, d.id, d.shop_id, quantity, amount, s.owner, s.ymm, s.partner, ymmRate, partnerShare);
+     (stripe_session_id, draft_id, shop_id, quantity, amount_yen, owner_yen, ymm_yen, partner_yen, fee_yen, ymm_rate, partner_share)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(session.id, d.id, d.shop_id, quantity, amount, s.owner, s.ymm, s.partner, s.fee, ymmRate, partnerShare);
   return { created: true };
 }
