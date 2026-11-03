@@ -18,6 +18,10 @@ export default function Home() {
           <div className="text-sm text-carrot font-bold">店主の方</div>
           <div className="text-lg font-bold">商品の下書きを確認する</div>
         </Link>
+        <Link href="/statement" className="block rounded-2xl bg-white p-5 shadow-sm border border-black/5">
+          <div className="text-sm text-sky-700 font-bold">パートナー・YMM</div>
+          <div className="text-lg font-bold">成果明細を見る</div>
+        </Link>
       </div>
       <p className="text-xs text-black/50">デモのため、店名・商品・金額はすべて架空です。</p>
     </div>

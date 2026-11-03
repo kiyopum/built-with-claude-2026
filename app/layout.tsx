@@ -15,10 +15,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <div className="mx-auto max-w-2xl px-4 py-3 flex items-center justify-between gap-2">
             <Link href="/" className="font-bold text-lg">YaoBiz</Link>
             {/* デモ用の役割切り替え（本番はログインで分ける） */}
-            <nav className="flex gap-1 text-sm">
-              <Link href="/hearing" className="rounded-full bg-white/15 px-3 py-1">パートナー</Link>
-              <Link href="/drafts" className="rounded-full bg-white/15 px-3 py-1">店主</Link>
-              <Link href="/shop" className="rounded-full bg-white/15 px-3 py-1">お客さま</Link>
+            <nav className="flex gap-1 text-[13px] whitespace-nowrap">
+              <Link href="/hearing" className="rounded-full bg-white/15 px-2.5 py-1">パートナー</Link>
+              <Link href="/drafts" className="rounded-full bg-white/15 px-2.5 py-1">店主</Link>
+              <Link href="/shop" className="rounded-full bg-white/15 px-2.5 py-1">お客さま</Link>
+              <Link href="/statement" className="rounded-full bg-white/15 px-2.5 py-1">明細</Link>
             </nav>
           </div>
         </header>

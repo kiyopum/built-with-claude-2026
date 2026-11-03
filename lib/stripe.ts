@@ -1,6 +1,7 @@
 // Stripe（テストモード専用）。本番キー（sk_live_）は受け付けない。
 import Stripe from "stripe";
 import { getDb, getSetting, type Draft } from "@/lib/db";
+import { splitAmount } from "@/lib/split";
 
 let client: Stripe | null = null;
 export function stripe(): Stripe {
@@ -29,17 +30,6 @@ export async function ensureStripePrice(d: Draft): Promise<string> {
     .prepare("UPDATE drafts SET stripe_product_id = ?, stripe_price_id = ? WHERE id = ?")
     .run(product.id, price.id, d.id);
   return price.id;
-}
-
-// 取り分の計算（C案）：
-//   売上の1割が YMM の取り分。そこから決済手数料（3.6%）を先に払い、残りをパートナーと YMM で分ける。残り9割が店主。
-//   手数料を先に引くので、いくら売れても YMM が手数料で赤字にならない。1円未満は切り捨て（手数料は四捨五入）。
-export function splitAmount(amount: number, ymmRate: number, feeRate: number, partnerShare: number) {
-  const ymmGross = Math.floor(amount * ymmRate);
-  const fee = Math.round(amount * feeRate);
-  const rest = Math.max(ymmGross - fee, 0);
-  const partner = Math.floor(rest * partnerShare);
-  return { owner: amount - ymmGross, fee, partner, ymm: rest - partner };
 }
 
 // 支払いが終わった決済を、注文として1回だけ記録する（Webhook と完了ページの両方から呼ばれても二重にならない）
