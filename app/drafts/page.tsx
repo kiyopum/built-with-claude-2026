@@ -94,6 +94,11 @@ function DraftCard({ d, onChanged }: { d: Draft; onChanged: () => void }) {
           <dd>{d.target_customer}</dd>
         </div>
       </dl>
+      {d.status === "published" && (
+        <a href={`/p/${d.id}`} className="block rounded-xl border border-leaf/30 bg-leaf/5 p-3 text-sm text-leaf font-bold">
+          公開ページを開く →
+        </a>
+      )}
       {d.revision_note && <p className="text-xs text-black/50">前回の修正依頼：{d.revision_note}</p>}
 
       {d.status === "draft" && !revising && (

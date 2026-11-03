@@ -55,7 +55,37 @@ function open(): DatabaseSync {
       created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
+
+    -- 売れた記録。Stripe の決済セッションID で二重登録を防ぐ
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      stripe_session_id TEXT NOT NULL UNIQUE,
+      draft_id INTEGER NOT NULL REFERENCES drafts(id),
+      shop_id INTEGER NOT NULL REFERENCES shops(id),
+      quantity INTEGER NOT NULL,
+      amount_yen INTEGER NOT NULL,      -- 売上（税込）
+      owner_yen INTEGER NOT NULL,       -- 店主の取り分
+      ymm_yen INTEGER NOT NULL,         -- YMM の取り分（パートナー分を引いた残り）
+      partner_yen INTEGER NOT NULL,     -- パートナーの取り分
+      ymm_rate REAL NOT NULL,           -- 計算に使った料率（あとで料率を変えても過去の注文は変わらない）
+      partner_share REAL NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+
+    -- 料率などの設定
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('ymm_rate', '0.10');
+    -- YMM の取り分のうちパートナーに回す割合。【仮の値】きよさんに確認してから決める
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('partner_share', '0.50');
   `);
+
+  // 後から足した列（すでにある DB にも足す）
+  const cols = (db.prepare("PRAGMA table_info(drafts)").all() as { name: string }[]).map((c) => c.name);
+  if (!cols.includes("stripe_product_id")) db.exec("ALTER TABLE drafts ADD COLUMN stripe_product_id TEXT");
+  if (!cols.includes("stripe_price_id")) db.exec("ALTER TABLE drafts ADD COLUMN stripe_price_id TEXT");
 
   // デモ用のダミーの店（架空）。1件もなければ入れる。
   const count = db.prepare("SELECT COUNT(*) AS n FROM shops").get() as { n: number };
@@ -88,6 +118,13 @@ export type Draft = {
   target_customer: string;
   status: "draft" | "published" | "rejected";
   revision_note: string;
+  stripe_product_id: string | null;
+  stripe_price_id: string | null;
   created_at: string;
   updated_at: string;
 };
+
+export function getSetting(key: "ymm_rate" | "partner_share"): number {
+  const row = getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;
+  return Number(row?.value ?? 0);
+}
