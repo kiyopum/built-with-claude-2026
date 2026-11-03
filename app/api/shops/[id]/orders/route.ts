@@ -11,7 +11,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (pinErr) return Response.json({ error: pinErr }, { status: 403 });
   const orders = getDb()
     .prepare(
-      `SELECT o.id, o.created_at, o.quantity, o.amount_yen, o.shipping_yen, o.owner_yen, o.ship_name, o.ship_address, d.name AS product_name
+      `SELECT o.id, o.created_at, o.quantity, o.amount_yen, o.shipping_yen, o.owner_yen, o.ship_name, o.ship_address, o.ship_method, o.ship_warning, d.name AS product_name
        FROM orders o JOIN drafts d ON d.id = o.draft_id WHERE o.shop_id = ? ORDER BY o.id DESC LIMIT 100`,
     )
     .all(g.shop.id);

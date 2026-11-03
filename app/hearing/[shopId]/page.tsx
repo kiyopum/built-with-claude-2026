@@ -14,6 +14,7 @@ import { PinPad } from "@/components/PinPad";
 import { OwnerApprove } from "@/components/OwnerApprove";
 import { Working } from "@/components/Working";
 import { apiFetch } from "@/lib/api";
+import { PREFS, fullPref } from "@/lib/shipping";
 
 type Data = {
   shop: {
@@ -23,6 +24,9 @@ type Data = {
     philosophy_text: string | null;
     philosophy_status: "none" | "draft" | "approved";
     shipping_yen: number | null;
+    prefecture: string | null;
+    pickup_ok: boolean;
+    prefecture_hint: string | null;
     has_pin: boolean;
     seller: Seller;
   };
@@ -78,7 +82,7 @@ function ShopPageInner() {
 
       <SellerSection shopId={shop.id} initial={shop.seller} />
 
-      <ShippingCard shopId={shop.id} initial={shop.shipping_yen} onSaved={load} />
+      <ShippingCard shopId={shop.id} initial={shop.shipping_yen} prefecture={shop.prefecture} hint={shop.prefecture_hint} pickupOk={shop.pickup_ok} onSaved={load} />
 
       {/* 商品（1つずつ、写真を撮って聞く）。タップで修正・リリースの画面 */}
       <section className="space-y-3">
@@ -268,9 +272,77 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
   );
 }
 
-// ---------- 送料（全国一律・商品代とは別） ----------
+// ---------- 送料 ----------
+//   送り出す都道府県：商品ごとに大きさ・重さを選ぶと、届け先との距離でいちばん安い「送料込み」の値段になる
+//   お店で受け取り：近所の人は送料なしで買える
+//   全国一律：大きさ・重さをまだ選んでいない商品で使う（今までの形）
 
-function ShippingCard({ shopId, initial, onSaved }: { shopId: number; initial: number | null; onSaved: () => void }) {
+function OriginCard({ shopId, prefecture, hint, pickupOk, onSaved }: { shopId: number; prefecture: string | null; hint: string | null; pickupOk: boolean; onSaved: () => void }) {
+  const [pref, setPref] = useState(prefecture ?? hint ?? "");
+  const [error, setError] = useState("");
+  async function send(body: Record<string, unknown>) {
+    setError("");
+    const { error } = await post(`/api/shops/${shopId}/shipping`, body);
+    if (error) return setError(error);
+    onSaved();
+  }
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <div className="text-sm font-bold">お店から送り出す都道府県</div>
+        <div className="flex gap-2">
+          <select className="flex-1 rounded-xl border border-black/15 bg-white p-3 text-base" value={pref} onChange={(e) => setPref(e.target.value)}>
+            <option value="">選んでください</option>
+            {PREFS.map((p) => (
+              <option key={p} value={p}>
+                {fullPref(p)}
+              </option>
+            ))}
+          </select>
+          <button className="rounded-xl bg-leaf text-white px-5 font-bold disabled:opacity-40" disabled={!pref || pref === prefecture} onClick={() => send({ prefecture: pref })}>
+            保存
+          </button>
+        </div>
+        <p className="text-xs text-black/50">
+          {prefecture
+            ? `保存済み：${fullPref(prefecture)}。商品ごとに大きさと重さを選ぶと、届け先までの距離で「送料込み」の値段になります。`
+            : hint
+              ? "販売者の住所から選んであります。合っていれば「保存」を押してください。"
+              : "商品ごとに大きさと重さを選ぶと、届け先までの距離で「送料込み」の値段になります。"}
+        </p>
+      </div>
+      <label className="flex items-center justify-between gap-3 rounded-xl bg-black/[0.03] p-3">
+        <span className="text-sm">
+          <b>お店で受け取り</b>もできる
+          <span className="block text-xs text-black/50">近所の方は送料なしで買えます</span>
+        </span>
+        <button
+          className={`shrink-0 w-16 h-9 rounded-full font-bold text-sm ${pickupOk ? "bg-leaf text-white" : "bg-black/10 text-black/50"}`}
+          onClick={() => send({ pickup_ok: !pickupOk })}
+        >
+          {pickupOk ? "できる" : "しない"}
+        </button>
+      </label>
+      {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
+    </div>
+  );
+}
+
+function ShippingCard({
+  shopId,
+  initial,
+  prefecture,
+  hint,
+  pickupOk,
+  onSaved,
+}: {
+  shopId: number;
+  initial: number | null;
+  prefecture: string | null;
+  hint: string | null;
+  pickupOk: boolean;
+  onSaved: () => void;
+}) {
   const [yen, setYen] = useState(initial == null ? "" : String(initial));
   const [editing, setEditing] = useState(initial == null);
   const [error, setError] = useState("");
@@ -286,13 +358,15 @@ function ShippingCard({ shopId, initial, onSaved }: { shopId: number; initial: n
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-bold text-leaf">送料（全国一律）</div>
+        <div className="text-sm font-bold text-leaf">送料</div>
         {!editing && (
           <button className="text-xs text-leaf underline" onClick={() => setEditing(true)}>
             変える
           </button>
         )}
       </div>
+      <OriginCard shopId={shopId} prefecture={prefecture} hint={hint} pickupOk={pickupOk} onSaved={onSaved} />
+      <div className="text-sm font-bold pt-2 border-t border-black/5">全国一律の送料（大きさと重さをまだ選んでいない商品）</div>
       {editing ? (
         <>
           <div className="flex items-center gap-2">
@@ -308,10 +382,10 @@ function ShippingCard({ shopId, initial, onSaved }: { shopId: number; initial: n
               保存
             </button>
           </div>
-          <p className="text-xs text-black/50">商品代とは別に、お客さまが払います。送料はそのまま店主さんに渡ります。送料なしなら 0。</p>
+          <p className="text-xs text-black/50">商品代とは別に、お客さまが払います。送料はそのまま店主さんに渡ります。お店が送料を持つなら 0。</p>
         </>
       ) : (
-        <p className="text-lg font-bold">{initial === 0 ? "送料無料" : `${initial?.toLocaleString()}円`}</p>
+        <p className="text-lg font-bold">{initial === 0 ? "0円（お店が負担）" : `${initial?.toLocaleString()}円`}</p>
       )}
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
     </section>
@@ -329,6 +403,8 @@ type Order = {
   owner_yen: number;
   ship_name: string | null;
   ship_address: string | null;
+  ship_method: string | null;
+  ship_warning: string | null;
   product_name: string;
 };
 
@@ -366,6 +442,8 @@ function OrdersCard({ shopId, hasPin }: { shopId: number; hasPin: boolean }) {
                   {o.ship_name ?? "（なし）"}
                   <div className="whitespace-pre-wrap">{o.ship_address ?? ""}</div>
                 </div>
+                {o.ship_method && <div className="text-xs">送り方：{o.ship_method}</div>}
+                {o.ship_warning && <div className="rounded-lg bg-amber-50 text-amber-800 p-2 text-xs">⚠️ {o.ship_warning}</div>}
                 <div className="text-xs">
                   お支払い {o.amount_yen.toLocaleString()}円（うち送料 {o.shipping_yen.toLocaleString()}円）／ 店主さんの受け取り <b>{o.owner_yen.toLocaleString()}円</b>
                 </div>

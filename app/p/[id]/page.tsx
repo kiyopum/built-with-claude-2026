@@ -6,13 +6,14 @@ import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Working } from "@/components/Working";
 import { apiFetch } from "@/lib/api";
+import { shippingForOrder, type ShippingInfo } from "@/lib/shipquote";
+import { PREFS, fullPref } from "@/lib/shipping";
 
 type Product = {
   id: number;
   name: string;
   description: string;
   price_yen: number;
-  shipping_yen: number | null;
   recommend_reason: string;
   target_customer: string;
   shop_name: string;
@@ -20,6 +21,7 @@ type Product = {
   labels: { name: string; value: string }[];
   photos: string[];
   shop_intro: string | null;
+  shipping: ShippingInfo;
 };
 
 function ProductPageInner() {
@@ -27,6 +29,8 @@ function ProductPageInner() {
   const [p, setP] = useState<Product | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [qty, setQty] = useState(1);
+  // お届け先：都道府県の名前か "pickup"（お店で受け取り）。送料込みの商品は、選ぶと送料込みの値段が決まる
+  const [dest, setDest] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -57,7 +61,7 @@ function ProductPageInner() {
   async function buy() {
     setError("");
     setBusy(true);
-    const r = await apiFetch("/api/checkout", { method: "POST", body: JSON.stringify({ draftId: Number(id), quantity: qty, ref: new URLSearchParams(window.location.search).get("ref") ?? "" }) });
+    const r = await apiFetch("/api/checkout", { method: "POST", body: JSON.stringify({ draftId: Number(id), quantity: qty, dest, ref: new URLSearchParams(window.location.search).get("ref") ?? "" }) });
     const j = await r.json();
     if (!r.ok || !j.url) {
       setBusy(false);
@@ -68,6 +72,12 @@ function ProductPageInner() {
 
   if (notFound) return <p className="text-black/60">この商品は公開されていません。</p>;
   if (!p) return <p className="text-black/50">読み込み中…</p>;
+  const info = p.shipping;
+  const inc = info.mode === "included";
+  const ship = shippingForOrder(info, dest, qty);
+  const ok = !("error" in ship);
+  // 届け先を選ぶ欄を出すか（送料込みの商品か、お店で受け取りができるとき）
+  const askDest = inc || info.pickup;
 
   return (
     <article className="space-y-5">
@@ -90,10 +100,25 @@ function ProductPageInner() {
         {p.shop_area && `（${p.shop_area}）`}
       </div>
       <h1 className="text-2xl font-bold leading-snug">{p.name}</h1>
-      <div className="text-3xl font-bold text-carrot">
-        {p.price_yen.toLocaleString()}
-        <span className="text-base text-black/60 font-normal"> 円（税込）</span>
-      </div>
+      {inc ? (
+        <div>
+          <div className="text-3xl font-bold text-carrot">
+            <span className="text-base font-bold">送料込み </span>
+            {(p.price_yen + info.min).toLocaleString()}
+            <span className="text-base text-black/60 font-normal"> 円{info.min !== info.max && "〜"}（税込）</span>
+          </div>
+          <p className="text-xs text-black/60">
+            {info.min === info.max
+              ? "全国どこへでも、この値段です。"
+              : `お届け先によって変わります（近いほどお安く：${(p.price_yen + info.min).toLocaleString()}〜${(p.price_yen + info.max).toLocaleString()}円）。下で選ぶと決まります。`}
+          </p>
+        </div>
+      ) : (
+        <div className="text-3xl font-bold text-carrot">
+          {p.price_yen.toLocaleString()}
+          <span className="text-base text-black/60 font-normal"> 円（税込）</span>
+        </div>
+      )}
       <p className="leading-relaxed whitespace-pre-wrap">{p.description}</p>
       <div className="rounded-xl bg-carrot/5 p-4 text-sm">
         <div className="font-bold text-carrot">こんな方に</div>
@@ -127,15 +152,38 @@ function ProductPageInner() {
             </button>
           </div>
         </div>
+        {askDest && (
+          <label className="flex items-center justify-between gap-3">
+            <span className="font-bold shrink-0">お届け先</span>
+            <select className="flex-1 min-w-0 rounded-xl border border-black/20 bg-white p-3 text-base" value={dest} onChange={(e) => setDest(e.target.value)}>
+              <option value="">{inc ? "都道府県を選んでください" : "配送する"}</option>
+              {info.pickup && <option value="pickup">お店で受け取る（送料なし）</option>}
+              {inc &&
+                PREFS.map((pr) => (
+                  <option key={pr} value={pr}>
+                    {fullPref(pr)}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
         <div className="flex items-center justify-between text-lg">
-          <span>合計</span>
-          <span className="font-bold">{p.shipping_yen == null ? "送料未定" : `${(p.price_yen * qty + p.shipping_yen).toLocaleString()}円`}</span>
+          <span>合計{inc && ok && !ship.pickup && "（送料込み）"}</span>
+          <span className="font-bold">{ok ? `${(p.price_yen * qty + ship.yen).toLocaleString()}円` : inc ? "お届け先を選ぶと決まります" : "送料未定"}</span>
         </div>
         <p className="text-xs text-black/60 text-right">
-          商品 {(p.price_yen * qty).toLocaleString()}円 ＋{" "}
-          {p.shipping_yen == null ? "送料（お店が準備中のため、まだ購入できません）" : p.shipping_yen ? `送料 ${p.shipping_yen.toLocaleString()}円（全国一律）` : "送料無料"}
+          {ok
+            ? ship.pickup
+              ? `商品 ${(p.price_yen * qty).toLocaleString()}円（お店で受け取るので送料はかかりません）`
+              : `うち商品 ${(p.price_yen * qty).toLocaleString()}円・送料 ${ship.yen.toLocaleString()}円（${ship.method}）`
+            : inc
+              ? ""
+              : "送料（お店が準備中のため、まだ購入できません）"}
         </p>
-        <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy || p.shipping_yen == null}>
+        {inc && info.perBox > 1 && (
+          <p className="text-xs text-leaf text-right">{info.perBox}個までは1つの箱で送るので、2個目からは送料がかかりません。</p>
+        )}
+        <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy || !ok}>
           {busy ? <Working text="決済画面を開いています" /> : "購入する"}
         </button>
         <p className="text-xs text-black/50">デモのため、テスト用の決済画面です。実際のお金は動きません。</p>

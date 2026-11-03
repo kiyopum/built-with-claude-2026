@@ -1,5 +1,6 @@
-import { getDb, type Draft } from "@/lib/db";
+import { getDb, type Draft, type Shop } from "@/lib/db";
 import { photoUrls } from "@/lib/files";
+import { shippingInfo } from "@/lib/shipquote";
 
 // 公開中の商品1件（お客さま向け）。公開していないものは見せない
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -7,7 +8,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const p = getDb()
     .prepare(
       `SELECT d.id, d.name, d.description, d.price_yen, d.recommend_reason, d.target_customer, d.legal_json,
-              s.name AS shop_name, s.area AS shop_area, s.shipping_yen,
+              d.size_class, d.weight_g, d.per_box, s.name AS shop_name, s.area AS shop_area, s.shipping_yen, s.prefecture, s.pickup_ok,
               CASE WHEN s.philosophy_status = 'approved' THEN s.philosophy_text END AS shop_intro
        FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ? AND d.status = 'published'`,
     )
@@ -17,5 +18,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const legal = p.legal_json ? (JSON.parse(p.legal_json) as { label_items?: { name: string; value: string | null }[] }) : null;
   const labels = (legal?.label_items ?? []).filter((l) => l.value);
   delete p.legal_json;
-  return Response.json({ product: { ...p, labels, photos: photoUrls(Number(id)) } });
+  const shipping = shippingInfo(p as Draft, p as unknown as Shop);
+  return Response.json({ product: { ...p, labels, photos: photoUrls(Number(id)), shipping } });
 }

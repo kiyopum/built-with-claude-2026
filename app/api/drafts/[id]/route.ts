@@ -1,4 +1,5 @@
 import { shopPinError, guardDraft } from "@/lib/auth";
+import { isIncluded } from "@/lib/shipping";
 import { getDb, type Draft } from "@/lib/db";
 import { reviseDraft, recheckLegal, type Legal, type DraftFields } from "@/lib/claude";
 import { loadProductContext } from "@/lib/context";
@@ -11,7 +12,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const g = await guardDraft(id);
   if (g instanceof Response) return g;
   const d = getDb()
-    .prepare("SELECT d.*, s.name AS shop_name FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ?")
+    .prepare("SELECT d.*, s.name AS shop_name, s.prefecture AS shop_prefecture, s.shipping_yen AS shop_shipping_yen FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ?")
     .get(Number(id)) as Draft | undefined;
   if (!d) return Response.json({ error: "商品が見つかりません" }, { status: 404 });
   return Response.json({ draft: { ...d, photos: photoUrls(d.id) } });
@@ -35,8 +36,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (pinErr) return Response.json({ error: pinErr }, { status: 403 });
 
   if (body.action === "publish") {
-    if (g.shop.shipping_yen == null) {
-      return Response.json({ error: "送料が決まっていません。お店のページで送料（全国一律）を入れてください。" }, { status: 400 });
+    // 送料：商品の大きさ・重さ（＋お店の都道府県）で送料込みにするか、お店の全国一律の送料のどちらかが要る
+    if (!isIncluded(d, g.shop) && g.shop.shipping_yen == null) {
+      return Response.json(
+        { error: "送料が決まっていません。この商品の「送り方（大きさと重さ）」を選ぶか、お店のページで送料を入れてください。" },
+        { status: 400 },
+      );
     }
     // 法律の判定で「このままでは販売できない」ものは公開させない
     const legal = d.legal_json ? (JSON.parse(d.legal_json) as Legal) : null;

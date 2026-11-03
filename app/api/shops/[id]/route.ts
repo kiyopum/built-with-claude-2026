@@ -1,3 +1,4 @@
+import { prefFromAddress } from "@/lib/shipping";
 import { guardShop } from "@/lib/auth";
 import { getDb, SELLER_KEYS, type Shop } from "@/lib/db";
 
@@ -30,6 +31,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       philosophy_text: shop.philosophy_text,
       philosophy_status: shop.philosophy_status,
       shipping_yen: shop.shipping_yen,
+      prefecture: shop.prefecture,
+      pickup_ok: !!shop.pickup_ok,
+      // 都道府県の初期値の候補（住所の書き出しから。決めるのは人）
+      prefecture_hint: prefFromAddress(shop.seller_address),
       has_pin: !!shop.release_pin_hash,
       seller: Object.fromEntries(SELLER_KEYS.map((k) => [k, shop[k] ?? ""])),
     },

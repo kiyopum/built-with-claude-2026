@@ -160,6 +160,25 @@ function open(): DatabaseSync {
     if (!ocols.includes(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} ${t}`);
   }
   if (!ocols.includes("fee_yen")) db.exec("ALTER TABLE orders ADD COLUMN fee_yen INTEGER NOT NULL DEFAULT 0");
+  // 送料込みの値段（2026-11-04 物流の社長さんの助言：大きさと重さで一番安い送り方を選ぶ・距離で送料を変える）
+  //   商品：大きさ（絵で選ぶ区分）と重さ。両方あれば「送料込み」、なければ今までどおりお店の全国一律の送料
+  //   お店：送り出す都道府県（地域ごとの料金に要る）・お店での受け取り
+  //   注文：買う人が選んだ届け先の都道府県・送り方・受け取り
+  if (!cols.includes("size_class")) db.exec("ALTER TABLE drafts ADD COLUMN size_class TEXT");
+  if (!cols.includes("weight_g")) db.exec("ALTER TABLE drafts ADD COLUMN weight_g INTEGER");
+  // 1箱にいくつ入るか（2個目からの送料を安くするため。お店が決める。初めは1）
+  if (!cols.includes("per_box")) db.exec("ALTER TABLE drafts ADD COLUMN per_box INTEGER NOT NULL DEFAULT 1");
+  if (!scols.includes("prefecture")) db.exec("ALTER TABLE shops ADD COLUMN prefecture TEXT");
+  if (!scols.includes("pickup_ok")) db.exec("ALTER TABLE shops ADD COLUMN pickup_ok INTEGER NOT NULL DEFAULT 0");
+  for (const [c, t] of [
+    ["ship_pref", "TEXT"],
+    ["ship_method", "TEXT"],
+    ["pickup", "INTEGER NOT NULL DEFAULT 0"],
+    // 決済画面で入れた住所が、先に選んだ届け先の都道府県と違うとき（送料が違うので、店主さんと YMM が確かめる）
+    ["ship_warning", "TEXT"],
+  ] as const) {
+    if (!ocols.includes(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} ${t}`);
+  }
 
   // デモ用のダミーの店（架空）。1件もなければ入れる。
   const count = db.prepare("SELECT COUNT(*) AS n FROM shops").get() as { n: number };
@@ -196,6 +215,8 @@ export type Shop = {
   partner_id: number | null;
   release_pin_hash: string | null;
   shipping_yen: number | null;
+  prefecture: string | null;
+  pickup_ok: number;
 };
 export const SELLER_KEYS = ["seller_name", "seller_rep", "seller_address", "seller_phone", "seller_email"] as const;
 export type Draft = {
@@ -214,6 +235,9 @@ export type Draft = {
   stripe_price_id: string | null;
   legal_json: string | null;
   sns_json?: string | null;
+  size_class?: string | null;
+  weight_g?: number | null;
+  per_box?: number;
   created_at: string;
   updated_at: string;
 };

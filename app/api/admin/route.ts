@@ -39,7 +39,7 @@ export async function GET() {
     .filter((d) => d.verdict === "このままでは販売できない");
   const orders = db
     .prepare(
-      `SELECT o.id, o.created_at, o.amount_yen, o.shipping_yen, o.ship_name, o.ship_address, d.name AS product_name, s.name AS shop_name
+      `SELECT o.id, o.created_at, o.amount_yen, o.shipping_yen, o.ship_name, o.ship_address, o.ship_method, o.ship_warning, d.name AS product_name, s.name AS shop_name
        FROM orders o JOIN drafts d ON d.id = o.draft_id JOIN shops s ON s.id = o.shop_id ORDER BY o.id DESC LIMIT 50`,
     )
     .all();

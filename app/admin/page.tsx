@@ -13,7 +13,7 @@ import { apiFetch } from "@/lib/api";
 type User = { id: number; name: string; role: string; active: number; code: string };
 type Shop = { id: number; name: string; category: string; partner_id: number | null; shipping_yen: number | null; has_pin: boolean; published: number; waiting: number };
 type Blocked = { id: number; shop_id: number; name: string; shop_name: string; partner_name: string | null; updated_at: string; reasons: string[] };
-type Order = { id: number; created_at: string; amount_yen: number; shipping_yen: number; ship_name: string | null; ship_address: string | null; product_name: string; shop_name: string };
+type Order = { id: number; created_at: string; amount_yen: number; shipping_yen: number; ship_name: string | null; ship_address: string | null; ship_method: string | null; ship_warning: string | null; product_name: string; shop_name: string };
 type Data = { me: { id: number }; users: User[]; shops: Shop[]; blocked: Blocked[]; orders: Order[]; payment_terms: string };
 
 const card = "rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3";
@@ -160,6 +160,8 @@ export default function AdminPage() {
                 <div className="text-xs mt-1">
                   届け先：{o.ship_name ?? "（なし）"} {o.ship_address ?? ""}
                 </div>
+                {o.ship_method && <div className="text-xs text-black/50">送り方：{o.ship_method}</div>}
+                {o.ship_warning && <div className="rounded-lg bg-amber-50 text-amber-800 p-2 text-xs mt-1">⚠️ {o.ship_warning}</div>}
               </li>
             ))}
           </ul>

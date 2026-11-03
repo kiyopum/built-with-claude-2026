@@ -13,6 +13,7 @@ import { DraftFieldsForm, TodoNoteButton } from "@/components/DraftFieldsForm";
 import { Working } from "@/components/Working";
 import { OwnerApprove } from "@/components/OwnerApprove";
 import { apiFetch } from "@/lib/api";
+import { PackageCard } from "@/components/PackageCard";
 
 type Draft = {
   id: number;
@@ -24,6 +25,11 @@ type Draft = {
   status: "draft" | "published" | "rejected";
   legal_json: string | null;
   photos: string[];
+  size_class: string | null;
+  weight_g: number | null;
+  per_box: number;
+  shop_prefecture: string | null;
+  shop_shipping_yen: number | null;
 };
 
 const STATUS = { draft: "店主さんの確認待ち", published: "公開中", rejected: "却下" };
@@ -47,6 +53,12 @@ function EditInner() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<"" | "save" | "revise">("");
   const [error, setError] = useState("");
+
+  // 送り方を保存したあとに、送り方の欄だけ読み直す（写真や入力中の文は消さない）
+  const reloadPackage = () =>
+    fetch(`/api/drafts/${draftId}`)
+      .then((r) => r.json())
+      .then((j: { draft: Draft }) => setDraft((old) => (old ? { ...old, size_class: j.draft.size_class, weight_g: j.draft.weight_g, per_box: j.draft.per_box } : old)));
 
   useEffect(() => {
     fetch(`/api/drafts/${draftId}`)
@@ -191,6 +203,15 @@ function EditInner() {
         <div className="text-sm font-bold text-leaf">商品ページの文</div>
         <DraftFieldsForm f={fields} setF={setFields} legal={legal} />
       </section>
+
+      <PackageCard
+        draftId={draft.id}
+        price={Number(fields.price_yen) || draft.price_yen}
+        initial={{ size_class: draft.size_class, weight_g: draft.weight_g, per_box: draft.per_box }}
+        shopPrefecture={draft.shop_prefecture}
+        shopFlatYen={draft.shop_shipping_yen}
+        onSaved={reloadPackage}
+      />
 
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
 
