@@ -3,7 +3,8 @@ import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// テストのときだけ YAOBIZ_DATA_DIR で別の場所に向ける（本物のデータを汚さない）
+const DATA_DIR = process.env.YAOBIZ_DATA_DIR || path.join(process.cwd(), "data");
 
 declare global {
   var __yaobizDb: DatabaseSync | undefined;
@@ -82,6 +83,23 @@ function open(): DatabaseSync {
       created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
 
+    -- ログインする人（パートナーと YMM 管理者）。店主はログインしない（リリースのときだけお店の暗証番号）
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'partner', -- partner / admin
+      pin_hash TEXT NOT NULL,
+      active INTEGER NOT NULL DEFAULT 1,
+      failed INTEGER NOT NULL DEFAULT 0,      -- 暗証番号を続けて間違えた回数
+      locked_until TEXT,                      -- 5回間違えたら少し待ってもらう
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      expires_at TEXT NOT NULL
+    );
+
     -- 料率などの設定
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
@@ -92,6 +110,8 @@ function open(): DatabaseSync {
     INSERT OR IGNORE INTO settings (key, value) VALUES ('stripe_fee_rate', '0.036');
     -- 手数料を引いた残りのうちパートナーに回す割合。金額設定は練り直し中（三方良しになる値を検討）
     INSERT OR IGNORE INTO settings (key, value) VALUES ('partner_share', '0.50');
+    -- パートナーへの支払期日（フリーランス新法で明示が必要）。YMM が管理画面で入れる。推測で埋めない
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('payment_terms', '');
   `);
 
   // 後から足した列（すでにある DB にも足す）
@@ -105,6 +125,13 @@ function open(): DatabaseSync {
   if (!hcols.includes("legal_research")) db.exec("ALTER TABLE hearings ADD COLUMN legal_research TEXT");
   const scols = (db.prepare("PRAGMA table_info(shops)").all() as { name: string }[]).map((c) => c.name);
   if (!scols.includes("legal_research")) db.exec("ALTER TABLE shops ADD COLUMN legal_research TEXT");
+  // 担当パートナー・リリース用のお店の暗証番号・送料（全国一律、商品代とは別）
+  if (!scols.includes("partner_id")) db.exec("ALTER TABLE shops ADD COLUMN partner_id INTEGER REFERENCES users(id)");
+  if (!scols.includes("release_pin_hash")) db.exec("ALTER TABLE shops ADD COLUMN release_pin_hash TEXT");
+  if (!scols.includes("shipping_yen")) db.exec("ALTER TABLE shops ADD COLUMN shipping_yen INTEGER");
+  // 店主さんの暗証番号も、続けて間違えたら少し待ってもらう（パートナーが総当たりできないように）
+  if (!scols.includes("pin_failed")) db.exec("ALTER TABLE shops ADD COLUMN pin_failed INTEGER NOT NULL DEFAULT 0");
+  if (!scols.includes("pin_locked_until")) db.exec("ALTER TABLE shops ADD COLUMN pin_locked_until TEXT");
   if (!scols.includes("legal_researched_at")) db.exec("ALTER TABLE shops ADD COLUMN legal_researched_at TEXT");
   // お店のヒアリング（理念・思い）。status: none（まだ）/ draft（店主の確認待ち）/ approved（公開OK）
   if (!scols.includes("philosophy_transcript")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_transcript TEXT");
@@ -119,6 +146,19 @@ function open(): DatabaseSync {
   const ocols = (db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name);
   // どのパートナーのシェアから売れたか（シェア用リンクの ?ref=）
   if (!ocols.includes("ref")) db.exec("ALTER TABLE orders ADD COLUMN ref TEXT");
+  // 送料（商品代とは別。店主に渡り、その手数料も送料から引く）・届け先・パートナーの分け方（担当と紹介者）
+  for (const [c, t] of [
+    ["shipping_yen", "INTEGER NOT NULL DEFAULT 0"],
+    ["shipping_fee_yen", "INTEGER NOT NULL DEFAULT 0"],
+    ["ship_name", "TEXT"],
+    ["ship_address", "TEXT"],
+    ["owner_partner_id", "INTEGER"],
+    ["owner_partner_yen", "INTEGER NOT NULL DEFAULT 0"],
+    ["referrer_id", "INTEGER"],
+    ["referrer_yen", "INTEGER NOT NULL DEFAULT 0"],
+  ] as const) {
+    if (!ocols.includes(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} ${t}`);
+  }
   if (!ocols.includes("fee_yen")) db.exec("ALTER TABLE orders ADD COLUMN fee_yen INTEGER NOT NULL DEFAULT 0");
 
   // デモ用のダミーの店（架空）。1件もなければ入れる。
@@ -153,6 +193,9 @@ export type Shop = {
   seller_address: string | null;
   seller_phone: string | null;
   seller_email: string | null;
+  partner_id: number | null;
+  release_pin_hash: string | null;
+  shipping_yen: number | null;
 };
 export const SELLER_KEYS = ["seller_name", "seller_rep", "seller_address", "seller_phone", "seller_email"] as const;
 export type Draft = {
@@ -174,6 +217,11 @@ export type Draft = {
   created_at: string;
   updated_at: string;
 };
+
+export function getText(key: "payment_terms"): string {
+  const row = getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;
+  return row?.value ?? "";
+}
 
 export function getSetting(key: "ymm_rate" | "partner_share" | "stripe_fee_rate"): number {
   const row = getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;

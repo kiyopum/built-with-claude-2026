@@ -1,8 +1,11 @@
+import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { RATE_LIMITS } from "@/lib/split";
 
 // 分け方の設定を変える。これからの注文に使う（過去の注文は記録した時の料率のまま）
 export async function POST(req: Request) {
+  const admin = await requireAdmin();
+  if (admin instanceof Response) return admin;
   const body = (await req.json()) as Record<string, unknown>;
   const db = getDb();
   const upd = db.prepare("UPDATE settings SET value = ? WHERE key = ?");

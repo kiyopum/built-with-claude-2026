@@ -7,7 +7,7 @@
 //   文を直したいときだけ、畳んである欄を開く
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { Working } from "@/components/Working";
 import { renderCarousel } from "@/components/carousel";
@@ -21,11 +21,10 @@ type Post = {
 type Saved = { post: Post; legal: Legal };
 type Product = { name: string; price_yen: number; shop_name: string; photos: string[] };
 
-// ログインを入れるまでは、デモのパートナー番号を固定で使う（画面では入力させない）
-const DEMO_REF = "P01";
-
+// 報酬を受け取る立場の紹介は「広告」になる（景品表示法のステマ規制）。いちばん最初に「#PR」を必ず入れる
 function textOf(p: Post) {
-  return `${p.caption}\n\n${p.hashtags.map((h) => `#${h.replace(/^#/, "")}`).join(" ")}`;
+  const tags = p.hashtags.map((h) => `#${h.replace(/^#/, "")}`).filter((h) => h.toUpperCase() !== "#PR");
+  return `#PR\n${p.caption}\n\n${tags.join(" ")}`;
 }
 
 // 本文のコピーは、共有画面を開く前に「同じ押した瞬間」に済ませる必要がある（iPhone の決まり）。
@@ -51,6 +50,8 @@ function copyNow(text: string): boolean {
 
 function ShareInner() {
   const { shopId, draftId } = useParams<{ shopId: string; draftId: string }>();
+  const fromEveryone = useSearchParams().get("from") === "everyone";
+  const [ref, setRef] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [post, setPost] = useState<Post | null>(null);
@@ -64,7 +65,11 @@ function ShareInner() {
     async (p: Product, s: Saved) => {
       setStep("draw");
       try {
-        const url = `${window.location.origin}/p/${draftId}?ref=${DEMO_REF}`;
+        // 紹介リンクには、ログインしている人のパートナー番号が自動で入る
+        const me = await (await apiFetch("/api/auth/me")).json();
+        const code: string = me.user?.role === "partner" ? me.user.code : "";
+        setRef(code);
+        const url = `${window.location.origin}/p/${draftId}${code ? `?ref=${code}` : ""}`;
         const blobs = await renderCarousel({ photos: p.photos, name: p.name, price: p.price_yen, shopName: p.shop_name, url, slides: s.post.slides });
         setFiles((old) => {
           old.forEach((f) => URL.revokeObjectURL(f.url));
@@ -152,7 +157,7 @@ function ShareInner() {
   return (
     <div className="space-y-5">
       <div>
-        <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← もどる</Link>
+        <Link href={fromEveryone ? "/everyone" : `/hearing/${shopId}`} className="text-sm text-leaf">← もどる</Link>
         <h1 className="text-xl font-bold mt-1">Instagram で紹介する</h1>
         {product && <p className="text-sm text-black/60">{product.name}</p>}
       </div>
@@ -190,6 +195,10 @@ function ShareInner() {
             ))}
           </div>
           <p className="text-center text-sm font-bold text-leaf">✓ 法律チェック済み。このまま投稿できます</p>
+          <p className="text-center text-xs text-black/50">
+            文章の先頭に「#PR」が自動で入ります（報酬を受け取る紹介は広告になるため）。
+            {ref && ` 画像の QR には、あなたの番号（${ref}）が入っています。`}
+          </p>
 
           <button className="w-full rounded-2xl bg-carrot text-white py-5 text-xl font-bold shadow active:scale-[0.99]" onClick={post2instagram}>
             📷 Instagram に投稿する

@@ -4,8 +4,9 @@ import path from "node:path";
 import { getDb } from "@/lib/db";
 import type { Photo } from "@/lib/claude";
 
-export const PHOTO_DIR = path.join(process.cwd(), "data", "photos");
-const AUDIO_DIR = path.join(process.cwd(), "data", "audio");
+const DATA_DIR = process.env.YAOBIZ_DATA_DIR || path.join(process.cwd(), "data");
+export const PHOTO_DIR = path.join(DATA_DIR, "photos");
+const AUDIO_DIR = path.join(DATA_DIR, "audio");
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 

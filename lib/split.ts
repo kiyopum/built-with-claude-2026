@@ -9,6 +9,18 @@ export function splitAmount(amount: number, ymmRate: number, feeRate: number, pa
   return { owner: amount - ymmGross, fee, partner, ymm: rest - partner };
 }
 
+// パートナーの取り分を、お店の担当と紹介した人で分ける（2026-11-03 きよさん決定：半分ずつ）
+//   自分の担当の商品を自分で紹介 → 全部担当に。紹介なし → 全部担当に。担当がいないお店 → 全部紹介者に
+//   1円の端数は担当に（合計がずれないように）
+export function splitPartner(partner: number, ownerPartnerId: number | null, referrerId: number | null) {
+  if (referrerId && ownerPartnerId && referrerId !== ownerPartnerId) {
+    const referrerYen = Math.floor(partner / 2);
+    return { ownerPartnerId, ownerPartnerYen: partner - referrerYen, referrerId, referrerYen };
+  }
+  if (referrerId && !ownerPartnerId) return { ownerPartnerId: null, ownerPartnerYen: 0, referrerId, referrerYen: partner };
+  return { ownerPartnerId, ownerPartnerYen: partner, referrerId: referrerId === ownerPartnerId ? referrerId : null, referrerYen: 0 };
+}
+
 // 設定できる範囲（画面とサーバーで同じ）
 export const RATE_LIMITS = {
   ymm_rate: { min: 0.05, max: 0.3 },

@@ -1,0 +1,269 @@
+"use client";
+
+// YMM の管理画面
+//   止まっている商品（法律チェックで販売できない）→ YMM が手助けに入る先
+//   パートナー：登録・止める・暗証番号の再発行
+//   お店：担当パートナーの割り当て・店主さんの暗証番号のリセット
+//   注文と届け先・支払期日（契約条件）
+//   売上・取り分・分け方の設定は「明細」へ
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
+
+type User = { id: number; name: string; role: string; active: number; code: string };
+type Shop = { id: number; name: string; category: string; partner_id: number | null; shipping_yen: number | null; has_pin: boolean; published: number; waiting: number };
+type Blocked = { id: number; shop_id: number; name: string; shop_name: string; partner_name: string | null; updated_at: string; reasons: string[] };
+type Order = { id: number; created_at: string; amount_yen: number; shipping_yen: number; ship_name: string | null; ship_address: string | null; product_name: string; shop_name: string };
+type Data = { me: { id: number }; users: User[]; shops: Shop[]; blocked: Blocked[]; orders: Order[]; payment_terms: string };
+
+const card = "rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3";
+const input = "w-full rounded-xl border border-black/15 p-2.5 text-base";
+
+export default function AdminPage() {
+  const [data, setData] = useState<Data | null>(null);
+  const [error, setError] = useState("");
+  const [msg, setMsg] = useState("");
+
+  const load = useCallback(async () => {
+    const r = await apiFetch("/api/admin");
+    const j = await r.json();
+    if (!r.ok) setError(j.error);
+    else setData(j);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/admin")
+      .then(async (r) => ({ ok: r.ok, j: await r.json() }))
+      .then(({ ok, j }) => (ok ? setData(j) : setError(j.error)));
+  }, []);
+
+  async function act(body: Record<string, unknown>, done?: string) {
+    setError("");
+    setMsg("");
+    const r = await apiFetch("/api/admin", { method: "POST", body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!r.ok) {
+      setError(j.error);
+      return false;
+    }
+    if (done) setMsg(done + (j.code ? `（パートナー番号 ${j.code}）` : ""));
+    await load();
+    return true;
+  }
+
+  if (error && !data) return <p className="rounded-xl bg-red-50 text-red-700 p-3">{error}</p>;
+  if (!data) return <p className="text-black/50">読み込み中…</p>;
+  const partners = data.users.filter((u) => u.role === "partner" && u.active);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-bold">YMM 管理</h1>
+        <p className="text-xs text-black/50">
+          売上・取り分・分け方の設定は <Link href="/statement" className="text-leaf underline">明細</Link> で見られます。
+        </p>
+      </div>
+      {msg && <p className="rounded-xl bg-leaf/10 text-leaf p-3 text-sm font-bold">{msg}</p>}
+      {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
+
+      {/* 止まっている商品 */}
+      <section className={card}>
+        <div className="font-bold">
+          法律チェックで止まっている商品 <span className="text-red-600">{data.blocked.length}件</span>
+        </div>
+        {data.blocked.length === 0 ? (
+          <p className="text-sm text-black/60">ありません。</p>
+        ) : (
+          <ul className="space-y-2">
+            {data.blocked.map((b) => (
+              <li key={b.id}>
+                <Link href={`/hearing/${b.shop_id}/p/${b.id}`} className="block rounded-xl bg-red-50 p-3 text-sm active:opacity-70">
+                  <div className="font-bold line-clamp-1">{b.name}</div>
+                  <div className="text-xs text-black/60">
+                    {b.shop_name}・担当 {b.partner_name ?? "なし"}・{b.updated_at}
+                  </div>
+                  {b.reasons.length > 0 && <div className="text-xs text-red-700 mt-1">NG：{b.reasons.join("／")}</div>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <UsersCard users={data.users} meId={data.me.id} act={act} />
+
+      {/* お店 */}
+      <section className={card}>
+        <div className="font-bold">お店と担当パートナー</div>
+        <ul className="space-y-2">
+          {data.shops.map((s) => (
+            <li key={s.id} className="rounded-xl bg-black/[0.03] p-3 space-y-2 text-sm">
+              <div className="flex justify-between gap-2">
+                <Link href={`/hearing/${s.id}`} className="font-bold underline-offset-2 hover:underline">
+                  {s.name}
+                </Link>
+                <span className="text-xs text-black/50 shrink-0">
+                  公開 {s.published}・確認待ち {s.waiting}
+                </span>
+              </div>
+              <div className="text-xs text-black/60">
+                送料 {s.shipping_yen == null ? <span className="text-red-600">未設定</span> : `${s.shipping_yen.toLocaleString()}円`}・店主さんの暗証番号{" "}
+                {s.has_pin ? "設定済み" : <span className="text-red-600">未設定</span>}
+              </div>
+              <div className="flex gap-2 items-center">
+                <span className="text-xs shrink-0">担当</span>
+                <select
+                  className="flex-1 rounded-lg border border-black/15 p-2 bg-white"
+                  value={s.partner_id ?? ""}
+                  onChange={(e) => act({ action: "assignShop", shopId: s.id, partnerId: e.target.value || null }, `${s.name} の担当を変えました`)}
+                >
+                  <option value="">（担当なし）</option>
+                  {partners.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}（{p.code}）
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {s.has_pin && (
+                <button
+                  className="text-xs text-black/50 underline"
+                  onClick={() => act({ action: "resetShopPin", shopId: s.id }, `${s.name} の暗証番号を消しました。次にお店のページを開いたとき、店主さんに決め直してもらってください`)}
+                >
+                  店主さんが暗証番号を忘れたとき：消して決め直してもらう
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <PaymentTerms initial={data.payment_terms} act={act} />
+
+      {/* 注文と届け先 */}
+      <section className={card}>
+        <div className="font-bold">注文と届け先（新しい順に50件）</div>
+        {data.orders.length === 0 ? (
+          <p className="text-sm text-black/60">まだありません。</p>
+        ) : (
+          <ul className="space-y-2">
+            {data.orders.map((o) => (
+              <li key={o.id} className="rounded-xl bg-black/[0.03] p-3 text-sm">
+                <div className="flex justify-between gap-2">
+                  <b className="line-clamp-1">{o.product_name}</b>
+                  <span className="shrink-0">{o.amount_yen.toLocaleString()}円</span>
+                </div>
+                <div className="text-xs text-black/50">
+                  {o.shop_name}・{o.created_at}
+                  {o.shipping_yen > 0 && `・うち送料 ${o.shipping_yen.toLocaleString()}円`}
+                </div>
+                <div className="text-xs mt-1">
+                  届け先：{o.ship_name ?? "（なし）"} {o.ship_address ?? ""}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
+
+// ---------- パートナー ----------
+
+function UsersCard({ users, meId, act }: { users: User[]; meId: number; act: (b: Record<string, unknown>, done?: string) => Promise<boolean> }) {
+  const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
+  const [role, setRole] = useState<"partner" | "admin">("partner");
+  const [resetFor, setResetFor] = useState<number | null>(null);
+  const [newPin, setNewPin] = useState("");
+
+  return (
+    <section className={card}>
+      <div className="font-bold">パートナーと管理者</div>
+      <ul className="space-y-2">
+        {users.map((u) => (
+          <li key={u.id} className={`rounded-xl bg-black/[0.03] p-3 text-sm space-y-2 ${u.active ? "" : "opacity-50"}`}>
+            <div className="flex justify-between items-center gap-2">
+              <span>
+                <b>{u.name}</b>
+                <span className="text-xs text-black/50">
+                  {" "}
+                  {u.role === "admin" ? "YMM 管理" : `パートナー ${u.code}`}
+                  {!u.active && "・停止中"}
+                </span>
+              </span>
+              <span className="flex gap-2 shrink-0 text-xs">
+                <button className="underline text-leaf" onClick={() => (setResetFor(resetFor === u.id ? null : u.id), setNewPin(""))}>
+                  暗証番号の再発行
+                </button>
+                {u.id !== meId && (
+                  <button
+                    className="underline text-black/60"
+                    onClick={() => act({ action: "setActive", id: u.id, active: !u.active }, u.active ? `${u.name} さんを止めました` : `${u.name} さんを戻しました`)}
+                  >
+                    {u.active ? "止める" : "戻す"}
+                  </button>
+                )}
+              </span>
+            </div>
+            {resetFor === u.id && (
+              <div className="flex gap-2">
+                <input className={input} inputMode="numeric" maxLength={4} placeholder="新しい数字4けた" value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))} />
+                <button
+                  className="rounded-xl bg-leaf text-white px-4 font-bold disabled:opacity-40 shrink-0"
+                  disabled={newPin.length !== 4}
+                  onClick={async () => {
+                    if (await act({ action: "resetPin", id: u.id, pin: newPin }, `${u.name} さんの暗証番号を変えました。本人に伝えてください`)) setResetFor(null);
+                  }}
+                >
+                  変える
+                </button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+      <div className="border-t border-black/5 pt-3 space-y-2">
+        <div className="text-sm font-bold text-leaf">新しく登録する</div>
+        <input className={input} placeholder="名前（例：架空 花子）" value={name} onChange={(e) => setName(e.target.value)} />
+        <div className="flex gap-2">
+          <input className={input} inputMode="numeric" maxLength={4} placeholder="はじめの暗証番号（数字4けた）" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} />
+          <select className="rounded-xl border border-black/15 p-2 bg-white shrink-0" value={role} onChange={(e) => setRole(e.target.value as "partner" | "admin")}>
+            <option value="partner">パートナー</option>
+            <option value="admin">YMM 管理</option>
+          </select>
+        </div>
+        <button
+          className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40"
+          disabled={!name.trim() || pin.length !== 4}
+          onClick={async () => {
+            if (await act({ action: "addUser", name, pin, role }, `${name} さんを登録しました`)) {
+              setName("");
+              setPin("");
+            }
+          }}
+        >
+          登録する
+        </button>
+        <p className="text-xs text-black/50">暗証番号は本人に直接伝えてください（メールやチャットに書かない）。</p>
+      </div>
+    </section>
+  );
+}
+
+// ---------- 支払期日（契約条件） ----------
+
+function PaymentTerms({ initial, act }: { initial: string; act: (b: Record<string, unknown>, done?: string) => Promise<boolean> }) {
+  const [text, setText] = useState(initial);
+  return (
+    <section className={card}>
+      <div className="font-bold">パートナーへの支払期日</div>
+      <p className="text-xs text-black/50">フリーランス新法で、パートナーに明示が必要です。明細の「契約の条件」にそのまま出ます。</p>
+      <input className={input} placeholder="例：月末締め、翌月○日払い" value={text} onChange={(e) => setText(e.target.value)} />
+      <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={text === initial} onClick={() => act({ action: "setPaymentTerms", text }, "支払期日を保存しました")}>
+        保存する
+      </button>
+    </section>
+  );
+}

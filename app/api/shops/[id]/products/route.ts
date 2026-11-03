@@ -1,3 +1,4 @@
+import { guardShop } from "@/lib/auth";
 import { getDb, type Shop } from "@/lib/db";
 import { generateProductDraft } from "@/lib/claude";
 import { photosFromForm, savePhotos, saveAudios } from "@/lib/files";
@@ -6,6 +7,8 @@ import { getResearch } from "@/lib/research";
 // 商品1つのヒアリングを送る → 商品ページの下書き1件（法律チェックつき）
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
+  const g = await guardShop(id);
+  if (g instanceof Response) return g;
   const db = getDb();
   const shop = db.prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
   if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });

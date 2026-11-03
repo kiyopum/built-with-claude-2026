@@ -1,9 +1,13 @@
+import { guardShop } from "@/lib/auth";
 import { readBusinessCard } from "@/lib/claude";
 import { photosFromForm } from "@/lib/files";
 
 // 名刺の写真を読み取って返す（保存はしない。画面で手で直してから保存する）
 // 名刺の写真そのものはサーバーに残さない
-export async function POST(req: Request) {
+export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  const g = await guardShop(id);
+  if (g instanceof Response) return g;
   try {
     const photos = await photosFromForm(await req.formData());
     if (!photos.length) return Response.json({ error: "名刺の写真がありません" }, { status: 400 });

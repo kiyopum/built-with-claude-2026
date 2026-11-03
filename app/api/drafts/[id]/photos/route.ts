@@ -1,3 +1,4 @@
+import { guardDraft } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { photosFromForm, replacePhotos } from "@/lib/files";
 
@@ -5,6 +6,8 @@ import { photosFromForm, replacePhotos } from "@/lib/files";
 // このあと画面から edit を呼び、新しい写真で法律チェックをやり直す
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
+  const g = await guardDraft(id);
+  if (g instanceof Response) return g;
   const d = getDb().prepare("SELECT id FROM drafts WHERE id = ?").get(Number(id)) as { id: number } | undefined;
   if (!d) return Response.json({ error: "商品が見つかりません" }, { status: 404 });
   try {

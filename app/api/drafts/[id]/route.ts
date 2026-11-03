@@ -1,3 +1,4 @@
+import { shopPinError, guardDraft } from "@/lib/auth";
 import { getDb, type Draft } from "@/lib/db";
 import { reviseDraft, recheckLegal, type Legal, type DraftFields } from "@/lib/claude";
 import { loadProductContext } from "@/lib/context";
@@ -7,6 +8,8 @@ import { loadPhotos, photoUrls } from "@/lib/files";
 // パートナーの修正画面用：商品1件（写真つき）
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
+  const g = await guardDraft(id);
+  if (g instanceof Response) return g;
   const d = getDb()
     .prepare("SELECT d.*, s.name AS shop_name FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ?")
     .get(Number(id)) as Draft | undefined;
@@ -20,12 +23,21 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 //   revise（AIに作り直してもらう → 文も法律チェックも作り直す）
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const body = (await req.json()) as { action: string; note?: string; fields?: Partial<DraftFields>; by?: string };
+  const g = await guardDraft(id);
+  if (g instanceof Response) return g;
+  const body = (await req.json()) as { action: string; note?: string; fields?: Partial<DraftFields>; by?: string; shopPin?: string };
   const db = getDb();
   const d = db.prepare("SELECT * FROM drafts WHERE id = ?").get(Number(id)) as Draft | undefined;
   if (!d) return Response.json({ error: "下書きが見つかりません" }, { status: 404 });
 
+  // リリースと却下は店主さんだけ。パートナーのスマホで、店主さんがお店の暗証番号を入れて押す
+  const pinErr = (body.action === "publish" || body.action === "reject") && shopPinError(g.shop, body.shopPin);
+  if (pinErr) return Response.json({ error: pinErr }, { status: 403 });
+
   if (body.action === "publish") {
+    if (g.shop.shipping_yen == null) {
+      return Response.json({ error: "送料が決まっていません。お店のページで送料（全国一律）を入れてください。" }, { status: 400 });
+    }
     // 法律の判定で「このままでは販売できない」ものは公開させない
     const legal = d.legal_json ? (JSON.parse(d.legal_json) as Legal) : null;
     if (legal?.verdict === "このままでは販売できない") {

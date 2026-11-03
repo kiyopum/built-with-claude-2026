@@ -1,8 +1,11 @@
+import { guardShop } from "@/lib/auth";
 import { getDb, SELLER_KEYS, type Shop } from "@/lib/db";
 
 // お店のページ用：お店の情報（理念）と商品の一覧
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
+  const g = await guardShop(id);
+  if (g instanceof Response) return g;
   const db = getDb();
   const shop = db.prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
   if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
@@ -26,6 +29,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       area: shop.area,
       philosophy_text: shop.philosophy_text,
       philosophy_status: shop.philosophy_status,
+      shipping_yen: shop.shipping_yen,
+      has_pin: !!shop.release_pin_hash,
       seller: Object.fromEntries(SELLER_KEYS.map((k) => [k, shop[k] ?? ""])),
     },
     products,

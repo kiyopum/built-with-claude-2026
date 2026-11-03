@@ -1,3 +1,4 @@
+import { guardShop } from "@/lib/auth";
 import { getDb, type Shop } from "@/lib/db";
 import { summarizeShop } from "@/lib/claude";
 import { saveAudios } from "@/lib/files";
@@ -5,6 +6,8 @@ import { saveAudios } from "@/lib/files";
 // お店のヒアリングを送る → Claude が「このお店について」を書く → 店主の確認待ちにする
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
+  const g = await guardShop(id);
+  if (g instanceof Response) return g;
   const db = getDb();
   const shop = db.prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
   if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });

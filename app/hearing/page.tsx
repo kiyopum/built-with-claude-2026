@@ -18,7 +18,7 @@ export default function HearingTop() {
   useEffect(() => {
     fetch("/api/shops")
       .then((r) => r.json())
-      .then((j: { shops: Shop[] }) => setShops(j.shops));
+      .then((j: { shops?: Shop[] }) => setShops(j.shops ?? []));
   }, []);
 
   async function add() {
@@ -31,7 +31,8 @@ export default function HearingTop() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold">訪問するお店</h1>
+      <h1 className="text-xl font-bold">担当のお店</h1>
+      {shops?.length === 0 && <p className="text-sm text-black/60">まだ担当のお店がありません。下から登録するか、YMM にお店を割り当ててもらってください。</p>}
       {shops === null && <p className="text-black/50">読み込み中…</p>}
       <div className="grid gap-3">
         {shops?.map((s) => (

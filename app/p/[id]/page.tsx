@@ -11,6 +11,7 @@ type Product = {
   name: string;
   description: string;
   price_yen: number;
+  shipping_yen: number | null;
   recommend_reason: string;
   target_customer: string;
   shop_name: string;
@@ -127,8 +128,11 @@ function ProductPageInner() {
         </div>
         <div className="flex items-center justify-between text-lg">
           <span>合計</span>
-          <span className="font-bold">{(p.price_yen * qty).toLocaleString()}円</span>
+          <span className="font-bold">{(p.price_yen * qty + (p.shipping_yen ?? 0)).toLocaleString()}円</span>
         </div>
+        <p className="text-xs text-black/60 text-right">
+          商品 {(p.price_yen * qty).toLocaleString()}円 ＋ {p.shipping_yen ? `送料 ${p.shipping_yen.toLocaleString()}円（全国一律）` : "送料無料"}
+        </p>
         <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy}>
           {busy ? <Working text="決済画面を開いています" /> : "購入する"}
         </button>

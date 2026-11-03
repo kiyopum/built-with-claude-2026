@@ -1,3 +1,4 @@
+import { requireUser } from "@/lib/auth";
 import { getDb, type Draft } from "@/lib/db";
 import { generateSnsPost, checkSnsPost, type SnsPost } from "@/lib/claude";
 import { loadProductContext } from "@/lib/context";
@@ -7,6 +8,9 @@ import { loadProductContext } from "@/lib/context";
 //   check   ：手で直した投稿文の法律チェックだけやり直す
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
+  // 公開した商品は、どのパートナーでも紹介できる（他の人のお店の商品も）
+  const u = await requireUser();
+  if (u instanceof Response) return u;
   const body = (await req.json()) as { action: string; post?: SnsPost };
   const db = getDb();
   const d = db.prepare("SELECT * FROM drafts WHERE id = ?").get(Number(id)) as Draft | undefined;
@@ -30,6 +34,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
+  // 公開した商品は、どのパートナーでも紹介できる（他の人のお店の商品も）
+  const u = await requireUser();
+  if (u instanceof Response) return u;
   const d = getDb()
     .prepare("SELECT d.id, d.name, d.price_yen, d.status, d.sns_json, s.name AS shop_name FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ?")
     .get(Number(id)) as { id: number; name: string; price_yen: number; status: string; sns_json: string | null; shop_name: string } | undefined;

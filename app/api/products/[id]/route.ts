@@ -7,7 +7,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const p = getDb()
     .prepare(
       `SELECT d.id, d.name, d.description, d.price_yen, d.recommend_reason, d.target_customer, d.legal_json,
-              s.name AS shop_name, s.area AS shop_area,
+              s.name AS shop_name, s.area AS shop_area, s.shipping_yen,
               CASE WHEN s.philosophy_status = 'approved' THEN s.philosophy_text END AS shop_intro
        FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ? AND d.status = 'published'`,
     )

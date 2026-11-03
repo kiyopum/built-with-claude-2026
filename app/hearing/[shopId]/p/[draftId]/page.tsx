@@ -1,7 +1,9 @@
 "use client";
 
-// パートナー：商品の修正。写真の撮り直し・追加・並べ替え、文や価格の修正、AIへの一言修正
-// 保存すると法律チェックをやり直し、店主さんの確認待ちに戻る（公開中でも、もう一度確認してもらう）
+// パートナー：商品の「2) 法律チェックと修正」と「3) リリース」
+//   写真の撮り直し・追加・並べ替え、文や価格の修正、AIへの一言修正
+//   保存すると法律チェックをやり直し、店主さんの確認待ちに戻る（公開中でも、もう一度確認してもらう）
+//   リリースは店主さんだけ：スマホを渡して、お店の暗証番号を押してもらう
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -9,6 +11,7 @@ import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { LegalPanel, type Legal } from "@/components/LegalPanel";
 import { DraftFieldsForm, TodoNoteButton } from "@/components/DraftFieldsForm";
 import { Working } from "@/components/Working";
+import { OwnerApprove } from "@/components/OwnerApprove";
 import { apiFetch } from "@/lib/api";
 
 type Draft = {
@@ -113,17 +116,64 @@ function EditInner() {
     }
   }
 
+  async function release(pin: string): Promise<string> {
+    const r = await apiFetch(`/api/drafts/${draftId}`, { method: "POST", body: JSON.stringify({ action: "publish", shopPin: pin }) });
+    const j = await r.json();
+    if (!r.ok) return j.error ?? "リリースできませんでした";
+    router.push(`/hearing/${shopId}`);
+    return "";
+  }
+
   if (!draft) return <p className="text-black/50">読み込み中…</p>;
   const legal = draft.legal_json ? (JSON.parse(draft.legal_json) as Legal) : null;
+  const blocked = legal?.verdict === "このままでは販売できない";
+  const unsaved =
+    photosChanged ||
+    fields.name !== draft.name ||
+    fields.price_yen !== String(draft.price_yen) ||
+    fields.description !== draft.description ||
+    fields.recommend_reason !== draft.recommend_reason ||
+    fields.target_customer !== draft.target_customer;
+  const step = draft.status === "published" ? 4 : blocked || unsaved ? 2 : 3;
   const input = "w-full rounded-xl border border-black/15 p-3 text-base";
 
   return (
     <div className="space-y-6">
       <div>
         <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← お店のページ</Link>
-        <h1 className="text-xl font-bold mt-1">商品を修正</h1>
+        <h1 className="text-xl font-bold mt-1">{draft.status === "published" ? "商品を修正" : "法律チェックと修正・リリース"}</h1>
         <p className="text-xs text-black/50">いまの状態：{STATUS[draft.status]}</p>
       </div>
+
+      {/* 3つのステップのどこにいるか */}
+      <ol className="grid grid-cols-3 gap-1 text-center text-xs font-bold">
+        {["1) ヒアリング", "2) 法律チェックと修正", "3) リリース"].map((t, i) => (
+          <li key={t} className={`rounded-lg py-2 ${i + 1 < step ? "bg-leaf/15 text-leaf" : i + 1 === step ? "bg-carrot text-white" : "bg-black/5 text-black/40"}`}>
+            {i + 1 < step ? "✓ " : ""}
+            {t}
+          </li>
+        ))}
+      </ol>
+
+      {draft.status === "draft" && (
+        <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-leaf/40 space-y-2">
+          <div className="text-sm font-bold text-leaf">3) リリース（店主さんだけ）</div>
+          {blocked ? (
+            <p className="text-sm text-red-600">「このままでは販売できない」ので、まだリリースできません。下の赤いところを直して保存してください。</p>
+          ) : unsaved ? (
+            <p className="text-sm text-amber-700">直したところがあります。先に下の「保存して、法律チェック」を押してください。</p>
+          ) : (
+            <p className="text-sm">店主さんに、写真と文を上から下まで見てもらってください。よければ、お店の暗証番号で公開します。</p>
+          )}
+          <OwnerApprove
+            button="店主さんに見てもらって、リリースする"
+            label="店主さん：お店の暗証番号"
+            onPin={release}
+            disabled={blocked || unsaved || busy !== ""}
+            workingText="公開しています"
+          />
+        </section>
+      )}
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
         <div className="text-sm font-bold text-leaf">写真（撮り直し・追加・メインの入れ替え）</div>

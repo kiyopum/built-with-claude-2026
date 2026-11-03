@@ -1,6 +1,8 @@
 "use client";
 
-// 画面3：成果明細（パートナー・YMM 用）
+// 画面3：成果明細
+//   パートナー：自分の取り分（担当分・紹介分）と、契約条件（フリーランス新法で明示が必要な3点）
+//   YMM 管理：
 //   ・売れた合計と、店主・パートナー・YMM・決済手数料の取り分
 //   ・注文ごとの明細（記録した時の料率で計算済み）
 //   ・分け方のシミュレーション：料率・月の売上・作業時間・サーバー代を動かして、三方良しになる設定を探す
@@ -25,10 +27,42 @@ type Order = {
   product_name: string;
   shop_name: string;
   ref: string | null;
+  shipping_yen: number;
+  owner_partner_name: string | null;
+  owner_partner_yen: number;
+  referrer_name: string | null;
+  referrer_yen: number;
 };
-type Totals = { count: number; amount: number; owner: number; partner: number; ymm: number; fee: number };
-type Settings = { ymm_rate: number; partner_share: number; stripe_fee_rate: number };
-type Data = { orders: Order[]; totals: Totals; byShop: { shop_name: string; count: number; amount: number; owner: number }[]; settings: Settings };
+type Totals = { count: number; amount: number; owner: number; partner: number; ymm: number; fee: number; shipping: number };
+type Settings = { ymm_rate: number; partner_share: number; stripe_fee_rate: number; payment_terms: string };
+type AdminData = {
+  view: "admin";
+  orders: Order[];
+  totals: Totals;
+  byShop: { shop_name: string; count: number; amount: number; owner: number }[];
+  byPartner: { id: number; name: string; owner_yen: number; referrer_yen: number }[];
+  settings: Settings;
+};
+type PartnerOrder = {
+  id: number;
+  created_at: string;
+  draft_id: number;
+  quantity: number;
+  amount_yen: number;
+  shipping_yen: number;
+  product_name: string;
+  shop_name: string;
+  my_yen: number;
+  role: string;
+};
+type PartnerData = {
+  view: "partner";
+  me: { name: string; code: string };
+  orders: PartnerOrder[];
+  totals: { count: number; sales: number; mine: number };
+  settings: Settings;
+};
+type Data = AdminData | PartnerData;
 
 const PARTS = [
   { key: "owner", label: "店主", color: "bg-carrot", text: "text-carrot" },
@@ -66,6 +100,7 @@ export default function StatementPage() {
   }, []);
 
   if (!data) return <p className="text-black/50">読み込み中…</p>;
+  if (data.view === "partner") return <PartnerStatement data={data} />;
   const t = data.totals;
 
   return (
@@ -82,6 +117,7 @@ export default function StatementPage() {
           <div className="text-xs text-black/50">{t.count}件</div>
         </div>
         <div className="text-3xl font-bold">{yen(t.amount)}</div>
+        {t.shipping > 0 && <div className="text-xs text-black/50">うち送料 {yen(t.shipping)}（店主さんへ）</div>}
         <SplitBar v={t} />
         <dl className="grid grid-cols-2 gap-2">
           {PARTS.map((p) => (
@@ -132,6 +168,12 @@ export default function StatementPage() {
                   </div>
                 ))}
               </div>
+              <div className="text-[11px] text-black/50">
+                パートナー：
+                {o.owner_partner_name ? `担当 ${o.owner_partner_name} ${yen(o.owner_partner_yen)}` : "担当なし"}
+                {o.referrer_name && o.referrer_yen > 0 && `／紹介 ${o.referrer_name} ${yen(o.referrer_yen)}`}
+                {o.shipping_yen > 0 && `／送料 ${yen(o.shipping_yen)}（店主さんへ・手数料は送料から）`}
+              </div>
               <div className="text-[11px] text-black/40">
                 この注文の料率：YMM {pct(o.ymm_rate)}・パートナー（手数料を引いた残りの）{pct(o.partner_share)}
               </div>
@@ -152,8 +194,107 @@ export default function StatementPage() {
         </section>
       )}
 
+      {data.byPartner.length > 0 && (
+        <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
+          <div className="text-sm font-bold">パートナーごと（担当分＋紹介分）</div>
+          {data.byPartner.map((p) => (
+            <div key={p.id} className="flex justify-between text-sm border-t border-black/5 pt-1">
+              <span>
+                {p.name}
+                <span className="text-xs text-black/50">（担当 {yen(p.owner_yen)}・紹介 {yen(p.referrer_yen)}）</span>
+              </span>
+              <span className="font-bold">{yen(p.owner_yen + p.referrer_yen)}</span>
+            </div>
+          ))}
+        </section>
+      )}
+
+      <Contract settings={data.settings} />
       <Simulator settings={data.settings} onSaved={load} />
     </div>
+  );
+}
+
+// ---------- パートナーの明細 ----------
+
+function PartnerStatement({ data }: { data: PartnerData }) {
+  const t = data.totals;
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-bold">わたしの報酬</h1>
+        <p className="text-xs text-black/50">
+          {data.me.name} さん（パートナー番号 {data.me.code}）。担当のお店で売れた分と、紹介して売れた分です。
+        </p>
+      </div>
+      <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
+        <div className="text-sm font-bold text-leaf">これまでの報酬の合計</div>
+        <div className="text-4xl font-bold text-leaf">{yen(t.mine)}</div>
+        <div className="text-xs text-black/50">
+          {t.count}件・関わった商品の売上 {yen(t.sales)}（送料を除く）
+        </div>
+        {t.count === 0 && <p className="text-sm text-black/60">まだ売れた記録はありません。商品を Instagram で紹介してみましょう。</p>}
+      </section>
+
+      {data.orders.length > 0 && (
+        <section className="space-y-2">
+          <div className="font-bold">売れたもの</div>
+          {data.orders.map((o) => (
+            <div key={o.id} className="rounded-2xl bg-white p-3 shadow-sm border border-black/5">
+              <div className="flex justify-between gap-2 text-xs text-black/50">
+                <span>{o.created_at}</span>
+                <span className="rounded-full bg-leaf/10 text-leaf px-2 py-0.5 font-bold">{o.role}</span>
+              </div>
+              <div className="flex justify-between gap-2 mt-1">
+                <div className="min-w-0">
+                  <div className="font-bold leading-snug line-clamp-2">{o.product_name}</div>
+                  <div className="text-xs text-black/50">
+                    {o.shop_name}・{o.quantity}個・{yen(o.amount_yen - o.shipping_yen)}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="text-xs text-black/50">報酬</div>
+                  <div className="text-lg font-bold text-leaf">{yen(o.my_yen)}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      <Contract settings={data.settings} />
+    </div>
+  );
+}
+
+// ---------- 契約条件（フリーランス新法：業務内容・報酬の計算方法・支払期日を明示する） ----------
+
+function Contract({ settings }: { settings: Settings }) {
+  const per1000 = splitAmount(1000, settings.ymm_rate, settings.stripe_fee_rate, settings.partner_share);
+  return (
+    <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2 text-sm">
+      <div className="font-bold">契約の条件（いつでもここで確かめられます）</div>
+      <dl className="space-y-2">
+        <div>
+          <dt className="text-xs font-bold text-black/60">業務の内容</dt>
+          <dd>お店でのヒアリング、商品ページの作成と修正の手伝い、商品の紹介（SNS など）。</dd>
+        </div>
+        <div>
+          <dt className="text-xs font-bold text-black/60">報酬の計算方法</dt>
+          <dd>
+            売上（商品代。送料は除く）の {pct(settings.ymm_rate)} から決済手数料 {pct(settings.stripe_fee_rate)} を引いた残りの {pct(settings.partner_share)}。
+            1,000円売れると {yen(per1000.partner)}。
+            <br />
+            ほかのパートナーが紹介して売れたときは、お店の担当と紹介した人で半分ずつ。自分の担当の商品を自分で紹介したときは全部。
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-bold text-black/60">支払期日</dt>
+          <dd>{settings.payment_terms || <span className="text-red-600">まだ決まっていません（YMM が管理画面で入れます）</span>}</dd>
+        </div>
+      </dl>
+      <p className="text-xs text-black/50">商品を紹介するときは、報酬を受け取る立場なので、投稿に「#PR」を入れます（紹介画面では自動で入ります）。</p>
+    </section>
   );
 }
 

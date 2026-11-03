@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import "./globals.css";
+import { Nav } from "@/components/Nav";
 
 export const metadata: Metadata = {
   title: "YaoBiz",
@@ -12,15 +14,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="ja" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         <header className="bg-leaf text-white">
-          <div className="mx-auto max-w-2xl px-4 py-3 flex items-center justify-between gap-2">
+          <div className="mx-auto max-w-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-2">
             <Link href="/" className="font-bold text-lg">YaoBiz</Link>
-            {/* デモ用の役割切り替え（本番はログインで分ける） */}
-            <nav className="flex gap-1 text-[13px] whitespace-nowrap">
-              <Link href="/hearing" className="rounded-full bg-white/15 px-2.5 py-1">パートナー</Link>
-              <Link href="/drafts" className="rounded-full bg-white/15 px-2.5 py-1">店主</Link>
-              <Link href="/shop" className="rounded-full bg-white/15 px-2.5 py-1">お客さま</Link>
-              <Link href="/statement" className="rounded-full bg-white/15 px-2.5 py-1">明細</Link>
-            </nav>
+            <Suspense fallback={null}>
+              <Nav />
+            </Suspense>
           </div>
         </header>
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">{children}</main>

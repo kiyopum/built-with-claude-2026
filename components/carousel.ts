@@ -110,7 +110,13 @@ export async function renderCarousel(input: SlideInput): Promise<Blob[]> {
     g.addColorStop(1, "rgba(0,0,0,0.78)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
-    drawText(ctx, input.shopName, 64, 64, { size: 34, weight: 700, color: "#fff", maxWidth: W - 128, maxLines: 1 });
+    drawText(ctx, input.shopName, 64, 64, { size: 34, weight: 700, color: "#fff", maxWidth: W - 280, maxLines: 1 });
+    // 広告であることの表示（ステマ規制）
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.beginPath();
+    ctx.roundRect(W - 64 - 110, 56, 110, 56, 12);
+    ctx.fill();
+    drawText(ctx, "PR", W - 64 - 55, 64, { size: 36, weight: 800, color: INK, maxWidth: 100, align: "center" });
     let y = H - 470;
     y = drawText(ctx, input.slides.cover, 64, y, { size: 76, weight: 800, color: "#fff", maxWidth: W - 128, maxLines: 2, lineHeight: 96 });
     y = drawText(ctx, input.name, 64, y + 24, { size: 40, weight: 700, color: "#fff", maxWidth: W - 128, maxLines: 2, lineHeight: 56 });

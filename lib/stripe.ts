@@ -1,7 +1,8 @@
 // Stripe（テストモード専用）。本番キー（sk_live_）は受け付けない。
 import Stripe from "stripe";
 import { getDb, getSetting, type Draft } from "@/lib/db";
-import { splitAmount } from "@/lib/split";
+import { splitAmount, splitPartner } from "@/lib/split";
+import { idOfCode } from "@/lib/auth";
 
 let client: Stripe | null = null;
 export function stripe(): Stripe {
@@ -44,15 +45,38 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
   const d = db.prepare("SELECT * FROM drafts WHERE id = ?").get(draftId) as Draft | undefined;
   if (!d) throw new Error(`注文の商品が見つかりません（draft_id=${draftId}）`);
 
-  const amount = session.amount_total ?? d.price_yen * quantity;
+  // 商品代と送料を分ける。取り分（YMM・パートナー）は商品代だけで計算する
+  const total = session.amount_total ?? d.price_yen * quantity;
+  const shipping = session.total_details?.amount_shipping ?? 0;
+  const subtotal = total - shipping;
   const ymmRate = getSetting("ymm_rate");
   const partnerShare = getSetting("partner_share");
   const feeRate = getSetting("stripe_fee_rate");
-  const s = splitAmount(amount, ymmRate, feeRate, partnerShare);
+  const s = splitAmount(subtotal, ymmRate, feeRate, partnerShare);
+  // 送料は店主さんに渡る。送料にかかる決済手数料も送料から引く（店主さんが持つ）
+  const shippingFee = Math.round(shipping * feeRate);
+
+  // パートナーの取り分：担当のパートナーと、紹介したパートナーで分ける
+  const shop = db.prepare("SELECT partner_id FROM shops WHERE id = ?").get(d.shop_id) as { partner_id: number | null } | undefined;
+  const ownerPartner = shop?.partner_id ?? null;
+  const refCode = session.metadata?.ref || "";
+  const refId = idOfCode(refCode);
+  const referrer = refId && db.prepare("SELECT 1 FROM users WHERE id = ? AND role = 'partner'").get(refId) ? refId : null;
+  const p = splitPartner(s.partner, ownerPartner, referrer);
+
+  // 届け先（決済画面で入れてもらったもの）
+  const ship = session.collected_information?.shipping_details ?? null;
+  const a = ship?.address;
+  const address = a ? [a.postal_code ? `〒${a.postal_code}` : "", a.state, a.city, a.line1, a.line2].filter(Boolean).join(" ") : null;
+
   db.prepare(
     `INSERT OR IGNORE INTO orders
-     (stripe_session_id, draft_id, shop_id, quantity, amount_yen, owner_yen, ymm_yen, partner_yen, fee_yen, ymm_rate, partner_share, ref)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(session.id, d.id, d.shop_id, quantity, amount, s.owner, s.ymm, s.partner, s.fee, ymmRate, partnerShare, session.metadata?.ref || null);
+     (stripe_session_id, draft_id, shop_id, quantity, amount_yen, owner_yen, ymm_yen, partner_yen, fee_yen, ymm_rate, partner_share, ref,
+      shipping_yen, shipping_fee_yen, ship_name, ship_address, owner_partner_id, owner_partner_yen, referrer_id, referrer_yen)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    session.id, d.id, d.shop_id, quantity, total, s.owner + shipping - shippingFee, s.ymm, s.partner, s.fee + shippingFee, ymmRate, partnerShare, refCode || null,
+    shipping, shippingFee, ship?.name ?? null, address, p.ownerPartnerId, p.ownerPartnerYen, p.referrerId, p.referrerYen,
+  );
   return { created: true };
 }
