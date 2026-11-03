@@ -70,7 +70,8 @@ function ShopPageInner() {
           ＋ 商品を追加
         </Link>
         {products.map((p) => (
-          <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm border border-black/5">
+          <div key={p.id}>
+          <div className={`flex gap-3 bg-white p-3 shadow-sm border border-black/5 ${p.status === "published" ? "rounded-t-2xl" : "rounded-2xl"}`}>
             <Link href={`/hearing/${shop.id}/p/${p.id}`} className="flex gap-3 min-w-0 flex-1 active:opacity-70">
             <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-black/5 grid place-items-center text-black/30 text-xs">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -89,12 +90,16 @@ function ShopPageInner() {
               <Link href={`/hearing/${shop.id}/p/${p.id}`} className="rounded-lg border border-leaf/40 text-leaf text-xs font-bold px-2.5 py-1.5 text-center">
                 修正
               </Link>
-              {p.status === "published" && (
-                <Link href={`/hearing/${shop.id}/p/${p.id}/share`} className="rounded-lg bg-carrot text-white text-xs font-bold px-2.5 py-1.5 text-center">
-                  シェア
-                </Link>
-              )}
             </div>
+          </div>
+          {p.status === "published" && (
+            <Link
+              href={`/hearing/${shop.id}/p/${p.id}/share`}
+              className="-mt-2 block rounded-b-2xl bg-carrot text-white text-center py-3 font-bold shadow-sm"
+            >
+              📷 Instagram で紹介する
+            </Link>
+          )}
           </div>
         ))}
       </section>

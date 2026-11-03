@@ -233,7 +233,7 @@ function DraftCard({ d, onChanged }: { d: Draft; onChanged: () => void }) {
       )}
       {d.status === "published" && (
         <a href={`/hearing/${d.shop_id}/p/${d.id}/share`} className="block rounded-xl bg-carrot text-white p-3 text-sm font-bold text-center">
-          Instagram でシェアする →
+          📷 Instagram で紹介する
         </a>
       )}
       {d.revision_note && <p className="text-xs text-black/50">前回の修正：{d.revision_note}</p>}

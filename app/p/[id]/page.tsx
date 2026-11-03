@@ -35,6 +35,23 @@ function ProductPageInner() {
       .catch(() => setNotFound(true));
   }, [id]);
 
+  const [shared, setShared] = useState(false);
+  async function shareLink() {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: p?.name, text: `${p?.shop_name}の「${p?.name}」`, url }).catch(() => {
+        /* 閉じただけ */
+      });
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setShared(true);
+      } catch {
+        /* コピーできない端末 */
+      }
+    }
+  }
+
   async function buy() {
     setError("");
     setBusy(true);
@@ -118,6 +135,11 @@ function ProductPageInner() {
         <p className="text-xs text-black/50">デモのため、テスト用の決済画面です。実際のお金は動きません。</p>
         {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
       </div>
+
+      {/* だれでも押せるシェア。LINE・メールなど、スマホの共有画面から選ぶだけ（紹介したパートナーの番号はそのまま引き継ぐ） */}
+      <button className="w-full rounded-2xl border-2 border-leaf text-leaf py-3 font-bold" onClick={shareLink}>
+        {shared ? "リンクをコピーしました ✓" : "📤 この商品を友だちに教える"}
+      </button>
 
       {p.shop_intro && (
         <section className="rounded-2xl bg-leaf/5 p-4 space-y-2">
