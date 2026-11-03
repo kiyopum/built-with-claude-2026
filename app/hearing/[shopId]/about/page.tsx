@@ -41,6 +41,7 @@ function AboutInner() {
     setBusy("");
     if (!r.ok) return setError(j.error);
     voice.clearRecordings();
+    setTranscript("");
     router.push(`/hearing/${shopId}`);
   }
 

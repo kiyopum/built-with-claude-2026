@@ -59,6 +59,8 @@ function EditInner() {
           target_customer: d.target_customer,
         });
         setPhotos(await toPicked(d.photos));
+        setPhotosChanged(false);
+        setError("");
       });
   }, [draftId]);
 
@@ -85,6 +87,9 @@ function EditInner() {
         method: "POST",
         body: JSON.stringify({ action: "edit", by: "partner", fields: { ...fields, price_yen: Number(fields.price_yen) } }),
       });
+      // Next 16 は画面の状態を覚えているので、作業中を解いてから移る（戻ったときに回り続けて見えるため）
+      setBusy("");
+      setNote("");
       router.push(`/hearing/${shopId}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "保存できませんでした");
@@ -98,6 +103,9 @@ function EditInner() {
     try {
       await uploadPhotosIfChanged();
       await call(`/api/drafts/${draftId}`, { method: "POST", body: JSON.stringify({ action: "revise", note }) });
+      // Next 16 は画面の状態を覚えているので、作業中を解いてから移る（戻ったときに回り続けて見えるため）
+      setBusy("");
+      setNote("");
       router.push(`/hearing/${shopId}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "作り直せませんでした");

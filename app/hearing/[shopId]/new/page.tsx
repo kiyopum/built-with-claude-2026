@@ -56,6 +56,10 @@ function NewProductInner() {
     setBusy("");
     if (!r.ok) return setError(j.error);
     voice.clearRecordings();
+    // 次の「＋商品を追加」で前の商品の写真や話が残らないように、全部空にしてから移る
+    setPhotos([]);
+    setAnalysis(null);
+    setTranscript("");
     router.push(`/hearing/${shopId}`);
   }
 

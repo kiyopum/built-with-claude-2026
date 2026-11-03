@@ -31,8 +31,9 @@ const MARK = {
 
 function todoItems(legal: Legal | null): Item[] {
   if (!legal) return [];
-  const order = { ng: 0, fix: 1, missing: 2, ok: 3 };
-  return legal.items.filter((i) => i.status !== "ok").sort((a, b) => order[a.status] - order[b.status]);
+  // 「直すところ」に出すのは NG・要修正・要確認だけ。参考（info）は出さない（全項目は下の詳細で見られる）
+  const order = { ng: 0, fix: 1, missing: 2, ok: 3, info: 4 };
+  return legal.items.filter((i) => i.status === "ng" || i.status === "fix" || i.status === "missing").sort((a, b) => order[a.status] - order[b.status]);
 }
 
 function whereIs(item: Item, f: FieldValues): TextKey | null {

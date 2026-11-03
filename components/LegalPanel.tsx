@@ -3,7 +3,7 @@
 export type Legal = {
   verdict: "販売できる" | "直せば販売できる" | "このままでは販売できない";
   summary: string;
-  items: { status: "ok" | "fix" | "ng" | "missing"; topic: string; detail: string; law: string; source_url: string; quote?: string }[];
+  items: { status: "ok" | "fix" | "ng" | "missing" | "info"; topic: string; detail: string; law: string; source_url: string; quote?: string }[];
   label_items: { name: string; value: string | null }[];
 };
 
@@ -16,9 +16,10 @@ const ITEM_STYLE = {
   ok: { mark: "○", label: "OK", cls: "text-leaf" },
   fix: { mark: "△", label: "要修正", cls: "text-amber-600" },
   ng: { mark: "×", label: "NG", cls: "text-red-600" },
-  missing: { mark: "？", label: "情報不足", cls: "text-black/50" },
+  missing: { mark: "？", label: "要確認", cls: "text-black/60" },
+  info: { mark: "i", label: "参考", cls: "text-sky-700" },
 };
-const ITEM_ORDER = { ng: 0, missing: 1, fix: 2, ok: 3 };
+const ITEM_ORDER = { ng: 0, fix: 1, missing: 2, ok: 3, info: 4 };
 
 export function LegalPanel({ legal }: { legal: Legal }) {
   const items = [...legal.items].sort((a, b) => ITEM_ORDER[a.status] - ITEM_ORDER[b.status]);
