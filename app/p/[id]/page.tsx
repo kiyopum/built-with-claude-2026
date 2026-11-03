@@ -14,6 +14,8 @@ type Product = {
   shop_name: string;
   shop_area: string;
   labels: { name: string; value: string }[];
+  photos: string[];
+  shop_intro: string | null;
 };
 
 function ProductPageInner() {
@@ -48,6 +50,20 @@ function ProductPageInner() {
 
   return (
     <article className="space-y-5">
+      {p.photos.length > 0 && (
+        <div className="space-y-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={p.photos[0]} alt={p.name} className="w-full aspect-square object-cover rounded-2xl" />
+          {p.photos.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto">
+              {p.photos.slice(1).map((src) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={src} src={src} alt="" className="w-20 h-20 object-cover rounded-xl" />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <div className="text-sm text-black/50">
         {p.shop_name}
         {p.shop_area && `（${p.shop_area}）`}
@@ -100,6 +116,13 @@ function ProductPageInner() {
         <p className="text-xs text-black/50">デモのため、テスト用の決済画面です。実際のお金は動きません。</p>
         {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
       </div>
+
+      {p.shop_intro && (
+        <section className="rounded-2xl bg-leaf/5 p-4 space-y-2">
+          <h2 className="font-bold text-leaf">このお店について（{p.shop_name}）</h2>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{p.shop_intro}</p>
+        </section>
+      )}
     </article>
   );
 }

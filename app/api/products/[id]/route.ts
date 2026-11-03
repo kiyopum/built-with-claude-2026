@@ -1,4 +1,5 @@
 import { getDb, type Draft } from "@/lib/db";
+import { photoUrls } from "@/lib/files";
 
 // 公開中の商品1件（お客さま向け）。公開していないものは見せない
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -6,7 +7,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const p = getDb()
     .prepare(
       `SELECT d.id, d.name, d.description, d.price_yen, d.recommend_reason, d.target_customer, d.legal_json,
-              s.name AS shop_name, s.area AS shop_area
+              s.name AS shop_name, s.area AS shop_area,
+              CASE WHEN s.philosophy_status = 'approved' THEN s.philosophy_text END AS shop_intro
        FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ? AND d.status = 'published'`,
     )
     .get(Number(id)) as Partial<Draft> | undefined;
@@ -15,5 +17,5 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const legal = p.legal_json ? (JSON.parse(p.legal_json) as { label_items?: { name: string; value: string | null }[] }) : null;
   const labels = (legal?.label_items ?? []).filter((l) => l.value);
   delete p.legal_json;
-  return Response.json({ product: { ...p, labels } });
+  return Response.json({ product: { ...p, labels, photos: photoUrls(Number(id)) } });
 }

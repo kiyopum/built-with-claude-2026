@@ -18,6 +18,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <nav className="flex gap-1 text-sm">
               <Link href="/hearing" className="rounded-full bg-white/15 px-3 py-1">パートナー</Link>
               <Link href="/drafts" className="rounded-full bg-white/15 px-3 py-1">店主</Link>
+              <Link href="/shop" className="rounded-full bg-white/15 px-3 py-1">お客さま</Link>
             </nav>
           </div>
         </header>

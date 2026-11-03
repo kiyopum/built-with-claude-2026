@@ -6,7 +6,8 @@ export async function GET() {
   await connection();
   const products = getDb()
     .prepare(
-      `SELECT d.id, d.name, d.description, d.price_yen, d.target_customer, s.name AS shop_name
+      `SELECT d.id, d.name, d.description, d.price_yen, d.target_customer, s.name AS shop_name,
+              (SELECT '/api/photos/' || file FROM product_photos p WHERE p.draft_id = d.id ORDER BY sort LIMIT 1) AS photo
        FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.status = 'published' ORDER BY d.updated_at DESC`,
     )
     .all() as Partial<Draft>[];

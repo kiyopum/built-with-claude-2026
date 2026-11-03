@@ -56,6 +56,15 @@ function open(): DatabaseSync {
       updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
 
+    -- 商品の写真（1枚目がメイン）
+    CREATE TABLE IF NOT EXISTS product_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      draft_id INTEGER NOT NULL REFERENCES drafts(id),
+      file TEXT NOT NULL,
+      mime TEXT NOT NULL,
+      sort INTEGER NOT NULL DEFAULT 0
+    );
+
     -- 売れた記録。Stripe の決済セッションID で二重登録を防ぐ
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,6 +104,12 @@ function open(): DatabaseSync {
   const scols = (db.prepare("PRAGMA table_info(shops)").all() as { name: string }[]).map((c) => c.name);
   if (!scols.includes("legal_research")) db.exec("ALTER TABLE shops ADD COLUMN legal_research TEXT");
   if (!scols.includes("legal_researched_at")) db.exec("ALTER TABLE shops ADD COLUMN legal_researched_at TEXT");
+  // お店のヒアリング（理念・思い）。status: none（まだ）/ draft（店主の確認待ち）/ approved（公開OK）
+  if (!scols.includes("philosophy_transcript")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_transcript TEXT");
+  if (!scols.includes("philosophy_text")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_text TEXT");
+  if (!scols.includes("philosophy_points")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_points TEXT");
+  if (!scols.includes("philosophy_status")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_status TEXT NOT NULL DEFAULT 'none'");
+  if (!hcols.includes("label_read")) db.exec("ALTER TABLE hearings ADD COLUMN label_read TEXT");
   const ocols = (db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name);
   if (!ocols.includes("fee_yen")) db.exec("ALTER TABLE orders ADD COLUMN fee_yen INTEGER NOT NULL DEFAULT 0");
 
@@ -116,7 +131,16 @@ export function getDb(): DatabaseSync {
   return globalThis.__yaobizDb;
 }
 
-export type Shop = { id: number; name: string; category: string; area: string };
+export type Shop = {
+  id: number;
+  name: string;
+  category: string;
+  area: string;
+  philosophy_transcript: string | null;
+  philosophy_text: string | null;
+  philosophy_points: string | null;
+  philosophy_status: "none" | "draft" | "approved";
+};
 export type Draft = {
   id: number;
   hearing_id: number;
