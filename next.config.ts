@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   // iPhone 実機テスト用：同じ Wi-Fi の中からの表示を許可（開発時のみ有効）
   allowedDevOrigins: lanIps,
+  // サーバー（VPS）に置くときだけ、動かすのに要るファイルだけをまとめる（YAOBIZ_STANDALONE=1 でビルド）
+  output: process.env.YAOBIZ_STANDALONE ? "standalone" : undefined,
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

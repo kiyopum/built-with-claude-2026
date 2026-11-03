@@ -10,7 +10,9 @@ type U = { id: number; name: string; role: string };
 
 function LoginInner() {
   const router = useRouter();
-  const next = useSearchParams().get("next");
+  const params = useSearchParams();
+  const next = params.get("next");
+  const setupKey = params.get("setup") ?? "";
   const [data, setData] = useState<{ users: U[]; setup: boolean } | null>(null);
   const [who, setWho] = useState<U | null>(null);
   const [busy, setBusy] = useState(false);
@@ -52,7 +54,7 @@ function LoginInner() {
     }
     setBusy(true);
     setError("");
-    const r = await apiFetch("/api/auth/setup", { method: "POST", body: JSON.stringify({ name: setupName, pin }) });
+    const r = await apiFetch("/api/auth/setup", { method: "POST", body: JSON.stringify({ name: setupName, pin, key: setupKey }) });
     const j = await r.json();
     if (!r.ok) {
       setBusy(false);

@@ -23,3 +23,6 @@ data/
 
 # 開発用の証明書
 certificates/
+
+# サーバーに置く手順（接続先を含むので GitHub に上げない）
+deploy.local/
