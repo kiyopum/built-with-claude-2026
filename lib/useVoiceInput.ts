@@ -50,6 +50,7 @@ export function useVoiceInput(onFinalText: (text: string) => void) {
   const srFailedRef = useRef(false);
   const secondsRef = useRef(0);
   const onFinalRef = useRef(onFinalText);
+  const lastFinalRef = useRef("");
   useEffect(() => {
     onFinalRef.current = onFinalText;
   }, [onFinalText]);
@@ -62,7 +63,9 @@ export function useVoiceInput(onFinalText: (text: string) => void) {
     }
     const sr = new C();
     sr.lang = "ja-JP";
-    sr.continuous = true;
+    // Android の Chrome は continuous だと同じ文を何度も返すことがある。区切りごとに止めて、自動で再開する（iPhone は今まで通り）
+    const android = /Android/i.test(navigator.userAgent);
+    sr.continuous = !android;
     sr.interimResults = true;
     sr.onresult = (e) => {
       let fin = "";
@@ -72,7 +75,12 @@ export function useVoiceInput(onFinalText: (text: string) => void) {
         if (r.isFinal) fin += r[0].transcript;
         else mid += r[0].transcript;
       }
-      if (fin.trim()) onFinalRef.current(fin.trim());
+      // 同じ文が続けて届いたら1回だけ入れる（Android の重複対策）
+      const text = fin.trim();
+      if (text && text !== lastFinalRef.current) {
+        lastFinalRef.current = text;
+        onFinalRef.current(text);
+      }
       setInterim(mid);
     };
     sr.onerror = (e) => {
@@ -82,6 +90,8 @@ export function useVoiceInput(onFinalText: (text: string) => void) {
       setWarning(
         e.error === "not-allowed" || e.error === "service-not-allowed"
           ? "文字起こしが許可されていません。iPhone の 設定 → 一般 → キーボード →「音声入力」をオンにしてください。録音は続いています。"
+          : e.error === "audio-capture"
+          ? "この端末では、録音しながらの文字起こしができないようです。録音は続いています。話した内容は、あとで手で書き足してください。"
           : `文字起こしが止まりました（${e.error}）。録音は続いています。`,
       );
     };
