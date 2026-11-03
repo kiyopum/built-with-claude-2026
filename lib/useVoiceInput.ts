@@ -4,6 +4,8 @@
 //   1) 話した言葉をその場で文字にする（Web Speech API・無料）
 //   2) 同時に録音ファイルも残す（MediaRecorder）
 // iPhone Safari・Mac で同時に動くことを実機で確認済み（2026-11-03）。
+// Android の Chrome は、録音と文字起こしでマイクを取り合って止まる（2026-11-03 デモのパートナーさんの端末で発生）。
+//   → Android では録音ファイルは作らず、文字起こしだけにする（Claude が使うのは文字。録音は控え）
 // どちらかが使えない端末でも、使える方だけで動く（手入力はいつでも可）。
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -89,21 +91,31 @@ export function useVoiceInput(onFinalText: (text: string) => void) {
       srFailedRef.current = true;
       setWarning(
         e.error === "not-allowed" || e.error === "service-not-allowed"
-          ? "文字起こしが許可されていません。iPhone の 設定 → 一般 → キーボード →「音声入力」をオンにしてください。録音は続いています。"
+          ? android
+            ? "マイクが許可されていません。アドレス欄の左のマーク →「権限」→「マイク」を許可にしてください。"
+            : "文字起こしが許可されていません。iPhone の 設定 → 一般 → キーボード →「音声入力」をオンにしてください。録音は続いています。"
+          : e.error === "network"
+          ? "文字起こしにはインターネットが要ります。電波の良いところで、もう一度押してください。"
           : e.error === "audio-capture"
           ? "この端末では、録音しながらの文字起こしができないようです。録音は続いています。話した内容は、あとで手で書き足してください。"
           : `文字起こしが止まりました（${e.error}）。録音は続いています。`,
       );
     };
-    // iPhone は無音が続くと止まるので、録音中なら自動で再開する
+    // 無音や区切りで止まるので、録音中なら自動で再開する（Android はすぐ再開すると失敗するので少し待つ）
     sr.onend = () => {
       setInterim("");
       if (activeRef.current && !srFailedRef.current) {
-        try {
-          sr.start();
-        } catch {
-          /* すでに動いている場合は無視 */
-        }
+        setTimeout(
+          () => {
+            if (!activeRef.current || srRef.current !== sr) return;
+            try {
+              sr.start();
+            } catch {
+              /* すでに動いている場合は無視 */
+            }
+          },
+          android ? 300 : 0,
+        );
       }
     };
     srRef.current = sr;
@@ -122,7 +134,17 @@ export function useVoiceInput(onFinalText: (text: string) => void) {
     secondsRef.current = 0;
     setSeconds(0);
 
-    // 録音（先にマイクを取る）
+    // 録音（先にマイクを取る）。Android は文字起こしだけ（マイクの取り合いで止まるため）
+    const android = /Android/i.test(navigator.userAgent);
+    if (android && getSR()) {
+      startSpeech();
+      setRecording(true);
+      timerRef.current = setInterval(() => {
+        secondsRef.current += 1;
+        setSeconds(secondsRef.current);
+      }, 1000);
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
