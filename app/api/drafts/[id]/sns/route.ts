@@ -1,16 +1,28 @@
-import { requireUser } from "@/lib/auth";
+import { currentUser, shopPinError } from "@/lib/auth";
+import type { Shop } from "@/lib/db";
 import { getDb, type Draft } from "@/lib/db";
 import { generateSnsPost, checkSnsPost, type SnsPost } from "@/lib/claude";
 import { loadProductContext } from "@/lib/context";
+
+// 使ってよい人：ログインしたパートナー（どのお店の商品でも紹介できる）か、
+// 店主さん（ログインしない。そのお店の暗証番号を x-shop-pin で送る。間違いは5回で5分待ち）
+async function allowed(req: Request, draftId: number): Promise<Response | null> {
+  if (await currentUser()) return null;
+  const pin = req.headers.get("x-shop-pin");
+  if (!pin) return Response.json({ error: "ログインしてください" }, { status: 401 });
+  const shop = getDb().prepare("SELECT s.* FROM shops s JOIN drafts d ON d.shop_id = s.id WHERE d.id = ?").get(draftId) as Shop | undefined;
+  if (!shop) return Response.json({ error: "商品が見つかりません" }, { status: 404 });
+  const err = shopPinError(shop, pin);
+  return err ? Response.json({ error: err }, { status: 403 }) : null;
+}
 
 // SNS（Instagram カルーセル）の投稿
 //   generate：Claude が投稿文を作り、そのまま法律チェックもする
 //   check   ：手で直した投稿文の法律チェックだけやり直す
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  // 公開した商品は、どのパートナーでも紹介できる（他の人のお店の商品も）
-  const u = await requireUser();
-  if (u instanceof Response) return u;
+  const ng = await allowed(req, Number(id));
+  if (ng) return ng;
   const body = (await req.json()) as { action: string; post?: SnsPost };
   const db = getDb();
   const d = db.prepare("SELECT * FROM drafts WHERE id = ?").get(Number(id)) as Draft | undefined;
@@ -32,11 +44,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
 }
 
-export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  // 公開した商品は、どのパートナーでも紹介できる（他の人のお店の商品も）
-  const u = await requireUser();
-  if (u instanceof Response) return u;
+  const ng = await allowed(req, Number(id));
+  if (ng) return ng;
   const d = getDb()
     .prepare("SELECT d.id, d.name, d.price_yen, d.status, d.sns_json, s.name AS shop_name FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ?")
     .get(Number(id)) as { id: number; name: string; price_yen: number; status: string; sns_json: string | null; shop_name: string } | undefined;

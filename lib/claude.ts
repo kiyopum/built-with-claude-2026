@@ -394,7 +394,8 @@ export async function readBusinessCard(photos: Photo[]): Promise<CardFields> {
 
 const SnsSchema = z.object({
   caption: z.string().describe("Instagram の本文。150〜300字。改行で読みやすく。最後に「ご購入はプロフィールのリンクから」"),
-  hashtags: z.array(z.string()).describe("ハッシュタグ 5〜10個。# は付けない。地域・商品・食べ方など"),
+  // Instagram のハッシュタグは1投稿5個まで。#PR は画面で必ず足すので、Claude が作るのは4個
+  hashtags: z.array(z.string()).describe("ハッシュタグ ちょうど4個。# は付けない。PR は入れない（別に付ける）。地域・商品・食べ方など、探す人が使う言葉"),
   slides: z.object({
     cover: z.string().describe("1枚目（表紙）に載せるひとこと。16字以内"),
     point_title: z.string().describe("2枚目の見出し（こだわり）。12字以内"),

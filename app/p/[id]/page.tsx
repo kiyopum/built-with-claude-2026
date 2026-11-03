@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 // 公開ページ（お客さま向け）：商品1件。購入ボタンで Stripe の決済画面へ
 import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -145,6 +146,11 @@ function ProductPageInner() {
       <button className="w-full rounded-2xl border-2 border-leaf text-leaf py-3 font-bold" onClick={shareLink}>
         {shared ? "リンクをコピーしました ✓" : "📤 この商品を友だちに教える"}
       </button>
+
+      {/* 店主さん用の入口（お店の暗証番号で開く） */}
+      <Link href={`/owner/p/${id}`} className="block text-center text-sm text-black/50 underline">
+        お店の方へ：この商品をお店の Instagram で紹介する
+      </Link>
 
       {p.shop_intro && (
         <section className="rounded-2xl bg-leaf/5 p-4 space-y-2">
