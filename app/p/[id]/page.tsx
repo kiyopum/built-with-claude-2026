@@ -181,7 +181,7 @@ function ProductPageInner() {
               : "送料（お店が準備中のため、まだ購入できません）"}
         </p>
         {inc && info.perBox > 1 && (
-          <p className="text-xs text-leaf text-right">{info.perBox}個までは1つの箱で送るので、2個目からは送料がかかりません。</p>
+          <p className="text-xs text-leaf text-right">{info.perBox}個までは1つの箱で送るので、送料は1回分です。</p>
         )}
         <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy || !ok}>
           {busy ? <Working text="決済画面を開いています" /> : "購入する"}

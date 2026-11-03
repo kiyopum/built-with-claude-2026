@@ -82,7 +82,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
             </button>
           ))}
         </div>
-        <p className="text-xs text-black/50">2つ以上入るなら、まとめて買った人は2個目から送料がかかりません。</p>
+        <p className="text-xs text-black/50">2つ以上入るなら、まとめて買った人は、その数までは送料1回分で届きます。</p>
       </div>
 
       {!from ? (

@@ -83,7 +83,8 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     session.id, d.id, d.shop_id, quantity, total, s.owner + shipping - shippingFee, s.ymm, s.partner, s.fee + shippingFee, ymmRate, partnerShare, refCode || null,
-    shipping, shippingFee, ship?.name ?? null, address, p.ownerPartnerId, p.ownerPartnerYen, p.referrerId, p.referrerYen,
+    // お店で受け取るときは住所を聞かないので、決済画面のお名前（なければメール）で、だれが来るか分かるようにする
+    shipping, shippingFee, ship?.name ?? session.customer_details?.name ?? session.customer_details?.email ?? null, address, p.ownerPartnerId, p.ownerPartnerYen, p.referrerId, p.referrerYen,
     chosen, session.metadata?.ship_method || null, pickup ? 1 : 0, warning,
   );
   return { created: true };
