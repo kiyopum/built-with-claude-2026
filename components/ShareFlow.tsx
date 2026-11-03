@@ -8,19 +8,21 @@
 //   開いたら自動で：Claude が投稿文を書く → 法律チェック → カルーセル画像4枚を作る
 //   「Instagram に投稿する」：本文をコピーして、そのまま共有画面を開く（Instagram を選んで、本文を貼って、シェア）
 //   文を直したいときだけ、畳んである欄を開く
+// 最初に「どんな場面に贈る？」を大きなボタンで選ぶ（2026-11-04 きよさん：買う人の「コト」に寄り添う投稿）
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Working } from "@/components/Working";
 import { renderCarousel } from "@/components/carousel";
 import type { Legal } from "@/components/LegalPanel";
+import { SCENES, sceneOf } from "@/lib/scenes";
 
 type Post = {
   caption: string;
   hashtags: string[];
   slides: { cover: string; point_title: string; point_text: string; story_text: string };
 };
-type Saved = { post: Post; legal: Legal };
+type Saved = { post: Post; legal: Legal; scene?: string | null };
 type Product = { name: string; price_yen: number; shop_name: string; photos: string[] };
 
 // 広告であることを示すため、いちばん最初に「#PR」を必ず入れる（ステマ規制。店主さんの投稿も同じ）
@@ -66,7 +68,7 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
   const [saved, setSaved] = useState<Saved | null>(null);
   const [post, setPost] = useState<Post | null>(null);
   const [files, setFiles] = useState<{ file: File; url: string }[]>([]);
-  const [step, setStep] = useState<"load" | "write" | "draw" | "ready" | "check" | "error">("load");
+  const [step, setStep] = useState<"load" | "pick" | "write" | "draw" | "ready" | "check" | "error">("load");
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const started = useRef(false);
@@ -98,14 +100,15 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
   );
 
   const write = useCallback(
-    async (p: Product, action: "generate" | "check", current?: Post) => {
+    async (p: Product, action: "generate" | "check", current?: Post, scene?: string) => {
       setError("");
       setStep(action === "generate" ? "write" : "check");
-      const r = await call(`/api/drafts/${draftId}/sns`, { method: "POST", body: JSON.stringify({ action, post: current }) });
+      const r = await call(`/api/drafts/${draftId}/sns`, { method: "POST", body: JSON.stringify({ action, post: current, scene }) });
       const j = await r.json();
       if (!r.ok) {
         setError(j.error);
-        setStep("error");
+        // 書けなかったときは、場面を選ぶ画面に戻して、もう一度押せるようにする
+        setStep(action === "generate" ? "pick" : "error");
         return;
       }
       setSaved(j);
@@ -134,12 +137,13 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
           setPost(s.saved.post);
           if (s.saved.legal.verdict === "このままでは販売できない") setStep("ready");
           else await draw(p.product, s.saved);
-        } else await write(p.product, "generate");
+        } else setStep("pick");
       },
     );
   }, [draftId, draw, write, call]);
 
   const legal = saved?.legal ?? null;
+  const scene = sceneOf(saved?.scene);
   const blocked = legal?.verdict === "このままでは販売できない";
   const edited = !!post && !!saved && JSON.stringify(post) !== JSON.stringify(saved.post);
   const issues = legal?.items.filter((i) => i.status === "ng" || i.status === "fix") ?? [];
@@ -181,6 +185,42 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
             }
             est={step === "write" ? 40 : step === "check" ? 25 : undefined}
           />
+        </div>
+      )}
+
+      {/* どんな場面に贈る？ */}
+      {step === "pick" && product && (
+        <div className="space-y-3">
+          <div className="text-lg font-bold">どんな場面に贈る？</div>
+          <p className="text-sm text-black/60">選んだ場面に合わせて、Claude が紹介文と画像の言葉を書きます。</p>
+          <div className="grid grid-cols-2 gap-2">
+            {SCENES.map((s) => (
+              <button
+                key={s.key}
+                className={`rounded-2xl bg-white border-2 p-4 text-left shadow-sm active:scale-[0.98] ${saved?.scene === s.key ? "border-carrot" : "border-black/5"}`}
+                onClick={() => write(product, "generate", undefined, s.key)}
+              >
+                <div className="text-3xl">{s.emoji}</div>
+                <div className="font-bold mt-1 leading-snug">{s.label}</div>
+              </button>
+            ))}
+          </div>
+          {saved && (
+            <button className="w-full text-sm text-black/50 underline" onClick={() => draw(product, saved)}>
+              やめて、前の紹介文にもどる
+            </button>
+          )}
+        </div>
+      )}
+
+      {step === "ready" && product && (
+        <div className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 border border-black/5 text-sm">
+          <span>
+            場面：<b>{scene ? `${scene.emoji} ${scene.label}` : "とくになし"}</b>
+          </span>
+          <button className="shrink-0 rounded-lg border border-carrot text-carrot px-3 py-1.5 font-bold" onClick={() => setStep("pick")}>
+            場面を変える
+          </button>
         </div>
       )}
 
@@ -245,7 +285,7 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
 
       {/* 文を直したいときだけ開く */}
-      {post && product && step !== "write" && step !== "check" && (
+      {post && product && step !== "write" && step !== "check" && step !== "pick" && (
         <details className="rounded-2xl bg-white p-4 shadow-sm border border-black/5" open={blocked}>
           <summary className="font-bold text-black/70">文を直したいとき</summary>
           <div className="space-y-2 mt-3">
@@ -270,7 +310,7 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
               <button className="rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={!edited} onClick={() => write(product, "check", post)}>
                 直したので確かめる
               </button>
-              <button className="rounded-xl border-2 border-carrot text-carrot py-3 font-bold" onClick={() => write(product, "generate")}>
+              <button className="rounded-xl border-2 border-carrot text-carrot py-3 font-bold" onClick={() => write(product, "generate", undefined, saved?.scene ?? undefined)}>
                 Claude に書き直してもらう
               </button>
             </div>

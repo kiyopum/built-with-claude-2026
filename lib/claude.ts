@@ -9,6 +9,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import type { Scene } from "@/lib/scenes";
 
 const client = new Anthropic();
 const MODEL = "claude-opus-5-5";
@@ -410,13 +411,16 @@ const SNS_SYSTEM = `あなたは、地域の小さなお店の商品を Instagra
 - 商品ページの文・お店の紹介に書かれた事実だけを使う。数字や産地などを推測で足さない
 - 病気の治療・予防や体の機能への効果をうたう表現、「日本一」「最高級」などの根拠のない最上級表現は使わない（お客さんの声の形でも使わない）
 - 押し売りせず、お店の人柄と商品の魅力（素材・作り方・食べ方・季節）で伝える。絵文字は少しだけ
-- 投稿するのは店主やパートナー。お店の立場で書く`;
+- 投稿するのは店主やパートナー。お店の立場で書く
+- 場面（scene）が指定されたら、その場面で贈る・使う人の気持ちに寄り添って書く（表紙のひとこと・本文・ハッシュタグも場面に合わせる）。商品の事実は変えない
+- 「○○に間に合います」「必ず届きます」など、届く日を約束する言い方はしない（配送の日数はお店や地域で変わるため）。「早めのご注文がおすすめです」程度にとどめる`;
 
-export async function generateSnsPost(c: ProductContext, current: DraftFields): Promise<SnsPost> {
+export async function generateSnsPost(c: ProductContext, current: DraftFields, scene?: Scene): Promise<SnsPost> {
+  const sceneBlock = scene ? `\n\n<scene>\n${scene.label}：${scene.hint}\n</scene>` : "";
   return ask(
     SnsSchema,
     SNS_SYSTEM,
-    `${shopBlock(c.shop)}\n\n<product_page>\n${JSON.stringify(current, null, 2)}\n</product_page>\n\nこの商品の Instagram カルーセル投稿を作ってください。`,
+    `${shopBlock(c.shop)}\n\n<product_page>\n${JSON.stringify(current, null, 2)}\n</product_page>${sceneBlock}\n\nこの商品の Instagram カルーセル投稿を作ってください。`,
   );
 }
 
@@ -428,6 +432,7 @@ const SNS_CHECK_SYSTEM = `あなたは、地域の小さなお店の SNS 投稿�
 投稿の文（post）を、商品ページの文・ヒアリング・法律の調査メモに照らして判定します。文は書き換えず、判定（legal）だけを返します。
 SNS の投稿も広告です。効能効果・根拠のない最上級表現・事実と違う表示は、商品ページと同じく問題になります。
 表示が必要な項目（label_items）は商品ページで扱うので、ここでは空の配列にしてください。
+「○○に間に合います」「必ず届きます」など届く日を約束する表現は、配送日数の根拠がないため fix にしてください。
 
 ${LEGAL_RULES}`;
 
