@@ -11,7 +11,7 @@
 - Stripe はテストモードのキーだけ使う。本番キーは入れない。
 
 ## APIキー
-- アプリから Claude を呼ぶキーは `.env` の `ANTHROPIC_API_KEY`（ハッカソン特典のアカウント の組織「山崎's Individual Org」、ハッカソン用 $500 クレジット）。
+- アプリから Claude を呼ぶキーは `.env` の `ANTHROPIC_API_KEY`（ハッカソン特典の API アカウント・$500 クレジット。どのアカウントかは Claude のメモリに記録。メールアドレスはここに書かない）。
 - キーの有効期限は 2026/12/03。それ以降も動かすなら新しいキーに差し替える。
 - `.env` は GitHub に上げない（.gitignore 済み）。キーをコード・README・チャットに書かない。
 - `ANTHROPIC_API_KEY` を ~/.zshrc など Mac 全体の設定に書かない（Claude Code が Max でなく API 課金で動いてしまう）。
