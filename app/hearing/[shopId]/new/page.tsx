@@ -9,6 +9,7 @@ import { VoiceInput, appendRecordings } from "@/components/VoiceInput";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { QuestionList, type Question } from "@/components/QuestionList";
 import { Working } from "@/components/Working";
+import { apiFetch } from "@/lib/api";
 
 type Analysis = {
   product_guess: string;
@@ -35,7 +36,7 @@ function NewProductInner() {
   async function analyze() {
     setError("");
     setBusy("analyze");
-    const r = await fetch(`/api/shops/${shopId}/products/analyze`, { method: "POST", body: photoForm() });
+    const r = await apiFetch(`/api/shops/${shopId}/products/analyze`, { method: "POST", body: photoForm() });
     const j = await r.json();
     setBusy("");
     if (!r.ok) return setError(j.error);
@@ -50,7 +51,7 @@ function NewProductInner() {
     fd.append("transcript", transcript);
     fd.append("label_read", JSON.stringify(analysis?.label_read ?? []));
     appendRecordings(fd, voice);
-    const r = await fetch(`/api/shops/${shopId}/products`, { method: "POST", body: fd });
+    const r = await apiFetch(`/api/shops/${shopId}/products`, { method: "POST", body: fd });
     const j = await r.json();
     setBusy("");
     if (!r.ok) return setError(j.error);

@@ -9,6 +9,7 @@ import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { LegalPanel, type Legal } from "@/components/LegalPanel";
 import { DraftFieldsForm, TodoNoteButton } from "@/components/DraftFieldsForm";
 import { Working } from "@/components/Working";
+import { apiFetch } from "@/lib/api";
 
 type Draft = {
   id: number;
@@ -27,7 +28,7 @@ const STATUS = { draft: "店主さんの確認待ち", published: "公開中", r
 async function toPicked(urls: string[]): Promise<PickedPhoto[]> {
   return Promise.all(
     urls.map(async (u) => {
-      const blob = await (await fetch(u)).blob();
+      const blob = await (await apiFetch(u)).blob();
       return { blob, url: URL.createObjectURL(blob) };
     }),
   );
@@ -62,7 +63,7 @@ function EditInner() {
   }, [draftId]);
 
   async function call(url: string, init: RequestInit) {
-    const r = await fetch(url, init);
+    const r = await apiFetch(url, init);
     const j = await r.json();
     if (!r.ok) throw new Error(j.error ?? "うまくいきませんでした");
   }

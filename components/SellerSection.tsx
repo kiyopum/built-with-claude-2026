@@ -3,6 +3,7 @@
 // 販売者の情報（ネット販売の表示用）。ヒアリングでは聞かず、名刺を撮って読み取る or 手で入れる
 import { useRef, useState } from "react";
 import { Working } from "@/components/Working";
+import { apiFetch } from "@/lib/api";
 
 export type Seller = { seller_name: string; seller_rep: string; seller_address: string; seller_phone: string; seller_email: string };
 
@@ -42,7 +43,7 @@ export function SellerSection({ shopId, initial }: { shopId: number; initial: Se
     try {
       const fd = new FormData();
       fd.append("photo", await shrink(files[0]), "card.jpg");
-      const r = await fetch(`/api/shops/${shopId}/seller/card`, { method: "POST", body: fd });
+      const r = await apiFetch(`/api/shops/${shopId}/seller/card`, { method: "POST", body: fd });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error);
       // 読めた項目だけ上書きする（読めなかった項目は今の入力を残す）
@@ -63,7 +64,7 @@ export function SellerSection({ shopId, initial }: { shopId: number; initial: Se
   async function save() {
     setError("");
     setBusy("save");
-    const r = await fetch(`/api/shops/${shopId}/seller`, { method: "POST", body: JSON.stringify(form) });
+    const r = await apiFetch(`/api/shops/${shopId}/seller`, { method: "POST", body: JSON.stringify(form) });
     const j = await r.json();
     setBusy("");
     if (!r.ok) return setError(j.error);

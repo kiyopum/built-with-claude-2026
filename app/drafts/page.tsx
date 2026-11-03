@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { LegalPanel, type Legal } from "@/components/LegalPanel";
 import { DraftFieldsForm, TodoNoteButton } from "@/components/DraftFieldsForm";
 import { Working } from "@/components/Working";
+import { apiFetch } from "@/lib/api";
 
 type ShopIntro = { id: number; name: string; philosophy_text: string; philosophy_status: "draft" | "approved" };
 
@@ -31,7 +32,7 @@ const STATUS_LABEL = {
   rejected: { text: "却下", cls: "bg-black/10 text-black/50" },
 };
 async function post(url: string, body: unknown): Promise<string> {
-  const r = await fetch(url, { method: "POST", body: JSON.stringify(body) });
+  const r = await apiFetch(url, { method: "POST", body: JSON.stringify(body) });
   const j = await r.json();
   return r.ok ? "" : (j.error ?? "うまくいきませんでした");
 }
@@ -40,7 +41,7 @@ export default function DraftsPage() {
   const [data, setData] = useState<{ shops: ShopIntro[]; drafts: Draft[] } | null>(null);
 
   async function load() {
-    const r = await fetch("/api/drafts");
+    const r = await apiFetch("/api/drafts");
     setData(await r.json());
   }
 

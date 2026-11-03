@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 
 type Shop = { id: number; name: string; category: string; area: string };
 
@@ -22,7 +23,7 @@ export default function HearingTop() {
 
   async function add() {
     setError("");
-    const r = await fetch("/api/shops", { method: "POST", body: JSON.stringify(form) });
+    const r = await apiFetch("/api/shops", { method: "POST", body: JSON.stringify(form) });
     const j = await r.json();
     if (!r.ok) return setError(j.error);
     router.push(`/hearing/${j.id}`);

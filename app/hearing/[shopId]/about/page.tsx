@@ -8,6 +8,7 @@ import { useVoiceInput } from "@/lib/useVoiceInput";
 import { VoiceInput, appendRecordings } from "@/components/VoiceInput";
 import { QuestionList, type Question } from "@/components/QuestionList";
 import { Working } from "@/components/Working";
+import { apiFetch } from "@/lib/api";
 
 function AboutInner() {
   const { shopId } = useParams<{ shopId: string }>();
@@ -21,7 +22,7 @@ function AboutInner() {
   async function makeQuestions() {
     setError("");
     setBusy("q");
-    const r = await fetch(`/api/shops/${shopId}/about/questions`, { method: "POST" });
+    const r = await apiFetch(`/api/shops/${shopId}/about/questions`, { method: "POST" });
     const j = await r.json();
     setBusy("");
     if (!r.ok) return setError(j.error);
@@ -35,7 +36,7 @@ function AboutInner() {
     const fd = new FormData();
     fd.append("transcript", transcript);
     appendRecordings(fd, voice);
-    const r = await fetch(`/api/shops/${shopId}/about`, { method: "POST", body: fd });
+    const r = await apiFetch(`/api/shops/${shopId}/about`, { method: "POST", body: fd });
     const j = await r.json();
     setBusy("");
     if (!r.ok) return setError(j.error);

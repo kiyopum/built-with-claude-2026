@@ -4,6 +4,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Working } from "@/components/Working";
+import { apiFetch } from "@/lib/api";
 
 type Product = {
   id: number;
@@ -37,7 +38,7 @@ function ProductPageInner() {
   async function buy() {
     setError("");
     setBusy(true);
-    const r = await fetch("/api/checkout", { method: "POST", body: JSON.stringify({ draftId: Number(id), quantity: qty }) });
+    const r = await apiFetch("/api/checkout", { method: "POST", body: JSON.stringify({ draftId: Number(id), quantity: qty }) });
     const j = await r.json();
     if (!r.ok || !j.url) {
       setBusy(false);
