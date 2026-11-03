@@ -109,6 +109,10 @@ function open(): DatabaseSync {
   if (!scols.includes("philosophy_text")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_text TEXT");
   if (!scols.includes("philosophy_points")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_points TEXT");
   if (!scols.includes("philosophy_status")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_status TEXT NOT NULL DEFAULT 'none'");
+  // 販売者の情報（特定商取引法の表示用）。ヒアリングでは聞かず、名刺の写真か手入力で登録する
+  for (const c of ["seller_name", "seller_rep", "seller_address", "seller_phone", "seller_email"]) {
+    if (!scols.includes(c)) db.exec(`ALTER TABLE shops ADD COLUMN ${c} TEXT`);
+  }
   if (!hcols.includes("label_read")) db.exec("ALTER TABLE hearings ADD COLUMN label_read TEXT");
   const ocols = (db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name);
   if (!ocols.includes("fee_yen")) db.exec("ALTER TABLE orders ADD COLUMN fee_yen INTEGER NOT NULL DEFAULT 0");
@@ -140,7 +144,13 @@ export type Shop = {
   philosophy_text: string | null;
   philosophy_points: string | null;
   philosophy_status: "none" | "draft" | "approved";
+  seller_name: string | null;
+  seller_rep: string | null;
+  seller_address: string | null;
+  seller_phone: string | null;
+  seller_email: string | null;
 };
+export const SELLER_KEYS = ["seller_name", "seller_rep", "seller_address", "seller_phone", "seller_email"] as const;
 export type Draft = {
   id: number;
   hearing_id: number;

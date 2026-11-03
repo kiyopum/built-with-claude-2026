@@ -4,9 +4,10 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { SellerSection, type Seller } from "@/components/SellerSection";
 
 type Data = {
-  shop: { id: number; name: string; category: string; philosophy_text: string | null; philosophy_status: "none" | "draft" | "approved" };
+  shop: { id: number; name: string; category: string; philosophy_text: string | null; philosophy_status: "none" | "draft" | "approved"; seller: Seller };
   products: { id: number; name: string; price_yen: number; status: string; verdict: string | null; photo: string | null }[];
 };
 
@@ -58,7 +59,9 @@ function ShopPageInner() {
         </Link>
       </section>
 
-      {/* 商品（1つずつ、写真を撮って聞く） */}
+      <SellerSection shopId={shop.id} initial={shop.seller} />
+
+      {/* 商品（1つずつ、写真を撮って聞く）。タップで修正画面 */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="font-bold">商品 {products.length}件</div>
@@ -67,7 +70,7 @@ function ShopPageInner() {
           ＋ 商品を追加
         </Link>
         {products.map((p) => (
-          <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm border border-black/5">
+          <Link key={p.id} href={`/hearing/${shop.id}/p/${p.id}`} className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm border border-black/5 active:bg-black/5">
             <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-black/5 grid place-items-center text-black/30 text-xs">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {p.photo ? <img src={p.photo} alt="" className="w-full h-full object-cover" /> : "写真なし"}
@@ -80,7 +83,8 @@ function ShopPageInner() {
                 {p.verdict && <span className={`font-bold ${VERDICT[p.verdict] ?? ""}`}>{p.verdict}</span>}
               </div>
             </div>
-          </div>
+            <span className="self-center shrink-0 rounded-lg border border-leaf/40 text-leaf text-xs font-bold px-2 py-1">修正</span>
+          </Link>
         ))}
       </section>
     </div>

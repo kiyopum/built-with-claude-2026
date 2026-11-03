@@ -45,10 +45,31 @@ function imageBlocks(photos: Photo[]): Anthropic.Beta.BetaContentBlockParam[] {
   }));
 }
 
-type ShopInfo = { name: string; category: string; philosophy_text?: string | null };
+type ShopInfo = {
+  name: string;
+  category: string;
+  philosophy_text?: string | null;
+  seller_name?: string | null;
+  seller_rep?: string | null;
+  seller_address?: string | null;
+  seller_phone?: string | null;
+  seller_email?: string | null;
+};
 function shopBlock(shop: ShopInfo): string {
   const about = shop.philosophy_text ? `\nお店の紹介（お店のヒアリングでまとめたもの）:\n${shop.philosophy_text}` : "";
-  return `お店の名前: ${shop.name}\n業種: ${shop.category}${about}`;
+  // 販売者の情報（特定商取引法の表示用）。中身は判定に要らないので、そろっているかどうかだけを伝える
+  const seller = (
+    [
+      ["販売業者名", shop.seller_name],
+      ["代表者・責任者", shop.seller_rep],
+      ["住所", shop.seller_address],
+      ["電話番号", shop.seller_phone],
+      ["メールアドレス", shop.seller_email],
+    ] as const
+  )
+    .map(([k, v]) => `${k}=${v ? "登録済み" : "未登録"}`)
+    .join("、");
+  return `お店の名前: ${shop.name}\n業種: ${shop.category}\n販売者の情報（ネット販売の表示用・お店のページで手入力）: ${seller}${about}`;
 }
 
 const QuestionSchema = z.object({
@@ -71,9 +92,10 @@ const SHOP_QUESTIONS_SYSTEM = `あなたは、地域の小さなお店の「ら�
 - 地域とのつながり、作り手・仕入れ先との関係
 - お客さんに言われてうれしかったこと
 - これからやりたいこと、ネットで売ることへの期待や不安
-- ネット販売のお店情報として必要になる、販売者の名前（屋号だけでなく）・連絡先・送料や返品の考え方も、最後に1〜2問で聞く
+- 最後に1問だけ、送料や返品の考え方を聞く（group は「表示・法律」）
+- 販売者の名前・住所・電話番号・メールアドレスは聞かない（口頭では正確に書き取れないので、名刺の写真か手入力で別に登録する）
 
-はい／いいえで終わらず、エピソードが出てくる聞き方にする。専門用語は使わない。8問前後。group はすべて「お店」（最後の販売者情報だけ「表示・法律」）。`;
+はい／いいえで終わらず、エピソードが出てくる聞き方にする。専門用語は使わない。8問前後。group は最後の1問以外「お店」。`;
 
 export async function generateShopQuestions(shop: ShopInfo) {
   return ask(ShopQuestionsSchema, SHOP_QUESTIONS_SYSTEM, `${shopBlock(shop)}\n\nこのお店の理念や思いを聞くための質問を作ってください。`);
@@ -292,27 +314,48 @@ export async function generateProductDraft(c: ProductContext, photos: Photo[]): 
 }
 
 // AI に作り直してもらう（店主の一言）
-export async function reviseDraft(c: ProductContext, current: DraftFields, note: string): Promise<DraftInput> {
-  const p = await ask(
-    DraftSchema,
-    DRAFT_SYSTEM,
-    `${contextBlock(c)}\n\n<current_draft>\n${JSON.stringify(current, null, 2)}\n</current_draft>\n\n<owner_request>\n${note}\n</owner_request>\n\n店主の依頼に合わせて、この1件を作り直し、法律の判定もやり直してください。依頼に関係ない部分はなるべく今のまま残してください。店主の依頼が法律に反する場合（例：効能をうたいたい）は、紹介文には入れず、legal の ng 項目でその理由を説明してください。`,
-  );
+export async function reviseDraft(c: ProductContext, current: DraftFields, note: string, photos: Photo[]): Promise<DraftInput> {
+  const p = await ask(DraftSchema, DRAFT_SYSTEM, [
+    ...imageBlocks(photos),
+    { type: "text", text: `${contextBlock(c)}\n\n<current_draft>\n${JSON.stringify(current, null, 2)}\n</current_draft>\n\n<owner_request>\n${note}\n</owner_request>\n\n店主の依頼に合わせて、この1件を作り直し、法律の判定もやり直してください。依頼に関係ない部分はなるべく今のまま残してください。店主の依頼が法律に反する場合（例：効能をうたいたい）は、紹介文には入れず、legal の ng 項目でその理由を説明してください。` },
+  ]);
   return { ...p, legal: keepKnownSources(p.legal, c.research) };
 }
 
 // 店主が手で直したあと、文は一切変えずに法律チェックだけやり直す
 const RECHECK_SYSTEM = `あなたは、地域の小さなお店の商品ページを法律の面から確かめる担当者です。
-店主が手で直した商品ページ（current_draft）を、写真から読み取った表示・ヒアリング・法律の調査メモに照らして判定します。
+店主やパートナーが手で直した商品ページ（current_draft）を、商品の写真（ラベルを含む。写真が差し替えられていれば、新しい写真を正とする）・写真から読み取った表示・ヒアリング・法律の調査メモに照らして判定します。
 商品ページの文は書き換えません。判定（legal）だけを返します。店主が書いた表現に問題があれば、どの言葉が、なぜ、どう直せばよいかを具体的に書きます。
 
 ${LEGAL_RULES}`;
 
-export async function recheckLegal(c: ProductContext, current: DraftFields): Promise<Legal> {
-  const legal = await ask(
-    LegalSchema,
-    RECHECK_SYSTEM,
-    `${contextBlock(c)}\n\n<current_draft>\n${JSON.stringify(current, null, 2)}\n</current_draft>\n\nこの商品ページを法律の面から判定してください。`,
-  );
+export async function recheckLegal(c: ProductContext, current: DraftFields, photos: Photo[]): Promise<Legal> {
+  const legal = await ask(LegalSchema, RECHECK_SYSTEM, [
+    ...imageBlocks(photos),
+    {
+      type: "text",
+      text: `${contextBlock(c)}\n\n<current_draft>\n${JSON.stringify(current, null, 2)}\n</current_draft>\n\nこの商品ページを法律の面から判定してください。`,
+    },
+  ]);
   return keepKnownSources(legal, c.research);
+}
+
+// ---------- 5) 名刺を読む（販売者の情報。読めないところは空のまま。店主・パートナーが手で直す前提） ----------
+
+const CardSchema = z.object({
+  seller_name: z.string().nullable().describe("会社名・屋号（販売業者名）"),
+  seller_rep: z.string().nullable().describe("代表者または担当者の氏名"),
+  seller_address: z.string().nullable().describe("住所（郵便番号があれば含める）"),
+  seller_phone: z.string().nullable().describe("電話番号（携帯より固定電話を優先。両方あれば固定電話）"),
+  seller_email: z.string().nullable().describe("メールアドレス"),
+});
+export type CardFields = z.infer<typeof CardSchema>;
+
+export async function readBusinessCard(photos: Photo[]): Promise<CardFields> {
+  return ask(
+    CardSchema,
+    `名刺の写真から、ネット販売で表示する販売者の情報を書き写します。
+写っている文字をそのまま書き写すだけにし、推測で補わない。読めない・写っていない項目は null にする。`,
+    [...imageBlocks(photos), { type: "text", text: "この名刺から販売者の情報を書き写してください。" }],
+  );
 }

@@ -1,4 +1,4 @@
-import { getDb, type Shop } from "@/lib/db";
+import { getDb, SELLER_KEYS, type Shop } from "@/lib/db";
 
 // お店のページ用：お店の情報（理念）と商品の一覧
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -26,6 +26,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       area: shop.area,
       philosophy_text: shop.philosophy_text,
       philosophy_status: shop.philosophy_status,
+      seller: Object.fromEntries(SELLER_KEYS.map((k) => [k, shop[k] ?? ""])),
     },
     products,
   });

@@ -1,6 +1,17 @@
 import { getDb, type Draft, type Shop } from "@/lib/db";
 import { reviseDraft, recheckLegal, type LegalResearch, type Legal, type ProductContext, type DraftFields } from "@/lib/claude";
 import { ensureStripePrice } from "@/lib/stripe";
+import { loadPhotos, photoUrls } from "@/lib/files";
+
+// パートナーの修正画面用：商品1件（写真つき）
+export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  const d = getDb()
+    .prepare("SELECT d.*, s.name AS shop_name FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ?")
+    .get(Number(id)) as Draft | undefined;
+  if (!d) return Response.json({ error: "商品が見つかりません" }, { status: 404 });
+  return Response.json({ draft: { ...d, photos: photoUrls(d.id) } });
+}
 
 // 店主の確認：
 //   publish（このまま公開）/ reject（却下）
@@ -8,7 +19,7 @@ import { ensureStripePrice } from "@/lib/stripe";
 //   revise（AIに作り直してもらう → 文も法律チェックも作り直す）
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const body = (await req.json()) as { action: string; note?: string; fields?: Partial<DraftFields> };
+  const body = (await req.json()) as { action: string; note?: string; fields?: Partial<DraftFields>; by?: string };
   const db = getDb();
   const d = db.prepare("SELECT * FROM drafts WHERE id = ?").get(Number(id)) as Draft | undefined;
   if (!d) return Response.json({ error: "下書きが見つかりません" }, { status: 404 });
@@ -67,19 +78,19 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       if (!next.name || !next.description || !next.price_yen) {
         return Response.json({ error: "商品名・紹介文・価格は空にできません" }, { status: 400 });
       }
-      const legal = await recheckLegal(c, next);
+      const legal = await recheckLegal(c, next, loadPhotos(d.id));
       db.prepare(
         `UPDATE drafts SET name = ?, description = ?, price_yen = ?, recommend_reason = ?, target_customer = ?, legal_json = ?,
-         status = 'draft', revision_note = '（店主が手で修正）', stripe_product_id = NULL, stripe_price_id = NULL,
+         status = 'draft', revision_note = ?, stripe_product_id = NULL, stripe_price_id = NULL,
          updated_at = datetime('now','localtime') WHERE id = ?`,
-      ).run(next.name, next.description, next.price_yen, next.recommend_reason, next.target_customer, JSON.stringify(legal), d.id);
+      ).run(next.name, next.description, next.price_yen, next.recommend_reason, next.target_customer, JSON.stringify(legal), body.by === "partner" ? "（パートナーが修正）" : "（店主が手で修正）", d.id);
       return Response.json({ ok: true });
     }
 
     if (body.action === "revise") {
       const note = body.note?.trim();
       if (!note) return Response.json({ error: "直してほしいことを一言入れてください" }, { status: 400 });
-      const p = await reviseDraft(c, current, note);
+      const p = await reviseDraft(c, current, note, loadPhotos(d.id));
       db.prepare(
         `UPDATE drafts SET name = ?, description = ?, price_yen = ?, recommend_reason = ?, target_customer = ?, legal_json = ?,
          status = 'draft', revision_note = ?, stripe_product_id = NULL, stripe_price_id = NULL,

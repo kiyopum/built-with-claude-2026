@@ -27,6 +27,15 @@ export function savePhotos(draftId: number, photos: Photo[]) {
   });
 }
 
+// 写真を丸ごと入れ替える（パートナーの修正画面から）
+export function replacePhotos(draftId: number, photos: Photo[]) {
+  const db = getDb();
+  const old = db.prepare("SELECT file FROM product_photos WHERE draft_id = ?").all(draftId) as { file: string }[];
+  db.prepare("DELETE FROM product_photos WHERE draft_id = ?").run(draftId);
+  for (const o of old) fs.rmSync(path.join(PHOTO_DIR, o.file), { force: true });
+  savePhotos(draftId, photos);
+}
+
 export function loadPhotos(draftId: number): Photo[] {
   const rows = getDb().prepare("SELECT file, mime FROM product_photos WHERE draft_id = ? ORDER BY sort").all(draftId) as {
     file: string;
