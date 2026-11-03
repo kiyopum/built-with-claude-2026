@@ -8,6 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { LegalPanel, type Legal } from "@/components/LegalPanel";
 import { DraftFieldsForm, TodoNoteButton } from "@/components/DraftFieldsForm";
+import { Working } from "@/components/Working";
 
 type Draft = {
   id: number;
@@ -140,7 +141,7 @@ function EditInner() {
           onClick={save}
           disabled={busy !== "" || photos.length === 0}
         >
-          {busy === "save" ? "保存して、法律チェックをやり直しています…" : "保存して、法律チェック"}
+          {busy === "save" ? <Working text="保存して、法律チェックをやり直しています" est={45} /> : "保存して、法律チェック"}
         </button>
         <p className="text-xs text-black/50">
           保存すると、直した文のまま Claude が法律チェックをやり直します（写真を変えたときは新しいラベルも読みます）。そのあと店主さんにもう一度確認してもらいます。
@@ -157,7 +158,7 @@ function EditInner() {
           onChange={(e) => setNote(e.target.value)}
         />
         <button className="w-full rounded-xl border-2 border-carrot text-carrot py-3 font-bold disabled:opacity-50" onClick={revise} disabled={busy !== "" || !note.trim()}>
-          {busy === "revise" ? "Claude が作り直して、法律も確かめ直しています…" : "この内容で作り直す"}
+          {busy === "revise" ? <Working text="Claude が作り直して、法律も確かめ直しています" est={60} /> : "この内容で作り直す"}
         </button>
       </section>
 

@@ -18,3 +18,16 @@ body {
   color: var(--foreground);
   font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
 }
+
+/* 作業中のボタンは薄くしない（止まって見えないように） */
+button:disabled:has(.yb-working) {
+  opacity: 1 !important;
+  cursor: wait;
+}
+@keyframes yb-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.yb-bar {
+  animation: yb-slide 1.4s ease-in-out infinite;
+}

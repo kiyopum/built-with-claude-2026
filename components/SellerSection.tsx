@@ -2,6 +2,7 @@
 
 // 販売者の情報（ネット販売の表示用）。ヒアリングでは聞かず、名刺を撮って読み取る or 手で入れる
 import { useRef, useState } from "react";
+import { Working } from "@/components/Working";
 
 export type Seller = { seller_name: string; seller_rep: string; seller_address: string; seller_phone: string; seller_email: string };
 
@@ -105,7 +106,7 @@ export function SellerSection({ shopId, initial }: { shopId: number; initial: Se
             onClick={() => inputRef.current?.click()}
             disabled={busy !== ""}
           >
-            {busy === "card" ? "Claude が名刺を読んでいます…" : "📷 名刺を撮って読み取る"}
+            {busy === "card" ? <Working text="Claude が名刺を読んでいます" est={5} /> : "📷 名刺を撮って読み取る"}
           </button>
           <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => readCard(e.target.files)} />
           {note && <p className="rounded-xl bg-amber-50 text-amber-800 p-3 text-sm">{note}</p>}

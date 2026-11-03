@@ -8,6 +8,7 @@ import { useVoiceInput } from "@/lib/useVoiceInput";
 import { VoiceInput, appendRecordings } from "@/components/VoiceInput";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { QuestionList, type Question } from "@/components/QuestionList";
+import { Working } from "@/components/Working";
 
 type Analysis = {
   product_guess: string;
@@ -76,7 +77,7 @@ function NewProductInner() {
         />
         {photos.length > 0 && !analysis && (
           <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" onClick={analyze} disabled={busy !== ""}>
-            {busy === "analyze" ? "Claude が写真とラベルを読んでいます…" : "Claude に写真を見てもらう"}
+            {busy === "analyze" ? <Working text="Claude が写真とラベルを読んでいます" est={25} /> : "Claude に写真を見てもらう"}
           </button>
         )}
       </section>
@@ -118,7 +119,7 @@ function NewProductInner() {
           onClick={send}
           disabled={!transcript.trim() || busy !== ""}
         >
-          {busy === "send" ? "Claude が法律に照らして、商品ページを作っています…（1分ほど）" : "送信して、商品ページを作る"}
+          {busy === "send" ? <Working text="Claude が法律に照らして、商品ページを作っています" est={90} /> : "送信して、商品ページを作る"}
         </button>
       )}
     </div>

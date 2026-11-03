@@ -3,6 +3,7 @@
 // 公開ページ（お客さま向け）：商品1件。購入ボタンで Stripe の決済画面へ
 import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { Working } from "@/components/Working";
 
 type Product = {
   id: number;
@@ -111,7 +112,7 @@ function ProductPageInner() {
           <span className="font-bold">{(p.price_yen * qty).toLocaleString()}円</span>
         </div>
         <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy}>
-          {busy ? "決済画面を開いています…" : "購入する"}
+          {busy ? <Working text="決済画面を開いています" /> : "購入する"}
         </button>
         <p className="text-xs text-black/50">デモのため、テスト用の決済画面です。実際のお金は動きません。</p>
         {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}

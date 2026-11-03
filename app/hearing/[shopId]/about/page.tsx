@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { VoiceInput, appendRecordings } from "@/components/VoiceInput";
 import { QuestionList, type Question } from "@/components/QuestionList";
+import { Working } from "@/components/Working";
 
 function AboutInner() {
   const { shopId } = useParams<{ shopId: string }>();
@@ -54,7 +55,7 @@ function AboutInner() {
         <div className="text-sm font-bold text-leaf">1) 聞くことリスト</div>
         {questions.length === 0 ? (
           <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={makeQuestions} disabled={busy !== ""}>
-            {busy === "q" ? "Claude が質問を考えています…" : "このお店向けの質問を Claude に作ってもらう"}
+            {busy === "q" ? <Working text="Claude が質問を考えています" est={15} /> : "このお店向けの質問を Claude に作ってもらう"}
           </button>
         ) : (
           <QuestionList questions={questions} />
@@ -72,7 +73,7 @@ function AboutInner() {
         onClick={send}
         disabled={!transcript.trim() || busy !== ""}
       >
-        {busy === "send" ? "Claude がお店の紹介を書いています…" : "送信して、お店の紹介を作る"}
+        {busy === "send" ? <Working text="Claude がお店の紹介を書いています" est={10} /> : "送信して、お店の紹介を作る"}
       </button>
     </div>
   );

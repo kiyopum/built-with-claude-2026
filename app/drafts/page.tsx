@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { LegalPanel, type Legal } from "@/components/LegalPanel";
 import { DraftFieldsForm, TodoNoteButton } from "@/components/DraftFieldsForm";
+import { Working } from "@/components/Working";
 
 type ShopIntro = { id: number; name: string; philosophy_text: string; philosophy_status: "draft" | "approved" };
 
@@ -129,7 +130,7 @@ function ShopIntroCard({ s, onChanged }: { s: ShopIntro; onChanged: () => void }
           <textarea className="w-full min-h-20 rounded-xl border border-black/15 p-3 text-base" placeholder="例：もっと素朴な感じに。祖母の代からの話を入れて。" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="flex gap-2">
             <button className="flex-1 rounded-xl bg-carrot text-white py-3 font-bold disabled:opacity-50" disabled={busy || !note.trim()} onClick={() => act("revise")}>
-              {busy ? "Claude が書き直しています…" : "この内容で書き直す"}
+              {busy ? <Working text="Claude が書き直しています" est={10} /> : "この内容で書き直す"}
             </button>
             <button className="rounded-xl border border-black/15 px-4" disabled={busy} onClick={() => setMode("")}>
               やめる
@@ -193,7 +194,7 @@ function DraftCard({ d, onChanged }: { d: Draft; onChanged: () => void }) {
           <p className="text-xs text-black/50">保存すると、直した文のまま、法律チェックだけ Claude がやり直します。</p>
           <div className="flex gap-2">
             <button className="flex-1 rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" disabled={busy} onClick={() => act("edit")}>
-              {busy ? "法律チェックをやり直しています…" : "保存して、法律チェック"}
+              {busy ? <Working text="法律チェックをやり直しています" est={45} /> : "保存して、法律チェック"}
             </button>
             <button className="rounded-xl border border-black/15 px-4" disabled={busy} onClick={() => setMode("")}>
               やめる
@@ -261,7 +262,7 @@ function DraftCard({ d, onChanged }: { d: Draft; onChanged: () => void }) {
           />
           <div className="flex gap-2">
             <button className="flex-1 rounded-xl bg-carrot text-white py-3 font-bold disabled:opacity-50" disabled={busy || !note.trim()} onClick={() => act("revise")}>
-              {busy ? "Claude が作り直して、法律も確かめ直しています…" : "この内容で作り直す"}
+              {busy ? <Working text="Claude が作り直して、法律も確かめ直しています" est={60} /> : "この内容で作り直す"}
             </button>
             <button className="rounded-xl border border-black/15 px-4" disabled={busy} onClick={() => setMode("")}>
               やめる
