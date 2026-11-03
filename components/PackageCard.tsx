@@ -12,10 +12,11 @@ type Props = {
   initial: { size_class: string | null; weight_g: number | null; per_box: number };
   shopPrefecture: string | null;
   shopFlatYen: number | null;
+  onlineLabel: boolean;
   onSaved: () => void;
 };
 
-export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatYen, onSaved }: Props) {
+export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatYen, onlineLabel, onSaved }: Props) {
   const [size, setSize] = useState(initial.size_class ?? "");
   const [weight, setWeight] = useState(initial.weight_g ? String(initial.weight_g) : "");
   const [perBox, setPerBox] = useState(initial.per_box || 1);
@@ -25,8 +26,8 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
 
   const from = prefOf(shopPrefecture);
   const w = Number(weight);
-  const quotes = from && size && w > 0 ? quotesByPref(size, w, from) : null;
-  const near = from && size && w > 0 ? cheapest(size, w, from, from) : null;
+  const quotes = from && size && w > 0 ? quotesByPref(size, w, from, { onlineLabel }) : null;
+  const near = from && size && w > 0 ? cheapest(size, w, from, from, { onlineLabel }) : null;
   const yens = quotes ? Object.values(quotes).map((q) => q.yen) : [];
   const changed = size !== (initial.size_class ?? "") || weight !== (initial.weight_g ? String(initial.weight_g) : "") || perBox !== (initial.per_box || 1);
 

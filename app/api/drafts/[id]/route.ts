@@ -12,7 +12,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const g = await guardDraft(id);
   if (g instanceof Response) return g;
   const d = getDb()
-    .prepare("SELECT d.*, s.name AS shop_name, s.prefecture AS shop_prefecture, s.shipping_yen AS shop_shipping_yen FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ?")
+    .prepare("SELECT d.*, s.name AS shop_name, s.prefecture AS shop_prefecture, s.shipping_yen AS shop_shipping_yen, s.online_label AS shop_online_label FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ?")
     .get(Number(id)) as Draft | undefined;
   if (!d) return Response.json({ error: "商品が見つかりません" }, { status: 404 });
   return Response.json({ draft: { ...d, photos: photoUrls(d.id) } });

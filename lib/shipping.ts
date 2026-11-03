@@ -73,12 +73,15 @@ function compact(from: Pref, to: Pref): Quote {
 }
 
 // この大きさ・重さで使える送り方の候補（重さの上限を超えるものは外す）
-function candidates(sizeKey: string, weightG: number, from: Pref, to: Pref): Quote[] {
+// onlineLabel：ネットで宛名ラベルを作る送り方（クリックポスト）を使うか。お店ごとに選ぶ（2026-11-04 きよさん：案B）。
+//   Yahoo! か Amazon のアカウント・ネットでのカード払い・ラベルの印刷が要るので、初めは使わない
+export type QuoteOpts = { onlineLabel?: boolean };
+function candidates(sizeKey: string, weightG: number, from: Pref, to: Pref, opts: QuoteOpts = {}): Quote[] {
   const kg = weightG / 1000;
   const list: (Quote | false)[] = [];
   const box = (n: number) => kg <= 25 && yupack(n, from, to);
   if (sizeKey === "post") {
-    list.push(kg <= 2 && { yen: FLAT.clickpost, method: "クリックポスト", note: "ネットで宛名ラベルを作って、ポストに入れます" });
+    list.push(!!opts.onlineLabel && kg <= 2 && { yen: FLAT.clickpost, method: "クリックポスト", note: "ネットで宛名ラベルを作って、ポストに入れます" });
     list.push(kg <= 1 && { yen: FLAT.yupacket, method: "ゆうパケット" });
     list.push(kg <= 4 && { yen: FLAT.letterpackLight, method: "レターパックライト" });
     list.push(box(60));
@@ -96,17 +99,17 @@ function candidates(sizeKey: string, weightG: number, from: Pref, to: Pref): Quo
 }
 
 // いちばん安い送り方。送れない（重すぎる・区分が不明）ときは null
-export function cheapest(sizeKey: string, weightG: number, from: Pref, to: Pref): Quote | null {
-  const list = candidates(sizeKey, weightG, from, to);
+export function cheapest(sizeKey: string, weightG: number, from: Pref, to: Pref, opts: QuoteOpts = {}): Quote | null {
+  const list = candidates(sizeKey, weightG, from, to, opts);
   if (list.length === 0) return null;
   return list.reduce((a, b) => (b.yen < a.yen ? b : a));
 }
 
 // 全国の届け先ごとの送料（商品ページで「○円〜○円」と、都道府県を選んだときの値段に使う）
-export function quotesByPref(sizeKey: string, weightG: number, from: Pref): Record<string, Quote> | null {
+export function quotesByPref(sizeKey: string, weightG: number, from: Pref, opts: QuoteOpts = {}): Record<string, Quote> | null {
   const out: Record<string, Quote> = {};
   for (const to of PREFS) {
-    const q = cheapest(sizeKey, weightG, from, to);
+    const q = cheapest(sizeKey, weightG, from, to, opts);
     if (!q) return null;
     out[to] = q;
   }

@@ -30,6 +30,7 @@ type Draft = {
   per_box: number;
   shop_prefecture: string | null;
   shop_shipping_yen: number | null;
+  shop_online_label: number;
 };
 
 const STATUS = { draft: "店主さんの確認待ち", published: "公開中", rejected: "却下" };
@@ -210,6 +211,7 @@ function EditInner() {
         initial={{ size_class: draft.size_class, weight_g: draft.weight_g, per_box: draft.per_box }}
         shopPrefecture={draft.shop_prefecture}
         shopFlatYen={draft.shop_shipping_yen}
+        onlineLabel={!!draft.shop_online_label}
         onSaved={reloadPackage}
       />
 

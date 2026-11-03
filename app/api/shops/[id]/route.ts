@@ -33,6 +33,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       shipping_yen: shop.shipping_yen,
       prefecture: shop.prefecture,
       pickup_ok: !!shop.pickup_ok,
+      online_label: !!shop.online_label,
       // 都道府県の初期値の候補（住所の書き出しから。決めるのは人）
       prefecture_hint: prefFromAddress(shop.seller_address),
       has_pin: !!shop.release_pin_hash,

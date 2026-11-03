@@ -26,6 +26,7 @@ type Data = {
     shipping_yen: number | null;
     prefecture: string | null;
     pickup_ok: boolean;
+    online_label: boolean;
     prefecture_hint: string | null;
     has_pin: boolean;
     seller: Seller;
@@ -82,7 +83,7 @@ function ShopPageInner() {
 
       <SellerSection shopId={shop.id} initial={shop.seller} />
 
-      <ShippingCard shopId={shop.id} initial={shop.shipping_yen} prefecture={shop.prefecture} hint={shop.prefecture_hint} pickupOk={shop.pickup_ok} onSaved={load} />
+      <ShippingCard shopId={shop.id} initial={shop.shipping_yen} prefecture={shop.prefecture} hint={shop.prefecture_hint} pickupOk={shop.pickup_ok} onlineLabel={shop.online_label} onSaved={load} />
 
       {/* 商品（1つずつ、写真を撮って聞く）。タップで修正・リリースの画面 */}
       <section className="space-y-3">
@@ -277,7 +278,7 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
 //   お店で受け取り：近所の人は送料なしで買える
 //   全国一律：大きさ・重さをまだ選んでいない商品で使う（今までの形）
 
-function OriginCard({ shopId, prefecture, hint, pickupOk, onSaved }: { shopId: number; prefecture: string | null; hint: string | null; pickupOk: boolean; onSaved: () => void }) {
+function OriginCard({ shopId, prefecture, hint, pickupOk, onlineLabel, onSaved }: { shopId: number; prefecture: string | null; hint: string | null; pickupOk: boolean; onlineLabel: boolean; onSaved: () => void }) {
   const [pref, setPref] = useState(prefecture ?? hint ?? "");
   const [error, setError] = useState("");
   async function send(body: Record<string, unknown>) {
@@ -323,6 +324,20 @@ function OriginCard({ shopId, prefecture, hint, pickupOk, onSaved }: { shopId: n
           {pickupOk ? "できる" : "しない"}
         </button>
       </label>
+      <label className="flex items-center justify-between gap-3 rounded-xl bg-black/[0.03] p-3">
+        <span className="text-sm">
+          <b>ネットで宛名ラベルを作る</b>送り方も使う
+          <span className="block text-xs text-black/50">
+            クリックポスト（小さな物が240円）。Yahoo! か Amazon のアカウント・ネットでのカード払い・ラベルの印刷が要ります。使わないときは、郵便局で出せる送り方だけで計算します。
+          </span>
+        </span>
+        <button
+          className={`shrink-0 w-16 h-9 rounded-full font-bold text-sm ${onlineLabel ? "bg-leaf text-white" : "bg-black/10 text-black/50"}`}
+          onClick={() => send({ online_label: !onlineLabel })}
+        >
+          {onlineLabel ? "使う" : "使わない"}
+        </button>
+      </label>
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
     </div>
   );
@@ -334,6 +349,7 @@ function ShippingCard({
   prefecture,
   hint,
   pickupOk,
+  onlineLabel,
   onSaved,
 }: {
   shopId: number;
@@ -341,6 +357,7 @@ function ShippingCard({
   prefecture: string | null;
   hint: string | null;
   pickupOk: boolean;
+  onlineLabel: boolean;
   onSaved: () => void;
 }) {
   const [yen, setYen] = useState(initial == null ? "" : String(initial));
@@ -365,7 +382,7 @@ function ShippingCard({
           </button>
         )}
       </div>
-      <OriginCard shopId={shopId} prefecture={prefecture} hint={hint} pickupOk={pickupOk} onSaved={onSaved} />
+      <OriginCard shopId={shopId} prefecture={prefecture} hint={hint} pickupOk={pickupOk} onlineLabel={onlineLabel} onSaved={onSaved} />
       <div className="text-sm font-bold pt-2 border-t border-black/5">全国一律の送料（大きさと重さをまだ選んでいない商品）</div>
       {editing ? (
         <>

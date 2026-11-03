@@ -6,11 +6,11 @@ export type ShippingInfo =
   | { mode: "included"; from: string; quotes: Record<string, Quote>; min: number; max: number; perBox: number; pickup: boolean }
   | { mode: "flat"; yen: number | null; pickup: boolean };
 
-export function shippingInfo(d: Pick<Draft, "size_class" | "weight_g" | "per_box">, shop: Pick<Shop, "prefecture" | "shipping_yen" | "pickup_ok">): ShippingInfo {
+export function shippingInfo(d: Pick<Draft, "size_class" | "weight_g" | "per_box">, shop: Pick<Shop, "prefecture" | "shipping_yen" | "pickup_ok" | "online_label">): ShippingInfo {
   const pickup = !!shop.pickup_ok;
   if (isIncluded(d, shop)) {
     const from = prefOf(shop.prefecture)!;
-    const quotes = quotesByPref(d.size_class!, d.weight_g!, from);
+    const quotes = quotesByPref(d.size_class!, d.weight_g!, from, { onlineLabel: !!shop.online_label });
     if (quotes) {
       const v = Object.values(quotes).map((q) => q.yen);
       return { mode: "included", from, quotes, min: Math.min(...v), max: Math.max(...v), perBox: d.per_box ?? 1, pickup };

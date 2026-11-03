@@ -169,6 +169,8 @@ function open(): DatabaseSync {
   // 1箱にいくつ入るか（2個目からの送料を安くするため。お店が決める。初めは1）
   if (!cols.includes("per_box")) db.exec("ALTER TABLE drafts ADD COLUMN per_box INTEGER NOT NULL DEFAULT 1");
   if (!scols.includes("prefecture")) db.exec("ALTER TABLE shops ADD COLUMN prefecture TEXT");
+  // ネットで宛名ラベルを作る送り方（クリックポスト）を使うか。初めは使わない（IT が苦手なお店でも出せる送り方だけにする）
+  if (!scols.includes("online_label")) db.exec("ALTER TABLE shops ADD COLUMN online_label INTEGER NOT NULL DEFAULT 0");
   if (!scols.includes("pickup_ok")) db.exec("ALTER TABLE shops ADD COLUMN pickup_ok INTEGER NOT NULL DEFAULT 0");
   for (const [c, t] of [
     ["ship_pref", "TEXT"],
@@ -217,6 +219,7 @@ export type Shop = {
   shipping_yen: number | null;
   prefecture: string | null;
   pickup_ok: number;
+  online_label: number;
 };
 export const SELLER_KEYS = ["seller_name", "seller_rep", "seller_address", "seller_phone", "seller_email"] as const;
 export type Draft = {
