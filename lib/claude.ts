@@ -242,6 +242,9 @@ const LegalSchema = z.object({
         detail: z.string().describe("店主に向けた説明。何が良くて何がだめか、どうすればよいか"),
         law: z.string().describe("根拠の法律やルールの名前"),
         source_url: z.string().describe("調査結果の出典URL。出典がなければ空文字"),
+        quote: z
+          .string()
+          .describe("商品ページの文（商品名・紹介文・おすすめ理由・こんな方に）の中に問題の言葉があれば、その部分を一字一句そのまま短く抜き出す。文に関係しない項目は空文字"),
       }),
     )
     .describe("法律から見たチェック項目。良い点も悪い点も並べる"),
@@ -266,6 +269,7 @@ const LEGAL_RULES = `法律の判定（legal）で守ること:
 - ヒアリングで言われたが紹介文から外した表現（例：「血圧に効く」）があれば、なぜ書けないかを ng の項目として説明する（紹介文に入っていなければ verdict は下げなくてよい）
 - 自家製の食品で営業許可の有無が分からなければ missing。許可がないと分かれば ng にして verdict は「このままでは販売できない」
 - label_items は、写真のラベル・ヒアリングで分かった内容を入れ、分からないものは null。必要な表示がそろっていなければ missing の項目にも入れる
+- fix・ng の項目で、商品ページの文の中に直すべき言葉があるときは、quote にその言葉を一字一句そのまま入れる（直す人が、どこを直せばよいかすぐ分かるように）。detail には「どう直せばよいか」を具体的に書く
 - source_url は、調査メモの出典一覧にあるURLだけを使う。合うものがなければ空文字
 - 断定できないことは断定しない。最終判断は店主（必要なら専門家）がする前提で書く`;
 
@@ -294,6 +298,12 @@ function keepKnownSources(legal: Legal, r: LegalResearch): Legal {
   return { ...legal, items: legal.items.map((it) => ({ ...it, source_url: known.has(it.source_url) ? it.source_url : "" })) };
 }
 
+// 問題の言葉（quote）が文の中に一字一句ない場合は空にする（画面で「消えました」と誤って出さないため）
+function keepRealQuotes(legal: Legal, f: DraftFields): Legal {
+  const all = [f.name, f.description, f.recommend_reason, f.target_customer].join("\n");
+  return { ...legal, items: legal.items.map((it) => ({ ...it, quote: it.quote && all.includes(it.quote) ? it.quote : "" })) };
+}
+
 export type ProductContext = {
   shop: ShopInfo;
   transcript: string;
@@ -310,7 +320,7 @@ export async function generateProductDraft(c: ProductContext, photos: Photo[]): 
     ...imageBlocks(photos),
     { type: "text", text: `${contextBlock(c)}\n\nこの商品の商品ページの下書きを、法律の判定つきで1件作ってください。` },
   ]);
-  return { ...p, legal: keepKnownSources(p.legal, c.research) };
+  return { ...p, legal: keepRealQuotes(keepKnownSources(p.legal, c.research), p) };
 }
 
 // AI に作り直してもらう（店主の一言）
@@ -319,7 +329,7 @@ export async function reviseDraft(c: ProductContext, current: DraftFields, note:
     ...imageBlocks(photos),
     { type: "text", text: `${contextBlock(c)}\n\n<current_draft>\n${JSON.stringify(current, null, 2)}\n</current_draft>\n\n<owner_request>\n${note}\n</owner_request>\n\n店主の依頼に合わせて、この1件を作り直し、法律の判定もやり直してください。依頼に関係ない部分はなるべく今のまま残してください。店主の依頼が法律に反する場合（例：効能をうたいたい）は、紹介文には入れず、legal の ng 項目でその理由を説明してください。` },
   ]);
-  return { ...p, legal: keepKnownSources(p.legal, c.research) };
+  return { ...p, legal: keepRealQuotes(keepKnownSources(p.legal, c.research), p) };
 }
 
 // 店主が手で直したあと、文は一切変えずに法律チェックだけやり直す
@@ -337,7 +347,7 @@ export async function recheckLegal(c: ProductContext, current: DraftFields, phot
       text: `${contextBlock(c)}\n\n<current_draft>\n${JSON.stringify(current, null, 2)}\n</current_draft>\n\nこの商品ページを法律の面から判定してください。`,
     },
   ]);
-  return keepKnownSources(legal, c.research);
+  return keepRealQuotes(keepKnownSources(legal, c.research), current);
 }
 
 // ---------- 5) 名刺を読む（販売者の情報。読めないところは空のまま。店主・パートナーが手で直す前提） ----------

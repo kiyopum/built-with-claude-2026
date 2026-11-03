@@ -6,6 +6,7 @@
 //     手で直したときは、文はそのままにして法律チェックだけやり直す
 import { useEffect, useState } from "react";
 import { LegalPanel, type Legal } from "@/components/LegalPanel";
+import { DraftFieldsForm, TodoNoteButton } from "@/components/DraftFieldsForm";
 
 type ShopIntro = { id: number; name: string; philosophy_text: string; philosophy_status: "draft" | "approved" };
 
@@ -170,8 +171,6 @@ function DraftCard({ d, onChanged }: { d: Draft; onChanged: () => void }) {
     onChanged();
   }
 
-  const input = "w-full rounded-xl border border-black/15 p-3 text-base";
-
   return (
     <article className={`rounded-2xl bg-white p-5 shadow-sm border border-black/5 space-y-3 ${d.status === "rejected" ? "opacity-60" : ""}`}>
       <div className="flex items-center justify-between gap-2 text-xs">
@@ -190,16 +189,7 @@ function DraftCard({ d, onChanged }: { d: Draft; onChanged: () => void }) {
 
       {mode === "edit" ? (
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-black/60">商品名</label>
-          <input className={input} value={fields.name} onChange={(e) => setFields({ ...fields, name: e.target.value })} />
-          <label className="block text-xs font-bold text-black/60">価格（税込・円）</label>
-          <input className={input} inputMode="numeric" value={fields.price_yen} onChange={(e) => setFields({ ...fields, price_yen: e.target.value.replace(/[^\d]/g, "") })} />
-          <label className="block text-xs font-bold text-black/60">紹介文</label>
-          <textarea className={`${input} min-h-48 leading-relaxed`} value={fields.description} onChange={(e) => setFields({ ...fields, description: e.target.value })} />
-          <label className="block text-xs font-bold text-black/60">おすすめ理由</label>
-          <textarea className={`${input} min-h-20`} value={fields.recommend_reason} onChange={(e) => setFields({ ...fields, recommend_reason: e.target.value })} />
-          <label className="block text-xs font-bold text-black/60">こんな方に</label>
-          <textarea className={`${input} min-h-20`} value={fields.target_customer} onChange={(e) => setFields({ ...fields, target_customer: e.target.value })} />
+          <DraftFieldsForm f={fields} setF={setFields} legal={legal} />
           <p className="text-xs text-black/50">保存すると、直した文のまま、法律チェックだけ Claude がやり直します。</p>
           <div className="flex gap-2">
             <button className="flex-1 rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" disabled={busy} onClick={() => act("edit")}>
@@ -262,6 +252,7 @@ function DraftCard({ d, onChanged }: { d: Draft; onChanged: () => void }) {
 
       {mode === "revise" && (
         <div className="space-y-2">
+          <TodoNoteButton legal={legal} setNote={setNote} />
           <textarea
             className="w-full min-h-24 rounded-xl border border-black/15 p-3 text-base"
             placeholder="例：値段は1,200円にして。もっと素朴な感じに。"

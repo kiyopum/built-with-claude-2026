@@ -7,6 +7,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { LegalPanel, type Legal } from "@/components/LegalPanel";
+import { DraftFieldsForm, TodoNoteButton } from "@/components/DraftFieldsForm";
 
 type Draft = {
   id: number;
@@ -128,16 +129,7 @@ function EditInner() {
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
         <div className="text-sm font-bold text-leaf">商品ページの文</div>
-        <label className="block text-xs font-bold text-black/60">商品名</label>
-        <input className={input} value={fields.name} onChange={(e) => setFields({ ...fields, name: e.target.value })} />
-        <label className="block text-xs font-bold text-black/60">価格（税込・円）</label>
-        <input className={input} inputMode="numeric" value={fields.price_yen} onChange={(e) => setFields({ ...fields, price_yen: e.target.value.replace(/[^\d]/g, "") })} />
-        <label className="block text-xs font-bold text-black/60">紹介文</label>
-        <textarea className={`${input} min-h-48 leading-relaxed`} value={fields.description} onChange={(e) => setFields({ ...fields, description: e.target.value })} />
-        <label className="block text-xs font-bold text-black/60">おすすめ理由</label>
-        <textarea className={`${input} min-h-20`} value={fields.recommend_reason} onChange={(e) => setFields({ ...fields, recommend_reason: e.target.value })} />
-        <label className="block text-xs font-bold text-black/60">こんな方に</label>
-        <textarea className={`${input} min-h-20`} value={fields.target_customer} onChange={(e) => setFields({ ...fields, target_customer: e.target.value })} />
+        <DraftFieldsForm f={fields} setF={setFields} legal={legal} />
       </section>
 
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
@@ -157,6 +149,7 @@ function EditInner() {
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
         <div className="text-sm font-bold text-carrot">AI に直してもらう</div>
+        <TodoNoteButton legal={legal} setNote={setNote} />
         <textarea
           className={`${input} min-h-20`}
           placeholder="例：店主さんが『もっと素朴に』と言っていた。容量は300gに変わった。"
@@ -169,10 +162,10 @@ function EditInner() {
       </section>
 
       {legal && (
-        <div className="space-y-2">
-          <div className="text-sm font-bold">いまの法律チェック</div>
+        <details className="space-y-2">
+          <summary className="text-sm font-bold">法律チェックの全項目（根拠・出典つき）</summary>
           <LegalPanel legal={legal} />
-        </div>
+        </details>
       )}
     </div>
   );

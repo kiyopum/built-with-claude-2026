@@ -3,7 +3,7 @@
 export type Legal = {
   verdict: "販売できる" | "直せば販売できる" | "このままでは販売できない";
   summary: string;
-  items: { status: "ok" | "fix" | "ng" | "missing"; topic: string; detail: string; law: string; source_url: string }[];
+  items: { status: "ok" | "fix" | "ng" | "missing"; topic: string; detail: string; law: string; source_url: string; quote?: string }[];
   label_items: { name: string; value: string | null }[];
 };
 

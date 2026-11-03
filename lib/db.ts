@@ -1,4 +1,4 @@
-// 八百ビズのデータベース（SQLite）。ファイルは data/yaobiz.db（GitHub には上げない）。
+// YaoBiz のデータベース（SQLite）。ファイルは data/yaobiz.db（GitHub には上げない）。
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
