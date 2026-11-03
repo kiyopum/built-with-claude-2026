@@ -197,6 +197,12 @@ export default function StatementPage() {
       {data.byPartner.length > 0 && (
         <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
           <div className="text-sm font-bold">パートナーごと（担当分＋紹介分）</div>
+          {t.partner - data.byPartner.reduce((a, p) => a + p.owner_yen + p.referrer_yen, 0) > 0 && (
+            <div className="flex justify-between text-sm border-t border-black/5 pt-1 text-red-600">
+              <span>どのパートナーにも付いていない分（担当なし・紹介なし／担当を決める前の注文）</span>
+              <span className="font-bold shrink-0">{yen(t.partner - data.byPartner.reduce((a, p) => a + p.owner_yen + p.referrer_yen, 0))}</span>
+            </div>
+          )}
           {data.byPartner.map((p) => (
             <div key={p.id} className="flex justify-between text-sm border-t border-black/5 pt-1">
               <span>
@@ -285,7 +291,7 @@ function Contract({ settings }: { settings: Settings }) {
             売上（商品代。送料は除く）の {pct(settings.ymm_rate)} から決済手数料 {pct(settings.stripe_fee_rate)} を引いた残りの {pct(settings.partner_share)}。
             1,000円売れると {yen(per1000.partner)}。
             <br />
-            ほかのパートナーが紹介して売れたときは、お店の担当と紹介した人で半分ずつ。自分の担当の商品を自分で紹介したときは全部。
+            ほかのパートナーが紹介して売れたときは、お店の担当と紹介した人で半分ずつ（1円の端数は担当へ）。自分の担当の商品を自分で紹介したとき、担当のいないお店の商品を紹介したときは全部。
           </dd>
         </div>
         <div>

@@ -14,7 +14,9 @@ export async function POST(req: Request) {
   // 戻り先は、いま開いているページのアドレスから作る（Mac でも iPhone でも同じように戻れる）
   const origin = req.headers.get("origin") ?? new URL(req.url).origin;
   const shop = getDb().prepare("SELECT shipping_yen FROM shops WHERE id = ?").get(d.shop_id) as Pick<Shop, "shipping_yen">;
-  const shipping = shop?.shipping_yen ?? 0;
+  // 送料が決まっていないお店は買えない（「送料無料」と誤って見せないため。リリースの決まりと同じ）
+  if (shop?.shipping_yen == null) return Response.json({ error: "送料がまだ決まっていないため、いまは購入できません" }, { status: 400 });
+  const shipping = shop.shipping_yen;
   try {
     const price = await ensureStripePrice(d);
     const session = await stripe().checkout.sessions.create({

@@ -36,7 +36,7 @@ export default function EveryonePage() {
       <div>
         <h1 className="text-xl font-bold">みんなの商品</h1>
         <p className="text-sm text-black/60">
-          ほかのパートナーさんのお店の商品も紹介できます。「これはいい！」と思ったら紹介してください。売れたら、報酬を担当の人と半分ずつ受け取れます。
+          ほかのパートナーさんのお店の商品も紹介できます。「これはいい！」と思ったら紹介してください。売れたら、報酬を担当の人と半分ずつ受け取れます（担当のいないお店なら全部）。
         </p>
       </div>
       <div className="grid grid-cols-3 gap-1 text-sm font-bold">
@@ -71,7 +71,7 @@ export default function EveryonePage() {
               </div>
             </Link>
             <Link href={`/hearing/${p.shop_id}/p/${p.id}/share?from=everyone`} className="block rounded-b-2xl bg-carrot text-white text-center py-3 font-bold shadow-sm">
-              📷 Instagram で紹介する{!p.mine && "（報酬は半分ずつ）"}
+              📷 Instagram で紹介する{p.mine ? "" : p.partner_name ? "（報酬は担当と半分ずつ）" : "（担当なし：報酬は全部あなたに）"}
             </Link>
           </div>
         ))}

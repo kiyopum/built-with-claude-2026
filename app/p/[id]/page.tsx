@@ -128,12 +128,13 @@ function ProductPageInner() {
         </div>
         <div className="flex items-center justify-between text-lg">
           <span>合計</span>
-          <span className="font-bold">{(p.price_yen * qty + (p.shipping_yen ?? 0)).toLocaleString()}円</span>
+          <span className="font-bold">{p.shipping_yen == null ? "送料未定" : `${(p.price_yen * qty + p.shipping_yen).toLocaleString()}円`}</span>
         </div>
         <p className="text-xs text-black/60 text-right">
-          商品 {(p.price_yen * qty).toLocaleString()}円 ＋ {p.shipping_yen ? `送料 ${p.shipping_yen.toLocaleString()}円（全国一律）` : "送料無料"}
+          商品 {(p.price_yen * qty).toLocaleString()}円 ＋{" "}
+          {p.shipping_yen == null ? "送料（お店が準備中のため、まだ購入できません）" : p.shipping_yen ? `送料 ${p.shipping_yen.toLocaleString()}円（全国一律）` : "送料無料"}
         </p>
-        <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy}>
+        <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy || p.shipping_yen == null}>
           {busy ? <Working text="決済画面を開いています" /> : "購入する"}
         </button>
         <p className="text-xs text-black/50">デモのため、テスト用の決済画面です。実際のお金は動きません。</p>
