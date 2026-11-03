@@ -38,7 +38,7 @@ function ProductPageInner() {
   async function buy() {
     setError("");
     setBusy(true);
-    const r = await apiFetch("/api/checkout", { method: "POST", body: JSON.stringify({ draftId: Number(id), quantity: qty }) });
+    const r = await apiFetch("/api/checkout", { method: "POST", body: JSON.stringify({ draftId: Number(id), quantity: qty, ref: new URLSearchParams(window.location.search).get("ref") ?? "" }) });
     const j = await r.json();
     if (!r.ok || !j.url) {
       setBusy(false);

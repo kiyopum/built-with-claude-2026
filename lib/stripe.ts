@@ -51,8 +51,8 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
   const s = splitAmount(amount, ymmRate, feeRate, partnerShare);
   db.prepare(
     `INSERT OR IGNORE INTO orders
-     (stripe_session_id, draft_id, shop_id, quantity, amount_yen, owner_yen, ymm_yen, partner_yen, fee_yen, ymm_rate, partner_share)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(session.id, d.id, d.shop_id, quantity, amount, s.owner, s.ymm, s.partner, s.fee, ymmRate, partnerShare);
+     (stripe_session_id, draft_id, shop_id, quantity, amount_yen, owner_yen, ymm_yen, partner_yen, fee_yen, ymm_rate, partner_share, ref)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(session.id, d.id, d.shop_id, quantity, amount, s.owner, s.ymm, s.partner, s.fee, ymmRate, partnerShare, session.metadata?.ref || null);
   return { created: true };
 }

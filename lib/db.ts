@@ -99,6 +99,8 @@ function open(): DatabaseSync {
   if (!cols.includes("stripe_product_id")) db.exec("ALTER TABLE drafts ADD COLUMN stripe_product_id TEXT");
   if (!cols.includes("stripe_price_id")) db.exec("ALTER TABLE drafts ADD COLUMN stripe_price_id TEXT");
   if (!cols.includes("legal_json")) db.exec("ALTER TABLE drafts ADD COLUMN legal_json TEXT");
+  // SNS 投稿（Claude が作った文と、その法律チェック）
+  if (!cols.includes("sns_json")) db.exec("ALTER TABLE drafts ADD COLUMN sns_json TEXT");
   const hcols = (db.prepare("PRAGMA table_info(hearings)").all() as { name: string }[]).map((c) => c.name);
   if (!hcols.includes("legal_research")) db.exec("ALTER TABLE hearings ADD COLUMN legal_research TEXT");
   const scols = (db.prepare("PRAGMA table_info(shops)").all() as { name: string }[]).map((c) => c.name);
@@ -115,6 +117,8 @@ function open(): DatabaseSync {
   }
   if (!hcols.includes("label_read")) db.exec("ALTER TABLE hearings ADD COLUMN label_read TEXT");
   const ocols = (db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name);
+  // どのパートナーのシェアから売れたか（シェア用リンクの ?ref=）
+  if (!ocols.includes("ref")) db.exec("ALTER TABLE orders ADD COLUMN ref TEXT");
   if (!ocols.includes("fee_yen")) db.exec("ALTER TABLE orders ADD COLUMN fee_yen INTEGER NOT NULL DEFAULT 0");
 
   // デモ用のダミーの店（架空）。1件もなければ入れる。
@@ -166,6 +170,7 @@ export type Draft = {
   stripe_product_id: string | null;
   stripe_price_id: string | null;
   legal_json: string | null;
+  sns_json?: string | null;
   created_at: string;
   updated_at: string;
 };

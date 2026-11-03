@@ -318,8 +318,8 @@ function keepKnownSources(legal: Legal, r: LegalResearch): Legal {
 }
 
 // 問題の言葉（quote）が文の中に一字一句ない場合は空にする（画面で「消えました」と誤って出さないため）
-function keepRealQuotes(legal: Legal, f: DraftFields): Legal {
-  const all = [f.name, f.description, f.recommend_reason, f.target_customer].join("\n");
+function keepRealQuotes(legal: Legal, f: DraftFields | string): Legal {
+  const all = typeof f === "string" ? f : [f.name, f.description, f.recommend_reason, f.target_customer].join("\n");
   return { ...legal, items: legal.items.map((it) => ({ ...it, quote: it.quote && all.includes(it.quote) ? it.quote : "" })) };
 }
 
@@ -388,4 +388,54 @@ export async function readBusinessCard(photos: Photo[]): Promise<CardFields> {
 写っている文字をそのまま書き写すだけにし、推測で補わない。読めない・写っていない項目は null にする。`,
     [...imageBlocks(photos), { type: "text", text: "この名刺から販売者の情報を書き写してください。" }],
   );
+}
+
+// ---------- 6) SNS（Instagram カルーセル）の投稿文と、その法律チェック ----------
+
+const SnsSchema = z.object({
+  caption: z.string().describe("Instagram の本文。150〜300字。改行で読みやすく。最後に「ご購入はプロフィールのリンクから」"),
+  hashtags: z.array(z.string()).describe("ハッシュタグ 5〜10個。# は付けない。地域・商品・食べ方など"),
+  slides: z.object({
+    cover: z.string().describe("1枚目（表紙）に載せるひとこと。16字以内"),
+    point_title: z.string().describe("2枚目の見出し（こだわり）。12字以内"),
+    point_text: z.string().describe("2枚目の本文。70字以内"),
+    story_text: z.string().describe("3枚目（お店の思い）の本文。90字以内。店主の言葉を生かす"),
+  }),
+});
+export type SnsPost = z.infer<typeof SnsSchema>;
+
+const SNS_SYSTEM = `あなたは、地域の小さなお店の商品を Instagram で紹介する投稿を作る担当者です。
+写真のカルーセル投稿（1枚目：表紙、2枚目：こだわり、3枚目：お店の思い、4枚目：買い方）に載せる短い文と、本文・ハッシュタグを作ります。
+- 商品ページの文・お店の紹介に書かれた事実だけを使う。数字や産地などを推測で足さない
+- 病気の治療・予防や体の機能への効果をうたう表現、「日本一」「最高級」などの根拠のない最上級表現は使わない（お客さんの声の形でも使わない）
+- 押し売りせず、お店の人柄と商品の魅力（素材・作り方・食べ方・季節）で伝える。絵文字は少しだけ
+- 投稿するのは店主やパートナー。お店の立場で書く`;
+
+export async function generateSnsPost(c: ProductContext, current: DraftFields): Promise<SnsPost> {
+  return ask(
+    SnsSchema,
+    SNS_SYSTEM,
+    `${shopBlock(c.shop)}\n\n<product_page>\n${JSON.stringify(current, null, 2)}\n</product_page>\n\nこの商品の Instagram カルーセル投稿を作ってください。`,
+  );
+}
+
+export function snsText(p: SnsPost): string {
+  return [p.slides.cover, p.slides.point_title, p.slides.point_text, p.slides.story_text, p.caption, p.hashtags.map((h) => `#${h}`).join(" ")].join("\n");
+}
+
+const SNS_CHECK_SYSTEM = `あなたは、地域の小さなお店の SNS 投稿を、公開前に法律の面から確かめる担当者です。
+投稿の文（post）を、商品ページの文・ヒアリング・法律の調査メモに照らして判定します。文は書き換えず、判定（legal）だけを返します。
+SNS の投稿も広告です。効能効果・根拠のない最上級表現・事実と違う表示は、商品ページと同じく問題になります。
+表示が必要な項目（label_items）は商品ページで扱うので、ここでは空の配列にしてください。
+
+${LEGAL_RULES}`;
+
+export async function checkSnsPost(c: ProductContext, current: DraftFields, post: SnsPost): Promise<Legal> {
+  const text = snsText(post);
+  const legal = await ask(
+    LegalSchema,
+    SNS_CHECK_SYSTEM,
+    `${contextBlock(c)}\n\n<product_page>\n${JSON.stringify(current, null, 2)}\n</product_page>\n\n<post>\n${text}\n</post>\n\nこの SNS 投稿を法律の面から判定してください。`,
+  );
+  return keepRealQuotes(keepKnownSources({ ...legal, label_items: [] }, c.research), text);
 }

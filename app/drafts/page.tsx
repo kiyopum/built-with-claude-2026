@@ -14,6 +14,7 @@ type ShopIntro = { id: number; name: string; philosophy_text: string; philosophy
 
 type Draft = {
   id: number;
+  shop_id: number;
   shop_name: string;
   name: string;
   description: string;
@@ -228,6 +229,11 @@ function DraftCard({ d, onChanged }: { d: Draft; onChanged: () => void }) {
       {d.status === "published" && (
         <a href={`/p/${d.id}`} className="block rounded-xl border border-leaf/30 bg-leaf/5 p-3 text-sm text-leaf font-bold">
           公開ページを開く →
+        </a>
+      )}
+      {d.status === "published" && (
+        <a href={`/hearing/${d.shop_id}/p/${d.id}/share`} className="block rounded-xl bg-carrot text-white p-3 text-sm font-bold text-center">
+          Instagram でシェアする →
         </a>
       )}
       {d.revision_note && <p className="text-xs text-black/50">前回の修正：{d.revision_note}</p>}

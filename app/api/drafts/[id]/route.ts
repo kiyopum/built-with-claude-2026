@@ -1,5 +1,6 @@
-import { getDb, type Draft, type Shop } from "@/lib/db";
-import { reviseDraft, recheckLegal, type LegalResearch, type Legal, type ProductContext, type DraftFields } from "@/lib/claude";
+import { getDb, type Draft } from "@/lib/db";
+import { reviseDraft, recheckLegal, type Legal, type DraftFields } from "@/lib/claude";
+import { loadProductContext } from "@/lib/context";
 import { ensureStripePrice } from "@/lib/stripe";
 import { loadPhotos, photoUrls } from "@/lib/files";
 
@@ -49,21 +50,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
 
   // ここから先は Claude を使う：お店・ヒアリング・ラベル・法律の調査をそろえる
-  const shop = db.prepare("SELECT * FROM shops WHERE id = ?").get(d.shop_id) as Shop;
-  const h = db.prepare("SELECT transcript, legal_research, label_read FROM hearings WHERE id = ?").get(d.hearing_id) as {
-    transcript: string;
-    legal_research: string | null;
-    label_read: string | null;
-  };
-  const research: LegalResearch = h.legal_research ? JSON.parse(h.legal_research) : { notes: "（法律の調査なし）", sources: [] };
-  const c: ProductContext = { shop, transcript: h.transcript, labelRead: h.label_read ? JSON.parse(h.label_read) : [], research };
-  const current: DraftFields = {
-    name: d.name,
-    description: d.description,
-    price_yen: d.price_yen,
-    recommend_reason: d.recommend_reason,
-    target_customer: d.target_customer,
-  };
+  const { c, current } = loadProductContext(d);
 
   try {
     if (body.action === "edit") {

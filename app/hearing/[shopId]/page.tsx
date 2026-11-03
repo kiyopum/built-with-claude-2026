@@ -70,7 +70,8 @@ function ShopPageInner() {
           ＋ 商品を追加
         </Link>
         {products.map((p) => (
-          <Link key={p.id} href={`/hearing/${shop.id}/p/${p.id}`} className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm border border-black/5 active:bg-black/5">
+          <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm border border-black/5">
+            <Link href={`/hearing/${shop.id}/p/${p.id}`} className="flex gap-3 min-w-0 flex-1 active:opacity-70">
             <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-black/5 grid place-items-center text-black/30 text-xs">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {p.photo ? <img src={p.photo} alt="" className="w-full h-full object-cover" /> : "写真なし"}
@@ -83,8 +84,18 @@ function ShopPageInner() {
                 {p.verdict && <span className={`font-bold ${VERDICT[p.verdict] ?? ""}`}>{p.verdict}</span>}
               </div>
             </div>
-            <span className="self-center shrink-0 rounded-lg border border-leaf/40 text-leaf text-xs font-bold px-2 py-1">修正</span>
-          </Link>
+            </Link>
+            <div className="self-center shrink-0 flex flex-col gap-1.5">
+              <Link href={`/hearing/${shop.id}/p/${p.id}`} className="rounded-lg border border-leaf/40 text-leaf text-xs font-bold px-2.5 py-1.5 text-center">
+                修正
+              </Link>
+              {p.status === "published" && (
+                <Link href={`/hearing/${shop.id}/p/${p.id}/share`} className="rounded-lg bg-carrot text-white text-xs font-bold px-2.5 py-1.5 text-center">
+                  シェア
+                </Link>
+              )}
+            </div>
+          </div>
         ))}
       </section>
     </div>

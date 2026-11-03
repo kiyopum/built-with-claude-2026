@@ -24,6 +24,7 @@ type Order = {
   partner_share: number;
   product_name: string;
   shop_name: string;
+  ref: string | null;
 };
 type Totals = { count: number; amount: number; owner: number; partner: number; ymm: number; fee: number };
 type Settings = { ymm_rate: number; partner_share: number; stripe_fee_rate: number };
@@ -108,7 +109,10 @@ export default function StatementPage() {
             <div key={o.id} className="rounded-2xl bg-white p-3 shadow-sm border border-black/5 space-y-2">
               <div className="flex justify-between gap-2 text-xs text-black/50">
                 <span>{o.created_at}</span>
-                <span>{o.shop_name}</span>
+                <span>
+                  {o.ref && <span className="mr-2 rounded-full bg-leaf/10 text-leaf px-2 py-0.5 font-bold">シェア経由：{o.ref}</span>}
+                  {o.shop_name}
+                </span>
               </div>
               <div className="flex justify-between gap-2">
                 <Link href={`/p/${o.draft_id}`} className="font-bold leading-snug line-clamp-2 underline-offset-2 hover:underline">
