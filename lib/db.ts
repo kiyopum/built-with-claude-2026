@@ -100,6 +100,46 @@ function open(): DatabaseSync {
       expires_at TEXT NOT NULL
     );
 
+    -- みんなの声（2026-11-05 きよさん）：店主さん・お客さまからのお褒めと要望を、スタッフみんなで分け合う。
+    --   original は聞いたままの言葉（書いた人と YMM 管理だけが見る）。message は Claude が「もっと未来のために」の形に整えた、みんなに見せる文
+    CREATE TABLE IF NOT EXISTS voices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      shop_id INTEGER REFERENCES shops(id),
+      source TEXT NOT NULL,          -- owner（店主さん）/ customer（お客さま）/ other
+      kind TEXT NOT NULL,            -- praise（お褒め）/ request（要望）
+      original TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      step TEXT NOT NULL DEFAULT '', -- 次の小さな一歩
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+    CREATE TABLE IF NOT EXISTS voice_thanks (
+      voice_id INTEGER NOT NULL REFERENCES voices(id),
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      PRIMARY KEY (voice_id, user_id)
+    );
+
+    -- 月1のふり返り（2026-11-05 きよさん）：事業や理念についての問いと、本人の気持ちのたしかめ。
+    --   答えは本人と山崎（YMM 管理）だけが読む（画面で本人にそう伝える）。ほかのパートナーには見せない
+    CREATE TABLE IF NOT EXISTS checkin_months (
+      month TEXT PRIMARY KEY,        -- 2026-11
+      questions_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+    CREATE TABLE IF NOT EXISTS checkins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      month TEXT NOT NULL,
+      answers_json TEXT NOT NULL,
+      reply TEXT NOT NULL,           -- 本人への返事
+      care_level TEXT NOT NULL,      -- 元気 / 気にかける / 早めに話す
+      care_summary TEXT NOT NULL,    -- 山崎向けのまとめ
+      talk_points TEXT NOT NULL,     -- 面談で聞くとよいこと（JSON）
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      UNIQUE (user_id, month)
+    );
+
     -- 料率などの設定
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,

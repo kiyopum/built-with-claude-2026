@@ -33,12 +33,14 @@ export function Nav() {
 
   return (
     <>
-      <nav className="flex gap-1 text-[13px] whitespace-nowrap">
+      <nav className="flex flex-wrap justify-end gap-1 text-[13px] whitespace-nowrap">
         {me ? (
           <>
             {pill("/hearing", "お店")}
             {pill("/everyone", "みんなの商品")}
             {pill("/statement", "明細")}
+            {pill("/voices", "みんなの声")}
+            {pill("/checkin", "月1")}
             {me.role === "admin" && pill("/admin", "管理")}
           </>
         ) : (
