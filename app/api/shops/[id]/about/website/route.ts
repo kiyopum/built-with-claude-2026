@@ -1,6 +1,6 @@
 import { guardShop } from "@/lib/auth";
 import { getDb, type Shop } from "@/lib/db";
-import { readShopWebsite } from "@/lib/claude";
+import { findShopWebsite, readShopWebsite } from "@/lib/claude";
 
 // SNS は中身がログインの向こうにあって読めないので、今までどおりヒアリングで聞く
 const SNS_HOSTS = ["instagram.com", "facebook.com", "x.com", "twitter.com", "tiktok.com", "line.me", "threads.net"];
@@ -13,7 +13,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const db = getDb();
   const shop = db.prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
   if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
-  const body = (await req.json().catch(() => ({}))) as { url?: string; clear?: boolean };
+  const body = (await req.json().catch(() => ({}))) as { url?: string; clear?: boolean; search?: boolean };
+  // お店の名前と地域で候補を探すだけ（どれを読むかはパートナーが選ぶ）
+  if (body.search) {
+    try {
+      return Response.json({ candidates: await findShopWebsite(shop) });
+    } catch (e) {
+      console.error(e);
+      return Response.json({ error: e instanceof Error ? e.message : "探せませんでした" }, { status: 500 });
+    }
+  }
   if (body.clear) {
     db.prepare("UPDATE shops SET website_url = NULL, website_notes = NULL WHERE id = ?").run(shop.id);
     return Response.json({ ok: true });

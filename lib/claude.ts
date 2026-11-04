@@ -191,6 +191,49 @@ export async function readShopWebsite(shop: { name: string; category: string }, 
   return { notes: notes.trim(), pages: [...pages] };
 }
 
+// お店の名前と地域から、お店のホームページの候補を探す（パートナーが URL を知らなくてもよいように。選ぶのは人）
+const SiteCandidatesSchema = z.object({
+  candidates: z
+    .array(
+      z.object({
+        url: z.string().describe("検索結果に出てきた URL をそのまま。作らない"),
+        title: z.string().describe("ページの名前"),
+        kind: z.enum(["公式サイト", "SNS", "紹介ページ"]).describe("お店が自分で作ったサイト／Instagram などの SNS／グルメサイトや地域の紹介記事など"),
+        reason: z.string().describe("このお店のページだと考えた理由（住所・業種が合う など）。20〜40字"),
+      }),
+    )
+    .describe("このお店のものらしいページ。確からしい順に最大4件。見つからなければ空"),
+});
+export type SiteCandidate = z.infer<typeof SiteCandidatesSchema>["candidates"][number];
+
+const SITE_SEARCH_SYSTEM = `あなたは、地域の小さなお店のホームページを探す担当者です。
+お店の名前・地域・業種で web_search を使って探し、このお店のものらしいページを候補として返します。
+- 検索結果に実際に出てきた URL だけを返す。URL を推測で作らない
+- 同じ名前の別のお店（ほかの地域・ほかの業種）は入れない。迷うものは reason に「同じ名前の別のお店かもしれない」と書く
+- お店が自分で作ったサイトを先に、SNS（Instagram など）や紹介ページはその後に
+- 見つからなければ candidates を空にする`;
+
+export async function findShopWebsite(shop: { name: string; category: string; area?: string | null }): Promise<SiteCandidate[]> {
+  const res = await client.beta.messages.parse({
+    model: MODEL,
+    max_tokens: 8000,
+    output_config: { effort: "low", format: betaZodOutputFormat(SiteCandidatesSchema) },
+    system: SITE_SEARCH_SYSTEM,
+    tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 3 }],
+    messages: [{ role: "user", content: `お店の名前: ${shop.name}\n地域: ${shop.area || "（不明）"}\n業種: ${shop.category}\n\nこのお店のホームページの候補を探してください。` }],
+    ...FALLBACK,
+  });
+  if (res.stop_reason === "refusal") throw new Error("Claude が検索を控えました。");
+  // 検索結果に出てこなかった URL は捨てる（作られた URL を見せない）
+  const seen = new Set<string>();
+  for (const b of res.content) {
+    if (b.type === "web_search_tool_result" && Array.isArray(b.content)) for (const r of b.content) if (r.type === "web_search_result") seen.add(r.url);
+  }
+  const norm = (u: string) => u.replace(/\/+$/, "");
+  const seenN = new Set([...seen].map(norm));
+  return (res.parsed_output?.candidates ?? []).filter((c) => seenN.has(norm(c.url)));
+}
+
 // ---------- 2) 商品の写真を見る（ラベルを読み、足りないことだけ質問する） ----------
 
 const LabelItemSchema = z.object({

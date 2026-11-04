@@ -16,7 +16,10 @@ function AboutInner() {
   const router = useRouter();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [transcript, setTranscript] = useState("");
-  const [busy, setBusy] = useState<"" | "q" | "send" | "web">("");
+  const [busy, setBusy] = useState<"" | "q" | "send" | "web" | "find">("");
+  const [shopLabel, setShopLabel] = useState("");
+  const [cands, setCands] = useState<{ url: string; title: string; kind: string; reason: string }[] | null>(null);
+  const [manual, setManual] = useState(false);
   const [url, setUrl] = useState("");
   const [notes, setNotes] = useState<string | null>(null);
   const [showNotes, setShowNotes] = useState(false);
@@ -25,16 +28,28 @@ function AboutInner() {
     fetch(`/api/shops/${shopId}`)
       .then((r) => r.json())
       .then((j) => {
+        if (j.shop) setShopLabel([j.shop.name, j.shop.area].filter(Boolean).join("・"));
         if (j.shop?.website_url) setUrl(j.shop.website_url);
         if (j.shop?.website_notes) setNotes(j.shop.website_notes);
       })
       .catch(() => {});
   }, [shopId]);
 
-  async function readWebsite() {
+  async function findWebsite() {
     setError("");
+    setBusy("find");
+    const r = await apiFetch(`/api/shops/${shopId}/about/website`, { method: "POST", body: JSON.stringify({ search: true }) });
+    const j = await r.json();
+    setBusy("");
+    if (!r.ok) return setError(j.error);
+    setCands(j.candidates);
+  }
+
+  async function readWebsite(target = url) {
+    setError("");
+    setUrl(target);
     setBusy("web");
-    const r = await apiFetch(`/api/shops/${shopId}/about/website`, { method: "POST", body: JSON.stringify({ url }) });
+    const r = await apiFetch(`/api/shops/${shopId}/about/website`, { method: "POST", body: JSON.stringify({ url: target }) });
     const j = await r.json();
     setBusy("");
     if (!r.ok) return setError(j.error);
@@ -49,6 +64,7 @@ function AboutInner() {
     if (!r.ok) return setError((await r.json()).error);
     setNotes(null);
     setUrl("");
+    setCands(null);
     setQuestions([]);
   }
   const [error, setError] = useState("");
@@ -91,7 +107,7 @@ function AboutInner() {
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
         <div className="text-sm font-bold text-leaf">1) お店のホームページ（あれば）</div>
         <p className="text-xs text-black/60">
-          ホームページがあれば、先に Claude が読みます。お話は、ホームページに載っていないことを聞くだけで済みます。Instagram だけのお店は、ここを飛ばしてお話を聞いてください。
+          お店の名前と地域で Claude がホームページを探して、読みます。お話は、ホームページに載っていないことを聞くだけで済みます。Instagram だけのお店は、ここを飛ばしてお話を聞いてください。
         </p>
         {notes ? (
           <div className="space-y-2">
@@ -107,20 +123,60 @@ function AboutInner() {
               ホームページを使わない（読んだ内容を消す）
             </button>
           </div>
+        ) : busy === "web" ? (
+          <div className="rounded-xl bg-black/[0.03] p-3 text-sm space-y-1">
+            <Working text="Claude がホームページを読んでいます" est={40} />
+            <div className="text-xs text-black/50 break-all">{url}</div>
+          </div>
         ) : (
-          <div className="space-y-2">
-            <input
-              className="w-full rounded-xl border border-black/15 p-3 text-base"
-              inputMode="url"
-              autoCapitalize="off"
-              placeholder="https://〜（なければ空のままで大丈夫）"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              disabled={busy !== ""}
-            />
-            <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={readWebsite} disabled={!url.trim() || busy !== ""}>
-              {busy === "web" ? <Working text="Claude がホームページを読んでいます" est={40} /> : "Claude にホームページを読んでもらう"}
+          <div className="space-y-3">
+            <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={findWebsite} disabled={busy !== ""}>
+              {busy === "find" ? <Working text="Claude が探しています" est={20} /> : `🔍 ホームページを探す${shopLabel ? `（${shopLabel}）` : ""}`}
             </button>
+            {cands && cands.length === 0 && (
+              <p className="rounded-xl bg-black/[0.03] p-3 text-sm">見つかりませんでした。ホームページのないお店は、このまま下でお話を聞いてください。</p>
+            )}
+            {cands && cands.length > 0 && (
+              <ul className="space-y-2">
+                <li className="text-xs text-black/60">このお店のものを選んでください（店主さんに「これですか？」と見せると確実です）</li>
+                {cands.map((c) => (
+                  <li key={c.url} className="rounded-xl border border-black/10 p-3 text-sm space-y-1">
+                    <div className="flex justify-between gap-2">
+                      <b className="line-clamp-2">{c.title}</b>
+                      <span className="shrink-0 text-xs text-black/50">{c.kind}</span>
+                    </div>
+                    <div className="text-xs text-black/50 break-all">{c.url}</div>
+                    <div className="text-xs text-black/70">{c.reason}</div>
+                    {c.kind === "SNS" ? (
+                      <div className="text-xs text-black/50">SNS は中身が読めないので、お話で聞いてください</div>
+                    ) : (
+                      <button className="w-full rounded-lg bg-leaf text-white py-2 font-bold" onClick={() => readWebsite(c.url)}>
+                        これを Claude に読んでもらう
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!manual ? (
+              <button className="text-xs text-black/50 underline" onClick={() => setManual(true)}>
+                アドレスが分かっているときは、ここに入れる
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  className="w-full rounded-xl border border-black/15 p-3 text-base"
+                  inputMode="url"
+                  autoCapitalize="off"
+                  placeholder="https://〜"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+                <button className="w-full rounded-xl border border-leaf text-leaf py-2 font-bold disabled:opacity-50" onClick={() => readWebsite()} disabled={!url.trim() || busy !== ""}>
+                  このアドレスを読んでもらう
+                </button>
+              </div>
+            )}
           </div>
         )}
       </section>
