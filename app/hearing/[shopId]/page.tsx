@@ -91,6 +91,9 @@ function ShopPageInner() {
         <Link href={`/hearing/${shop.id}/new`} className="block text-center rounded-2xl bg-carrot text-white py-4 text-lg font-bold">
           ＋ 商品を追加
         </Link>
+        <Link href={`/hearing/${shop.id}/new?kind=service`} className="block text-center rounded-2xl border-2 border-carrot text-carrot py-3 font-bold">
+          ＋ サービスを追加（ライブ配信・講座・体験など）
+        </Link>
         {products.map((p) => (
           <div key={p.id}>
             <Link
@@ -422,6 +425,8 @@ type Order = {
   ship_address: string | null;
   ship_method: string | null;
   ship_warning: string | null;
+  customer_email: string | null;
+  kind: "goods" | "service";
   product_name: string;
 };
 
@@ -454,15 +459,23 @@ function OrdersCard({ shopId, hasPin }: { shopId: number; hasPin: boolean }) {
                   <span className="shrink-0">×{o.quantity}</span>
                 </div>
                 <div className="text-xs text-black/50">{o.created_at}</div>
-                <div>
-                  <b>届け先：</b>
-                  {o.ship_name ?? "（なし）"}
-                  <div className="whitespace-pre-wrap">{o.ship_address ?? ""}</div>
-                </div>
+                {o.kind === "service" ? (
+                  <div className="rounded-lg bg-leaf/10 p-2">
+                    <b>案内を送る先：</b>
+                    {o.ship_name ?? ""} <span className="break-all">{o.customer_email ?? "（メールアドレスなし）"}</span>
+                    <div className="text-xs text-black/60">配信の URL や日時を、このアドレスにメールで送ってください。</div>
+                  </div>
+                ) : (
+                  <div>
+                    <b>届け先：</b>
+                    {o.ship_name ?? "（なし）"}
+                    <div className="whitespace-pre-wrap">{o.ship_address ?? ""}</div>
+                  </div>
+                )}
                 {o.ship_method && <div className="text-xs">送り方：{o.ship_method}</div>}
                 {o.ship_warning && <div className="rounded-lg bg-amber-50 text-amber-800 p-2 text-xs">⚠️ {o.ship_warning}</div>}
                 <div className="text-xs">
-                  お支払い {o.amount_yen.toLocaleString()}円（うち送料 {o.shipping_yen.toLocaleString()}円）／ 店主さんの受け取り <b>{o.owner_yen.toLocaleString()}円</b>
+                  お支払い {o.amount_yen.toLocaleString()}円{o.kind !== "service" && `（うち送料 ${o.shipping_yen.toLocaleString()}円）`}／ 店主さんの受け取り <b>{o.owner_yen.toLocaleString()}円</b>
                 </div>
               </li>
             ))}

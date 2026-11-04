@@ -17,7 +17,10 @@ export async function POST(req: Request) {
   const shop = getDb().prepare("SELECT shipping_yen, prefecture, pickup_ok, online_label FROM shops WHERE id = ?").get(d.shop_id) as Pick<Shop, "shipping_yen" | "prefecture" | "pickup_ok" | "online_label">;
   // 送料：送料込みの商品は届け先の都道府県で、そうでない商品はお店の全国一律で。決まっていなければ買えない
   //   商品の値段（Stripe の価格）はそのまま。送料は注文ごとに1回（1箱に入る数で箱の数を出す）＝2個目からは送料分が安くなる
-  const ship = shippingForOrder(shippingInfo(d, shop), typeof dest === "string" ? dest : "", qty);
+  const info = shippingInfo(d, shop);
+  const ship = shippingForOrder(info, typeof dest === "string" ? dest : "", qty);
+  // サービスは送らないので、住所も送料も聞かない（メールアドレスは決済画面がいつも聞く＝お店からの案内に使う）
+  const service = info.mode === "none";
   if ("error" in ship) return Response.json({ error: ship.error }, { status: 400 });
   try {
     const price = await ensureStripePrice(d);
@@ -25,11 +28,11 @@ export async function POST(req: Request) {
       mode: "payment",
       line_items: [{ price, quantity: qty }],
       // お店で受け取るときは住所を聞かない
-      ...(ship.pickup ? {} : { shipping_address_collection: { allowed_countries: ["JP" as const] } }),
-      shipping_options: [{ shipping_rate_data: { type: "fixed_amount", display_name: ship.label, fixed_amount: { amount: ship.yen, currency: "jpy" } } }],
+      ...(ship.pickup || service ? {} : { shipping_address_collection: { allowed_countries: ["JP" as const] } }),
+      ...(service ? {} : { shipping_options: [{ shipping_rate_data: { type: "fixed_amount" as const, display_name: ship.label, fixed_amount: { amount: ship.yen, currency: "jpy" } } }] }),
       success_url: `${origin}/p/${d.id}/thanks?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/p/${d.id}`,
-      metadata: { draft_id: String(d.id), quantity: String(qty), ref: refCode, dest: ship.pickup ? "pickup" : ship.pref ?? "", ship_method: ship.method },
+      metadata: { draft_id: String(d.id), quantity: String(qty), ref: refCode, dest: service ? "service" : ship.pickup ? "pickup" : ship.pref ?? "", ship_method: ship.method },
     });
     return Response.json({ url: session.url });
   } catch (e) {

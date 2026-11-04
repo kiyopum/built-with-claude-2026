@@ -12,6 +12,7 @@ export async function GET() {
   const db = getDb();
   const settings = {
     ymm_rate: getSetting("ymm_rate"),
+    ymm_rate_service: getSetting("ymm_rate_service"),
     partner_share: getSetting("partner_share"),
     stripe_fee_rate: getSetting("stripe_fee_rate"),
     payment_terms: getText("payment_terms"),

@@ -16,6 +16,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const form = await req.formData();
   const transcript = String(form.get("transcript") ?? "").trim();
   const labelRead = JSON.parse(String(form.get("label_read") ?? "[]"));
+  const kind = form.get("kind") === "service" ? "service" : "goods";
   if (!transcript) return Response.json({ error: "ヒアリング内容が空です" }, { status: 400 });
 
   try {
@@ -23,7 +24,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const t0 = Date.now();
     const research = await getResearch(shop);
     const t1 = Date.now();
-    const p = await generateProductDraft({ shop, transcript, labelRead, research }, photos);
+    const p = await generateProductDraft({ shop, kind, transcript, labelRead, research }, photos);
     console.log(`[product] 法律の調査を待った時間 ${((t1 - t0) / 1000).toFixed(1)}秒 / 下書き作成 ${((Date.now() - t1) / 1000).toFixed(1)}秒`);
 
     const hearingId = Number(
@@ -37,10 +38,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const draftId = Number(
       db
         .prepare(
-          `INSERT INTO drafts (hearing_id, shop_id, name, description, price_yen, recommend_reason, target_customer, legal_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO drafts (hearing_id, shop_id, name, description, price_yen, recommend_reason, target_customer, legal_json, kind)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
-        .run(hearingId, shop.id, p.name, p.description, p.price_yen, p.recommend_reason, p.target_customer, JSON.stringify(p.legal))
+        .run(hearingId, shop.id, p.name, p.description, p.price_yen, p.recommend_reason, p.target_customer, JSON.stringify(p.legal), kind)
         .lastInsertRowid,
     );
     savePhotos(draftId, photos);

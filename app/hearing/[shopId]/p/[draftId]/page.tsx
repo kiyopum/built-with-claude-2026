@@ -14,6 +14,7 @@ import { Working } from "@/components/Working";
 import { OwnerApprove } from "@/components/OwnerApprove";
 import { apiFetch } from "@/lib/api";
 import { PackageCard } from "@/components/PackageCard";
+import { splitAmount } from "@/lib/split";
 
 type Draft = {
   id: number;
@@ -31,7 +32,10 @@ type Draft = {
   shop_prefecture: string | null;
   shop_shipping_yen: number | null;
   shop_online_label: number;
+  kind: "goods" | "service";
+  ymm_rate?: number | null;
 };
+type Rates = { effective: number; goods: number; service: number };
 
 const STATUS = { draft: "店主さんの確認待ち", published: "公開中", rejected: "却下" };
 
@@ -54,6 +58,7 @@ function EditInner() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<"" | "save" | "revise">("");
   const [error, setError] = useState("");
+  const [rates, setRates] = useState<Rates | null>(null); // YMM 管理のときだけ届く
 
   // 送り方を保存したあとに、送り方の欄だけ読み直す（写真や入力中の文は消さない）
   const reloadPackage = () =>
@@ -64,9 +69,10 @@ function EditInner() {
   useEffect(() => {
     fetch(`/api/drafts/${draftId}`)
       .then((r) => r.json())
-      .then(async (j: { draft: Draft }) => {
+      .then(async (j: { draft: Draft; rates: Rates | null }) => {
         const d = j.draft;
         setDraft(d);
+        setRates(j.rates);
         setFields({
           name: d.name,
           price_yen: String(d.price_yen),
@@ -205,6 +211,12 @@ function EditInner() {
         <DraftFieldsForm f={fields} setF={setFields} legal={legal} />
       </section>
 
+      {draft.kind === "service" ? (
+        <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-1 text-sm">
+          <div className="font-bold text-leaf">お届け</div>
+          <p>サービスなので送りません（送料なし）。申し込んだ人には、お店からメールで案内（配信の URL など）を送ってください。申し込んだ人のメールアドレスは、お店のページの「注文」に出ます。</p>
+        </section>
+      ) : (
       <PackageCard
         draftId={draft.id}
         price={Number(fields.price_yen) || draft.price_yen}
@@ -214,6 +226,9 @@ function EditInner() {
         onlineLabel={!!draft.shop_online_label}
         onSaved={reloadPackage}
       />
+      )}
+
+      {rates && <RateCard draftId={draft.id} kind={draft.kind} rates={rates} custom={draft.ymm_rate ?? null} onSaved={(r) => setRates(r)} />}
 
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
 
@@ -221,7 +236,7 @@ function EditInner() {
         <button
           className="w-full rounded-2xl bg-carrot text-white py-4 text-lg font-bold disabled:opacity-50"
           onClick={save}
-          disabled={busy !== "" || photos.length === 0}
+          disabled={busy !== "" || (draft.kind !== "service" && photos.length === 0)}
         >
           {busy === "save" ? <Working text="保存して、法律チェックをやり直しています" est={45} /> : "保存して、法律チェック"}
         </button>
@@ -259,5 +274,48 @@ export default function EditProductPage() {
     <Suspense fallback={<p className="text-black/50">読み込み中…</p>}>
       <EditInner />
     </Suspense>
+  );
+}
+
+// ---------- 分け方（YMM 管理だけ。この商品の YMM の取り分を決める） ----------
+
+function RateCard({ draftId, kind, rates, custom, onSaved }: { draftId: number; kind: "goods" | "service"; rates: Rates; custom: number | null; onSaved: (r: Rates) => void }) {
+  const pct = (r: number) => `${Math.round(r * 1000) / 10}%`;
+  const def = kind === "service" ? rates.service : rates.goods;
+  const [other, setOther] = useState(custom != null ? String(Math.round(custom * 1000) / 10) : "");
+  const [cur, setCur] = useState<number | null>(custom);
+  const [msg, setMsg] = useState("");
+  const effective = cur ?? def;
+  const per = (r: number) => splitAmount(10000, r, 0.036, 0.5);
+  async function set(rate: number | null) {
+    setMsg("");
+    const r = await apiFetch("/api/admin", { method: "POST", body: JSON.stringify({ action: "setDraftRate", draftId, rate }) });
+    const j = await r.json();
+    if (!r.ok) return setMsg(j.error);
+    setCur(rate);
+    onSaved({ ...rates, effective: rate ?? def });
+    setMsg("保存しました。これからの注文に使います（これまでの注文はそのままです）。");
+  }
+  const btn = (on: boolean) => `rounded-xl py-2 px-3 text-sm font-bold border ${on ? "bg-sky-700 text-white border-sky-700" : "border-black/15"}`;
+  const ex = per(effective);
+  return (
+    <section className="rounded-2xl bg-sky-50 p-4 border border-sky-200 space-y-2 text-sm">
+      <div className="font-bold text-sky-800">分け方（YMM 管理だけに見えています）</div>
+      <p className="text-xs text-black/60">YMM の取り分の割合。そこから決済手数料を引いた残りを、YMM とパートナーで半分ずつ。</p>
+      <div className="flex flex-wrap gap-2">
+        <button className={btn(cur === null)} onClick={() => set(null)}>
+          {kind === "service" ? "サービスの既定" : "物販の既定"}（{pct(def)}）
+        </button>
+        <span className="flex items-center gap-1">
+          <input className="w-16 rounded-xl border border-black/15 p-2 text-right" inputMode="decimal" value={other} onChange={(e) => setOther(e.target.value.replace(/[^\d.]/g, ""))} placeholder="50" />
+          <span>%</span>
+          <button className={btn(cur !== null)} disabled={!other} onClick={() => set(Math.round(Number(other) * 10) / 1000)}>
+            この割合にする
+          </button>
+        </span>
+      </div>
+      <p className="text-xs">いま：{pct(effective)}。1万円売れると、お店 {ex.owner.toLocaleString()}円・YMM {ex.ymm.toLocaleString()}円・パートナー {ex.partner.toLocaleString()}円（手数料 3.6%・パートナーへ半分の場合）</p>
+      {msg && <p className="text-xs text-sky-800">{msg}</p>}
+    </section>
   );
 }

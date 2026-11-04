@@ -1,6 +1,6 @@
 import { shopPinError, guardDraft } from "@/lib/auth";
 import { isIncluded } from "@/lib/shipping";
-import { getDb, type Draft } from "@/lib/db";
+import { getDb, getSetting, ymmRateOf, type Draft } from "@/lib/db";
 import { reviseDraft, recheckLegal, type Legal, type DraftFields } from "@/lib/claude";
 import { loadProductContext } from "@/lib/context";
 import { ensureStripePrice } from "@/lib/stripe";
@@ -15,7 +15,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     .prepare("SELECT d.*, s.name AS shop_name, s.prefecture AS shop_prefecture, s.shipping_yen AS shop_shipping_yen, s.online_label AS shop_online_label FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ?")
     .get(Number(id)) as Draft | undefined;
   if (!d) return Response.json({ error: "商品が見つかりません" }, { status: 404 });
-  return Response.json({ draft: { ...d, photos: photoUrls(d.id) } });
+  // 分け方（YMM の取り分）は YMM 管理だけに見せる・変えさせる
+  const admin = g.user.role === "admin";
+  return Response.json({
+    draft: { ...d, photos: photoUrls(d.id), ymm_rate: admin ? d.ymm_rate : undefined },
+    is_admin: admin,
+    rates: admin ? { effective: ymmRateOf(d), goods: getSetting("ymm_rate"), service: getSetting("ymm_rate_service") } : null,
+  });
 }
 
 // 店主の確認：
@@ -37,7 +43,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   if (body.action === "publish") {
     // 送料：商品の大きさ・重さ（＋お店の都道府県）で送料込みにするか、お店の全国一律の送料のどちらかが要る
-    if (!isIncluded(d, g.shop) && g.shop.shipping_yen == null) {
+    // サービス（ライブ配信・講座など）は送らないので、送料は要らない
+    if (d.kind !== "service" && !isIncluded(d, g.shop) && g.shop.shipping_yen == null) {
       return Response.json(
         { error: "送料が決まっていません。この商品の「送り方（大きさと重さ）」を選ぶか、お店のページで送料を入れてください。" },
         { status: 400 },

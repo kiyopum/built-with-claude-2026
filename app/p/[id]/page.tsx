@@ -74,6 +74,8 @@ function ProductPageInner() {
   if (!p) return <p className="text-black/50">読み込み中…</p>;
   const info = p.shipping;
   const inc = info.mode === "included";
+  // サービス（ライブ配信・講座・体験など）：送らない。買ったあとお店からメールで案内が届く
+  const svc = info.mode === "none";
   const ship = shippingForOrder(info, dest, qty);
   const ok = !("error" in ship);
   // 届け先を選ぶ欄を出すか（送料込みの商品か、お店で受け取りができるとき）
@@ -127,7 +129,7 @@ function ProductPageInner() {
 
       {p.labels.length > 0 && (
         <table className="w-full text-sm bg-white rounded-xl border border-black/5 overflow-hidden">
-          <caption className="text-left font-bold pb-1">商品情報</caption>
+          <caption className="text-left font-bold pb-1">{svc ? "サービスの内容" : "商品情報"}</caption>
           <tbody>
             {p.labels.map((l, i) => (
               <tr key={i} className="border-t border-black/5">
@@ -141,7 +143,7 @@ function ProductPageInner() {
 
       <div className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-bold">数量</span>
+          <span className="font-bold">{svc ? "人数" : "数量"}</span>
           <div className="flex items-center gap-3">
             <button className="w-10 h-10 rounded-full border border-black/20 text-xl" onClick={() => setQty((q) => Math.max(1, q - 1))}>
               −
@@ -173,7 +175,9 @@ function ProductPageInner() {
         </div>
         <p className="text-xs text-black/60 text-right">
           {ok
-            ? ship.pickup
+            ? svc
+              ? "お申し込みのあと、お店からメールでご案内が届きます（配信の URL や日時など）。"
+              : ship.pickup
               ? `商品 ${(p.price_yen * qty).toLocaleString()}円（お店で受け取るので送料はかかりません）`
               : `うち商品 ${(p.price_yen * qty).toLocaleString()}円・送料 ${ship.yen.toLocaleString()}円（${ship.method}）`
             : inc
@@ -184,7 +188,7 @@ function ProductPageInner() {
           <p className="text-xs text-leaf text-right">{info.perBox}個までは1つの箱で送るので、送料は1回分です。</p>
         )}
         <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy || !ok}>
-          {busy ? <Working text="決済画面を開いています" /> : "購入する"}
+          {busy ? <Working text="決済画面を開いています" /> : svc ? "申し込む" : "購入する"}
         </button>
         <p className="text-xs text-black/50">デモのため、テスト用の決済画面です。実際のお金は動きません。</p>
         {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}

@@ -4,9 +4,12 @@ import { boxesFor, fullPref, isIncluded, prefOf, quotesByPref, type Quote } from
 
 export type ShippingInfo =
   | { mode: "included"; from: string; quotes: Record<string, Quote>; min: number; max: number; perBox: number; pickup: boolean }
-  | { mode: "flat"; yen: number | null; pickup: boolean };
+  | { mode: "flat"; yen: number | null; pickup: boolean }
+  // サービス（ライブ配信・講座・体験など）：送らない。お店からメールで案内する
+  | { mode: "none"; pickup: false };
 
-export function shippingInfo(d: Pick<Draft, "size_class" | "weight_g" | "per_box">, shop: Pick<Shop, "prefecture" | "shipping_yen" | "pickup_ok" | "online_label">): ShippingInfo {
+export function shippingInfo(d: Pick<Draft, "size_class" | "weight_g" | "per_box" | "kind">, shop: Pick<Shop, "prefecture" | "shipping_yen" | "pickup_ok" | "online_label">): ShippingInfo {
+  if (d.kind === "service") return { mode: "none", pickup: false };
   const pickup = !!shop.pickup_ok;
   if (isIncluded(d, shop)) {
     const from = prefOf(shop.prefecture)!;
@@ -21,6 +24,7 @@ export function shippingInfo(d: Pick<Draft, "size_class" | "weight_g" | "per_box
 
 // 決済のときの送料。dest は届け先の都道府県か "pickup"（お店で受け取り）
 export function shippingForOrder(info: ShippingInfo, dest: string, quantity: number): { yen: number; label: string; pickup: boolean; pref: string | null; method: string } | { error: string } {
+  if (info.mode === "none") return { yen: 0, label: "", pickup: false, pref: null, method: "メールでご案内" };
   if (dest === "pickup") {
     if (!info.pickup) return { error: "このお店では受け取りができません" };
     return { yen: 0, label: "お店で受け取り（送料なし）", pickup: true, pref: null, method: "お店で受け取り" };

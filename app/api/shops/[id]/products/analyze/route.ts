@@ -1,7 +1,7 @@
 import { guardShop } from "@/lib/auth";
 import { after } from "next/server";
 import { getDb, type Shop } from "@/lib/db";
-import { analyzeProductPhotos } from "@/lib/claude";
+import { analyzeProductPhotos, analyzeService } from "@/lib/claude";
 import { photosFromForm } from "@/lib/files";
 import { getResearch } from "@/lib/research";
 
@@ -14,7 +14,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
   after(() => getResearch(shop).catch((e) => console.error("法律の調査に失敗", e)));
   try {
-    const photos = await photosFromForm(await req.formData());
+    const form = await req.formData();
+    const photos = await photosFromForm(form);
+    // サービス（ライブ配信・講座など）は写真がなくてもよい
+    if (form.get("kind") === "service") return Response.json(await analyzeService(shop, photos));
     if (!photos.length) return Response.json({ error: "写真がありません" }, { status: 400 });
     return Response.json(await analyzeProductPhotos(shop, photos));
   } catch (e) {

@@ -1,7 +1,7 @@
 // Stripe（テストモード専用）。本番キー（sk_live_）は受け付けない。
 import { fullPref, prefOf } from "@/lib/shipping";
 import Stripe from "stripe";
-import { getDb, getSetting, type Draft } from "@/lib/db";
+import { getDb, getSetting, ymmRateOf, type Draft } from "@/lib/db";
 import { splitAmount, splitPartner } from "@/lib/split";
 import { idOfCode } from "@/lib/auth";
 
@@ -50,7 +50,7 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
   const total = session.amount_total ?? d.price_yen * quantity;
   const shipping = session.total_details?.amount_shipping ?? 0;
   const subtotal = total - shipping;
-  const ymmRate = getSetting("ymm_rate");
+  const ymmRate = ymmRateOf(d); // 物販は1割、サービスは既定5割（商品ごとに YMM 管理が変えられる）
   const partnerShare = getSetting("partner_share");
   const feeRate = getSetting("stripe_fee_rate");
   const s = splitAmount(subtotal, ymmRate, feeRate, partnerShare);
@@ -69,9 +69,10 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
   const ship = session.collected_information?.shipping_details ?? null;
   const a = ship?.address;
   const pickup = session.metadata?.dest === "pickup";
-  const address = pickup ? "お店で受け取り" : a ? [a.postal_code ? `〒${a.postal_code}` : "", a.state, a.city, a.line1, a.line2].filter(Boolean).join(" ") : null;
+  const service = d.kind === "service";
+  const address = service ? "オンライン（お店からメールでご案内）" : pickup ? "お店で受け取り" : a ? [a.postal_code ? `〒${a.postal_code}` : "", a.state, a.city, a.line1, a.line2].filter(Boolean).join(" ") : null;
   // 先に選んだ届け先の都道府県と、決済画面で入れた住所が違うとき（送料が変わるので、店主さんと YMM が確かめる）
-  const chosen = pickup ? null : prefOf(session.metadata?.dest);
+  const chosen = pickup || service ? null : prefOf(session.metadata?.dest);
   const actual = prefOf(a?.state);
   const warning = chosen && a?.state && actual !== chosen ? `届け先を「${fullPref(chosen)}」で選びましたが、住所は「${a.state}」です。送料が違う可能性があります` : null;
 
@@ -79,13 +80,13 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
     `INSERT OR IGNORE INTO orders
      (stripe_session_id, draft_id, shop_id, quantity, amount_yen, owner_yen, ymm_yen, partner_yen, fee_yen, ymm_rate, partner_share, ref,
       shipping_yen, shipping_fee_yen, ship_name, ship_address, owner_partner_id, owner_partner_yen, referrer_id, referrer_yen,
-      ship_pref, ship_method, pickup, ship_warning)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ship_pref, ship_method, pickup, ship_warning, customer_email)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     session.id, d.id, d.shop_id, quantity, total, s.owner + shipping - shippingFee, s.ymm, s.partner, s.fee + shippingFee, ymmRate, partnerShare, refCode || null,
     // お店で受け取るときは住所を聞かないので、決済画面のお名前（なければメール）で、だれが来るか分かるようにする
     shipping, shippingFee, ship?.name ?? session.customer_details?.name ?? session.customer_details?.email ?? null, address, p.ownerPartnerId, p.ownerPartnerYen, p.referrerId, p.referrerYen,
-    chosen, session.metadata?.ship_method || null, pickup ? 1 : 0, warning,
+    chosen, service ? "メールでご案内" : session.metadata?.ship_method || null, pickup ? 1 : 0, warning, session.customer_details?.email ?? null,
   );
   return { created: true };
 }

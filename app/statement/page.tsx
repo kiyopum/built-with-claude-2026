@@ -34,7 +34,7 @@ type Order = {
   referrer_yen: number;
 };
 type Totals = { count: number; amount: number; owner: number; partner: number; ymm: number; fee: number; shipping: number };
-type Settings = { ymm_rate: number; partner_share: number; stripe_fee_rate: number; payment_terms: string };
+type Settings = { ymm_rate: number; ymm_rate_service: number; partner_share: number; stripe_fee_rate: number; payment_terms: string };
 type AdminData = {
   view: "admin";
   orders: Order[];
@@ -277,6 +277,7 @@ function PartnerStatement({ data }: { data: PartnerData }) {
 
 function Contract({ settings }: { settings: Settings }) {
   const per1000 = splitAmount(1000, settings.ymm_rate, settings.stripe_fee_rate, settings.partner_share);
+  const per1000s = splitAmount(1000, settings.ymm_rate_service, settings.stripe_fee_rate, settings.partner_share);
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2 text-sm">
       <div className="font-bold">契約の条件（いつでもここで確かめられます）</div>
@@ -290,6 +291,8 @@ function Contract({ settings }: { settings: Settings }) {
           <dd>
             売上（商品代。送料は除く）の {pct(settings.ymm_rate)} から決済手数料 {pct(settings.stripe_fee_rate)} を引いた残りの {pct(settings.partner_share)}。
             1,000円売れると {yen(per1000.partner)}。
+            <br />
+            ライブ配信・講座・体験などのサービスは、売上の {pct(settings.ymm_rate_service)} から決済手数料を引いた残りの {pct(settings.partner_share)}。1,000円売れると {yen(per1000s.partner)}。（サービスごとに YMM が割合を決めることがあります。その場合は注文ごとの料率に出ます）
             <br />
             ほかのパートナーが紹介して売れたときは、お店の担当と紹介した人で半分ずつ（1円の端数は担当へ）。自分の担当の商品を自分で紹介したとき、担当のいないお店の商品を紹介したときは全部。
           </dd>
@@ -312,6 +315,7 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
   const [ymm, setYmm] = useState(toPct(settings.ymm_rate));
   const [share, setShare] = useState(toPct(settings.partner_share));
   const [fee, setFee] = useState(toPct(settings.stripe_fee_rate));
+  const [svc, setSvc] = useState(toPct(settings.ymm_rate_service));
   const [sales, setSales] = useState("300000");
   const [hours, setHours] = useState("10");
   const [server, setServer] = useState("");
@@ -319,20 +323,20 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
   const [busy, setBusy] = useState(false);
 
   const fromPct = (v: string) => Math.round(Number(v) * 100) / 10000;
-  const r = { ymm: fromPct(ymm), share: fromPct(share), fee: fromPct(fee) };
-  const valid = [r.ymm, r.share, r.fee].every((x) => Number.isFinite(x) && x >= 0) && r.ymm <= 0.3 && r.share <= 1 && r.fee <= 0.1;
+  const r = { ymm: fromPct(ymm), share: fromPct(share), fee: fromPct(fee), svc: fromPct(svc) };
+  const valid = [r.ymm, r.share, r.fee, r.svc].every((x) => Number.isFinite(x) && x >= 0) && r.ymm <= 0.3 && r.share <= 1 && r.fee <= 0.1 && r.svc <= 0.7;
   const monthly = valid ? splitAmount(Number(sales) || 0, r.ymm, r.fee, r.share) : null;
   const per1000 = valid ? splitAmount(1000, r.ymm, r.fee, r.share) : null;
   const h = Number(hours);
   const serverCost = Number(server) || 0;
-  const changed = r.ymm !== settings.ymm_rate || r.share !== settings.partner_share || r.fee !== settings.stripe_fee_rate;
+  const changed = r.ymm !== settings.ymm_rate || r.share !== settings.partner_share || r.fee !== settings.stripe_fee_rate || r.svc !== settings.ymm_rate_service;
 
   async function save() {
     setMsg("");
     setBusy(true);
     const res = await apiFetch("/api/settings", {
       method: "POST",
-      body: JSON.stringify({ ymm_rate: r.ymm, partner_share: r.share, stripe_fee_rate: r.fee }),
+      body: JSON.stringify({ ymm_rate: r.ymm, ymm_rate_service: r.svc, partner_share: r.share, stripe_fee_rate: r.fee }),
     });
     const j = await res.json();
     setBusy(false);
@@ -361,7 +365,7 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        {field("YMM の取り分", ymm, setYmm, "%", "売上に対して")}
+        {field("YMM の取り分", ymm, setYmm, "%", "物販の売上に対して")}
         {field("パートナーへ", share, setShare, "%", "手数料を引いた残りのうち")}
         {field("決済手数料", fee, setFee, "%", "Stripe")}
       </div>
@@ -370,8 +374,11 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
         {field("パートナーの作業", hours, setHours, "時間", "ひと月あたり")}
         {field("サーバー代など", server, setServer, "円", "YMM の月の費用")}
       </div>
+      <div className="grid grid-cols-3 gap-2">
+        {field("サービスの YMM", svc, setSvc, "%", "ライブ配信・講座などの既定")}
+      </div>
 
-      {!valid && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">YMM は30%まで、パートナーは100%まで、手数料は10%までで入れてください。</p>}
+      {!valid && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">YMM は物販30%・サービス70%まで、パートナーは100%まで、手数料は10%までで入れてください。</p>}
 
       {monthly && per1000 && (
         <>

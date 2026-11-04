@@ -112,6 +112,8 @@ function open(): DatabaseSync {
     INSERT OR IGNORE INTO settings (key, value) VALUES ('partner_share', '0.50');
     -- パートナーへの支払期日（フリーランス新法で明示が必要）。YMM が管理画面で入れる。推測で埋めない
     INSERT OR IGNORE INTO settings (key, value) VALUES ('payment_terms', '');
+    -- サービス（ライブ配信・講座・体験など）の YMM の取り分の既定（2026-11-05 きよさん：5割。講師（お店）5割、残りから手数料を引いて YMM とパートナーで半分ずつ）
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('ymm_rate_service', '0.50');
   `);
 
   // 後から足した列（すでにある DB にも足す）
@@ -171,6 +173,9 @@ function open(): DatabaseSync {
   if (!cols.includes("weight_g")) db.exec("ALTER TABLE drafts ADD COLUMN weight_g INTEGER");
   // 1箱にいくつ入るか（2個目からの送料を安くするため。お店が決める。初めは1）
   if (!cols.includes("per_box")) db.exec("ALTER TABLE drafts ADD COLUMN per_box INTEGER NOT NULL DEFAULT 1");
+  // 種類：goods（もの）/ service（ライブ配信・講座・体験など。送らない）。ymm_rate：この商品だけの YMM の取り分（空なら種類ごとの既定。変えられるのは YMM 管理だけ）
+  if (!cols.includes("kind")) db.exec("ALTER TABLE drafts ADD COLUMN kind TEXT NOT NULL DEFAULT 'goods'");
+  if (!cols.includes("ymm_rate")) db.exec("ALTER TABLE drafts ADD COLUMN ymm_rate REAL");
   if (!scols.includes("prefecture")) db.exec("ALTER TABLE shops ADD COLUMN prefecture TEXT");
   // ネットで宛名ラベルを作る送り方（クリックポスト）を使うか。初めは使わない（IT が苦手なお店でも出せる送り方だけにする）
   if (!scols.includes("online_label")) db.exec("ALTER TABLE shops ADD COLUMN online_label INTEGER NOT NULL DEFAULT 0");
@@ -181,6 +186,8 @@ function open(): DatabaseSync {
     ["pickup", "INTEGER NOT NULL DEFAULT 0"],
     // 決済画面で入れた住所が、先に選んだ届け先の都道府県と違うとき（送料が違うので、店主さんと YMM が確かめる）
     ["ship_warning", "TEXT"],
+    // お客さまのメールアドレス（サービスの案内＝配信の URL などを講師がメールで送るため）
+    ["customer_email", "TEXT"],
   ] as const) {
     if (!ocols.includes(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} ${t}`);
   }
@@ -246,6 +253,8 @@ export type Draft = {
   size_class?: string | null;
   weight_g?: number | null;
   per_box?: number;
+  kind?: "goods" | "service";
+  ymm_rate?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -255,7 +264,13 @@ export function getText(key: "payment_terms"): string {
   return row?.value ?? "";
 }
 
-export function getSetting(key: "ymm_rate" | "partner_share" | "stripe_fee_rate"): number {
+export function getSetting(key: "ymm_rate" | "ymm_rate_service" | "partner_share" | "stripe_fee_rate"): number {
   const row = getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;
   return Number(row?.value ?? 0);
+}
+
+// この商品の YMM の取り分（商品だけの設定 → なければ種類ごとの既定）
+export function ymmRateOf(d: Pick<Draft, "kind" | "ymm_rate">): number {
+  if (d.ymm_rate != null) return d.ymm_rate;
+  return getSetting(d.kind === "service" ? "ymm_rate_service" : "ymm_rate");
 }

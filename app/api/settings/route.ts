@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const body = (await req.json()) as Record<string, unknown>;
   const db = getDb();
   const upd = db.prepare("UPDATE settings SET value = ? WHERE key = ?");
-  const LABEL: Record<string, string> = { ymm_rate: "YMM の取り分", partner_share: "パートナーへの割合", stripe_fee_rate: "決済手数料" };
+  const LABEL: Record<string, string> = { ymm_rate: "YMM の取り分（物販）", ymm_rate_service: "YMM の取り分（サービス）", partner_share: "パートナーへの割合", stripe_fee_rate: "決済手数料" };
   for (const [key, lim] of Object.entries(RATE_LIMITS)) {
     const v = Number(body[key]);
     if (!Number.isFinite(v) || v < lim.min || v > lim.max) {

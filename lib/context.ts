@@ -12,7 +12,7 @@ export function loadProductContext(d: Draft): { c: ProductContext; current: Draf
   };
   const research: LegalResearch = h.legal_research ? JSON.parse(h.legal_research) : { notes: "（法律の調査なし）", sources: [] };
   return {
-    c: { shop, transcript: h.transcript, labelRead: h.label_read ? JSON.parse(h.label_read) : [], research },
+    c: { shop, kind: d.kind ?? "goods", transcript: h.transcript, labelRead: h.label_read ? JSON.parse(h.label_read) : [], research },
     current: {
       name: d.name,
       description: d.description,

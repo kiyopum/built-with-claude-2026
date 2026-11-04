@@ -261,6 +261,28 @@ const PHOTO_SYSTEM = `あなたは、地域の小さなお店の商品をネッ�
 - 店主の前でそのまま読み上げられる、やさしい話し言葉。1問に1つ。6〜9問。法律の名前は why に書く
 - 写真の文字が読みにくいときは、無理に読まず null にする（推測で埋めない）`;
 
+// サービス（ライブ配信・講座・体験など）。写真はなくてもよい（チラシや講師・会場の写真があれば読む）
+const SERVICE_SYSTEM = `あなたは、地域の小さなお店や講師の「サービス」（ライブ配信・オンライン講座・教室・体験など、ものを送らないもの）をネットで申し込めるようにするためのヒアリングの名人です。
+写真（チラシ・講師・会場などの写真。なければ無し）とお店の情報から、
+1) このサービスが何かの見立て（写真がなければ、お店の業種から考えられることを短く。推測であることが分かるように書く）、
+2) ネットで申し込みを受けるときに、申し込みページに書いておく必要がある項目と、写真から読み取れた内容（分からないものは null）、
+3) 店主（講師）に聞くことを、質問にします。
+
+表示が必要な項目（label_read）の例：サービスの名前、内容（何をするか・何が身につくか）、日時、所要時間、受け方（ライブ配信／録画の視聴／会場）、配信の URL などの案内の届け方と時期、定員、申し込みの締め切り、キャンセル・返金の決まり、用意するもの・必要な環境
+質問の考え方:
+- 「商品」：このサービスへの思い、誰に向けたものか、受けた人がどうなってほしいか、講師の経歴や経験（話してもらえる範囲で）、値段
+- 「表示・法律」：日時・所要時間・受け方・定員・締め切り・キャンセルや返金の決まり・案内の届け方（申し込みのあと、メールで配信の URL を送るのか、いつ送るのか）
+- 「必ず〜できるようになる」「〜が治る」など、結果を約束する話がないか（言えないことの確認）
+- 店主の前でそのまま読み上げられる、やさしい話し言葉。1問に1つ。6〜9問。法律の名前は why に書く
+- 写真の文字が読みにくいときは、無理に読まず null にする（推測で埋めない）`;
+
+export async function analyzeService(shop: ShopInfo, photos: Photo[]): Promise<PhotoAnalysis> {
+  return ask(PhotoAnalysisSchema, SERVICE_SYSTEM, [
+    ...imageBlocks(photos),
+    { type: "text", text: `${shopBlock(shop)}\n\n${photos.length ? "この写真のサービス" : "（写真はありません）このお店のサービス"}について、申し込みページに書く項目の読み取りと、店主への質問を作ってください。` },
+  ]);
+}
+
 export async function analyzeProductPhotos(shop: ShopInfo, photos: Photo[]): Promise<PhotoAnalysis> {
   return ask(PhotoAnalysisSchema, PHOTO_SYSTEM, [
     ...imageBlocks(photos),
@@ -293,6 +315,7 @@ const RESEARCH_SYSTEM = `あなたは、日本の小さなお店がネットで�
 - 言ってはいけないこと：薬機法（食品で病気の治療・予防・体の機能への効果をうたうこと）、健康増進法と景品表示法（根拠のない「日本一」「最高級」など誇大・優良誤認の表示）
 - ネット販売そのもののルール：特定商取引法の通信販売の表示義務（これはお店単位のもの）
 - その他、酒類・医薬品・動物・刃物など、商品の種類によって特別な許可や禁止があるもの
+- 講座・ライブ配信・体験などのサービスを売ることが考えられるお店なら：特定商取引法の通信販売の表示（サービスを提供する時期、申し込みの撤回・解除＝キャンセルや返金の決まり）、結果を約束する表現の注意（景品表示法）
 
 書き方:
 - 箇条書きで、法律の名前、何をしなければならないか（または何をしてはいけないか）、このお店の商品にどう当てはまるか、を短く書く
@@ -436,13 +459,24 @@ function keepRealQuotes(legal: Legal, f: DraftFields | string): Legal {
 
 export type ProductContext = {
   shop: ShopInfo;
+  kind?: "goods" | "service";
   transcript: string;
   labelRead: z.infer<typeof LabelItemSchema>[];
   research: LegalResearch;
 };
 
+// サービス（ライブ配信・講座・体験など）のときに足す決まり。ものの表示（食品表示など）は当てはまらない
+const SERVICE_RULES = `<kind>
+この商品は「サービス」（ライブ配信・オンライン講座・教室・体験など、ものを送らないもの）です。商品ページは申し込みページとして書きます。
+- 紹介文には、何をするか・誰に向けたものか・受けるとどうなれるか（約束でなく、目指すこと）を、ヒアリングの事実だけで書く
+- 「必ず〜できるようになる」「〜が治る・やせる」など結果を約束する表現、根拠のない「日本一」「No.1」は使わない（景品表示法の優良誤認、効能なら薬機法）
+- 食品表示法・食品衛生法の項目は当てはまらない。label_items は申し込みページに書く項目にする：内容、日時、所要時間、受け方（ライブ配信／録画／会場）、案内（配信の URL など）の届け方と時期、定員、申し込みの締め切り、キャンセル・返金の決まり、用意するもの・必要な環境。分からないものは null
+- 法律の判定では、特定商取引法の通信販売の表示（サービスを提供する時期、キャンセル・返金の決まり＝申し込みの撤回や解除についての決まり）を重く見る。日時やキャンセルの決まりが分からないときは missing にする（ネットで申し込みを受けるには書いておく必要があるため）
+- 送料・お届けの話は書かない。買ったあとは、お店からメールで案内が届く
+</kind>`;
+
 function contextBlock(c: ProductContext): string {
-  return `${shopBlock(c.shop)}\n\n<label_read>\n${JSON.stringify(c.labelRead, null, 2)}\n</label_read>\n\n<hearing>\n${c.transcript}\n</hearing>\n\n${researchBlock(c.research)}`;
+  return `${c.kind === "service" ? `${SERVICE_RULES}\n\n` : ""}${shopBlock(c.shop)}\n\n<label_read>\n${JSON.stringify(c.labelRead, null, 2)}\n</label_read>\n\n<hearing>\n${c.transcript}\n</hearing>\n\n${researchBlock(c.research)}`;
 }
 
 export async function generateProductDraft(c: ProductContext, photos: Photo[]): Promise<DraftInput> {

@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { getDb, getText } from "@/lib/db";
 import { codeOf, hashPin, isPin, requireAdmin } from "@/lib/auth";
+import { ITEM_RATE_LIMIT } from "@/lib/split";
 
 // YMM の管理画面：人・お店の割り当て・止まっている商品・注文
 export async function GET() {
@@ -39,7 +40,7 @@ export async function GET() {
     .filter((d) => d.verdict === "このままでは販売できない");
   const orders = db
     .prepare(
-      `SELECT o.id, o.created_at, o.amount_yen, o.shipping_yen, o.ship_name, o.ship_address, o.ship_method, o.ship_warning, d.name AS product_name, s.name AS shop_name
+      `SELECT o.id, o.created_at, o.amount_yen, o.shipping_yen, o.ship_name, o.ship_address, o.ship_method, o.ship_warning, o.customer_email, d.name AS product_name, s.name AS shop_name
        FROM orders o JOIN drafts d ON d.id = o.draft_id JOIN shops s ON s.id = o.shop_id ORDER BY o.id DESC LIMIT 50`,
     )
     .all();
@@ -72,6 +73,19 @@ export async function POST(req: Request) {
     case "resetPin": {
       if (!isPin(b.pin)) return bad("暗証番号は数字4けたです");
       db.prepare("UPDATE users SET pin_hash = ?, failed = 0, locked_until = NULL WHERE id = ?").run(hashPin(b.pin), Number(b.id));
+      return Response.json({ ok: true });
+    }
+    case "setDraftRate": {
+      // この商品だけの YMM の取り分（空＝種類ごとの既定に戻す）。これからの注文に使う
+      const id = Number(b.draftId);
+      if (!db.prepare("SELECT 1 FROM drafts WHERE id = ?").get(id)) return bad("商品が見つかりません");
+      if (b.rate == null) {
+        db.prepare("UPDATE drafts SET ymm_rate = NULL WHERE id = ?").run(id);
+        return Response.json({ ok: true });
+      }
+      const r = Number(b.rate);
+      if (!Number.isFinite(r) || r < ITEM_RATE_LIMIT.min || r > ITEM_RATE_LIMIT.max) return bad(`割合は ${ITEM_RATE_LIMIT.min * 100}〜${ITEM_RATE_LIMIT.max * 100}% で入れてください`);
+      db.prepare("UPDATE drafts SET ymm_rate = ? WHERE id = ?").run(r, id);
       return Response.json({ ok: true });
     }
     case "assignShop": {
