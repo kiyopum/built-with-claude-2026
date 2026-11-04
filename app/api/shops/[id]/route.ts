@@ -30,6 +30,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       area: shop.area,
       philosophy_text: shop.philosophy_text,
       philosophy_status: shop.philosophy_status,
+      website_url: shop.website_url,
+      website_notes: shop.website_notes,
       shipping_yen: shop.shipping_yen,
       prefecture: shop.prefecture,
       pickup_ok: !!shop.pickup_ok,

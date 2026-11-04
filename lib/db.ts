@@ -138,6 +138,9 @@ function open(): DatabaseSync {
   if (!scols.includes("philosophy_text")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_text TEXT");
   if (!scols.includes("philosophy_points")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_points TEXT");
   if (!scols.includes("philosophy_status")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_status TEXT NOT NULL DEFAULT 'none'");
+  // お店のホームページ（あれば Claude が読んで、お店のヒアリングの土台にする。ヒアリングは補足になる）
+  if (!scols.includes("website_url")) db.exec("ALTER TABLE shops ADD COLUMN website_url TEXT");
+  if (!scols.includes("website_notes")) db.exec("ALTER TABLE shops ADD COLUMN website_notes TEXT");
   // 販売者の情報（特定商取引法の表示用）。ヒアリングでは聞かず、名刺の写真か手入力で登録する
   for (const c of ["seller_name", "seller_rep", "seller_address", "seller_phone", "seller_email"]) {
     if (!scols.includes(c)) db.exec(`ALTER TABLE shops ADD COLUMN ${c} TEXT`);
@@ -209,6 +212,8 @@ export type Shop = {
   philosophy_text: string | null;
   philosophy_points: string | null;
   philosophy_status: "none" | "draft" | "approved";
+  website_url: string | null;
+  website_notes: string | null;
   seller_name: string | null;
   seller_rep: string | null;
   seller_address: string | null;

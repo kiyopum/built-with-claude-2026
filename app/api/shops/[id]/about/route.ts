@@ -13,7 +13,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
   const form = await req.formData();
   const transcript = String(form.get("transcript") ?? "").trim();
-  if (!transcript) return Response.json({ error: "ヒアリング内容が空です" }, { status: 400 });
+  // ホームページを読んであれば、ヒアリングは補足（空でもよい）
+  if (!transcript && !shop.website_notes) return Response.json({ error: "ヒアリング内容が空です" }, { status: 400 });
   try {
     await saveAudios(form, `shop-${shop.id}`);
     const s = await summarizeShop(shop, transcript);

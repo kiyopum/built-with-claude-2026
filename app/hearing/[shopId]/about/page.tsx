@@ -1,8 +1,9 @@
 "use client";
 
 // パートナー：お店のヒアリング（理念・思い。1回だけ）
+//   ホームページがあれば先に Claude に読んでもらい、ヒアリングはそれを補う（Instagram だけのお店は今までどおりヒアリング）
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { VoiceInput, appendRecordings } from "@/components/VoiceInput";
@@ -15,7 +16,41 @@ function AboutInner() {
   const router = useRouter();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [transcript, setTranscript] = useState("");
-  const [busy, setBusy] = useState<"" | "q" | "send">("");
+  const [busy, setBusy] = useState<"" | "q" | "send" | "web">("");
+  const [url, setUrl] = useState("");
+  const [notes, setNotes] = useState<string | null>(null);
+  const [showNotes, setShowNotes] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/shops/${shopId}`)
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.shop?.website_url) setUrl(j.shop.website_url);
+        if (j.shop?.website_notes) setNotes(j.shop.website_notes);
+      })
+      .catch(() => {});
+  }, [shopId]);
+
+  async function readWebsite() {
+    setError("");
+    setBusy("web");
+    const r = await apiFetch(`/api/shops/${shopId}/about/website`, { method: "POST", body: JSON.stringify({ url }) });
+    const j = await r.json();
+    setBusy("");
+    if (!r.ok) return setError(j.error);
+    setNotes(j.website_notes);
+    setUrl(j.website_url);
+    setShowNotes(true);
+    setQuestions([]); // 質問はホームページの中身に合わせて作り直す
+  }
+  async function clearWebsite() {
+    setError("");
+    const r = await apiFetch(`/api/shops/${shopId}/about/website`, { method: "POST", body: JSON.stringify({ clear: true }) });
+    if (!r.ok) return setError((await r.json()).error);
+    setNotes(null);
+    setUrl("");
+    setQuestions([]);
+  }
   const [error, setError] = useState("");
   const voice = useVoiceInput((text) => setTranscript((t) => (t ? t.replace(/\s*$/, "\n") : "") + text));
 
@@ -54,7 +89,44 @@ function AboutInner() {
       </div>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        <div className="text-sm font-bold text-leaf">1) 聞くことリスト</div>
+        <div className="text-sm font-bold text-leaf">1) お店のホームページ（あれば）</div>
+        <p className="text-xs text-black/60">
+          ホームページがあれば、先に Claude が読みます。お話は、ホームページに載っていないことを聞くだけで済みます。Instagram だけのお店は、ここを飛ばしてお話を聞いてください。
+        </p>
+        {notes ? (
+          <div className="space-y-2">
+            <div className="rounded-xl bg-leaf/10 p-3 text-sm">
+              <div className="font-bold text-leaf">✅ ホームページを読みました</div>
+              <div className="text-xs text-black/60 break-all">{url}</div>
+            </div>
+            <button className="text-sm text-leaf underline" onClick={() => setShowNotes(!showNotes)}>
+              {showNotes ? "まとめを閉じる" : "Claude のまとめを見る"}
+            </button>
+            {showNotes && <pre className="whitespace-pre-wrap text-xs leading-relaxed bg-black/[0.03] rounded-xl p-3 font-sans">{notes}</pre>}
+            <button className="block text-xs text-black/50 underline" onClick={clearWebsite} disabled={busy !== ""}>
+              ホームページを使わない（読んだ内容を消す）
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <input
+              className="w-full rounded-xl border border-black/15 p-3 text-base"
+              inputMode="url"
+              autoCapitalize="off"
+              placeholder="https://〜（なければ空のままで大丈夫）"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              disabled={busy !== ""}
+            />
+            <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={readWebsite} disabled={!url.trim() || busy !== ""}>
+              {busy === "web" ? <Working text="Claude がホームページを読んでいます" est={40} /> : "Claude にホームページを読んでもらう"}
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
+        <div className="text-sm font-bold text-leaf">2) 聞くことリスト{notes && <span className="font-normal text-black/50">（ホームページに載っていないことだけ）</span>}</div>
         {questions.length === 0 ? (
           <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={makeQuestions} disabled={busy !== ""}>
             {busy === "q" ? <Working text="Claude が質問を考えています" est={15} /> : "このお店向けの質問を Claude に作ってもらう"}
@@ -65,7 +137,7 @@ function AboutInner() {
       </section>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        <div className="text-sm font-bold text-leaf">2) お話を聞く</div>
+        <div className="text-sm font-bold text-leaf">3) お話を聞く{notes && <span className="font-normal text-black/50">（補足。短くても大丈夫）</span>}</div>
         <VoiceInput voice={voice} value={transcript} onChange={setTranscript} disabled={busy !== ""} />
       </section>
 
@@ -73,9 +145,9 @@ function AboutInner() {
       <button
         className="w-full rounded-2xl bg-carrot text-white py-4 text-lg font-bold disabled:opacity-50"
         onClick={send}
-        disabled={!transcript.trim() || busy !== ""}
+        disabled={(!transcript.trim() && !notes) || busy !== ""}
       >
-        {busy === "send" ? <Working text="Claude がお店の紹介を書いています" est={10} /> : "送信して、お店の紹介を作る"}
+        {busy === "send" ? <Working text="Claude がお店の紹介を書いています" est={10} /> : !transcript.trim() && notes ? "ホームページだけで、お店の紹介を作る" : "送信して、お店の紹介を作る"}
       </button>
     </div>
   );
