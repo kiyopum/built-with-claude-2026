@@ -129,7 +129,8 @@ export function isIncluded(d: { size_class?: string | null; weight_g?: number | 
 // 発送する曜日（0=日〜6=土）。"2,5" ⇔ [2, 5]
 export const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"] as const;
 export function parseShipDays(s: string | null | undefined): number[] {
-  return [...new Set((s ?? "").split(",").map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))].sort();
+  // 空の文字は Number("") が 0（日曜）になるので、先に捨てる
+  return [...new Set((s ?? "").split(",").filter((x) => x.trim() !== "").map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))].sort();
 }
 export const shipDaysLabel = (days: number[]) => days.map((d) => WEEKDAYS[d]).join("・");
 // 注文の日から見て、次の発送日（その日の注文は翌日以降の発送日に回す）
