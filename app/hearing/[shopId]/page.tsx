@@ -8,7 +8,7 @@
 //   注文と届け先（店主さん用・暗証番号で開く）
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { SellerSection, type Seller } from "@/components/SellerSection";
 import { PinPad } from "@/components/PinPad";
 import { OwnerApprove } from "@/components/OwnerApprove";
@@ -62,6 +62,8 @@ async function post(url: string, body: unknown): Promise<{ error: string; json: 
 
 function ShopPageInner() {
   const { shopId } = useParams<{ shopId: string }>();
+  // 見本の一覧から開いたとき（?demo=1）は、日数に関係なく「次の小さな一歩」を全部の公開中の商品に出す
+  const demo = useSearchParams().get("demo") === "1";
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState("");
 
@@ -136,7 +138,7 @@ function ShopPageInner() {
                 📷 Instagram で紹介する
               </Link>
             )}
-            {p.status === "published" && (p.quiet || p.nudge) && <NudgeCard draftId={p.id} initial={p.nudge} at={p.nudge_at} />}
+            {p.status === "published" && (p.quiet || p.nudge || demo) && <NudgeCard draftId={p.id} initial={p.nudge} at={p.nudge_at} />}
           </div>
         ))}
       </section>

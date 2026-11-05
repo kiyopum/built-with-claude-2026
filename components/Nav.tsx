@@ -43,6 +43,7 @@ export function Nav() {
             {pill("/checkin", "月1")}
             {pill("/me", "歩み")}
             {me.role === "admin" && pill("/admin", "管理")}
+            {pill("/demo", "見本")}
           </>
         ) : (
           me === null && (
