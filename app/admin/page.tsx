@@ -14,7 +14,7 @@ type User = { id: number; name: string; role: string; active: number; code: stri
 type Shop = { id: number; name: string; category: string; partner_id: number | null; cover_partner_id: number | null; shipping_yen: number | null; has_pin: boolean; published: number; waiting: number };
 type Blocked = { id: number; shop_id: number; name: string; shop_name: string; partner_name: string | null; updated_at: string; reasons: string[] };
 type Order = { id: number; created_at: string; amount_yen: number; shipping_yen: number; ship_name: string | null; ship_address: string | null; ship_method: string | null; ship_warning: string | null; customer_email: string | null; product_name: string; shop_name: string };
-type Data = { me: { id: number }; users: User[]; shops: Shop[]; blocked: Blocked[]; orders: Order[]; payment_terms: string };
+type Data = { me: { id: number }; users: User[]; shops: Shop[]; blocked: Blocked[]; orders: Order[]; payment_terms: string; nudge_days: number };
 
 const card = "rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3";
 const input = "w-full rounded-xl border border-black/15 p-2.5 text-base";
@@ -158,6 +158,7 @@ export default function AdminPage() {
       </section>
 
       <PaymentTerms initial={data.payment_terms} act={act} />
+      <NudgeDays initial={data.nudge_days} act={act} />
 
       {/* 注文と届け先 */}
       <section className={card}>
@@ -276,6 +277,25 @@ function UsersCard({ users, meId, act }: { users: User[]; meId: number; act: (b:
         </button>
         <p className="text-xs text-black/50">暗証番号は本人に直接伝えてください（メールやチャットに書かない）。</p>
       </div>
+    </section>
+  );
+}
+
+// ---------- 次の小さな一歩を出すまでの日数 ----------
+
+function NudgeDays({ initial, act }: { initial: number; act: (b: Record<string, unknown>, done?: string) => Promise<boolean> }) {
+  const [days, setDays] = useState(String(initial));
+  return (
+    <section className={card}>
+      <div className="font-bold">🌱 次の小さな一歩を出すまでの日数</div>
+      <p className="text-xs text-black/50">公開からこの日数のあいだ注文のない商品に、お店のページで「もっと届くように、次の小さな一歩」を出します。0 にすると、注文のない公開中の商品すべてに出ます（デモ用）。</p>
+      <div className="flex gap-2 items-center">
+        <input className={input} inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value.replace(/\D/g, ""))} />
+        <span className="shrink-0">日</span>
+      </div>
+      <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={days === String(initial) || days === ""} onClick={() => act({ action: "setNudgeDays", days: Number(days) }, "日数を保存しました")}>
+        保存する
+      </button>
     </section>
   );
 }

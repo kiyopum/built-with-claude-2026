@@ -1,6 +1,6 @@
 import { prefFromAddress } from "@/lib/shipping";
 import { guardShop } from "@/lib/auth";
-import { getDb, SELLER_KEYS, type Shop } from "@/lib/db";
+import { getDb, getSetting, SELLER_KEYS, type Shop } from "@/lib/db";
 import { thisMonth } from "@/lib/checkin";
 
 // お店のページ用：お店の情報（理念）と商品の一覧
@@ -13,13 +13,19 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
   const rows = db
     .prepare(
-      `SELECT d.id, d.name, d.price_yen, d.status, d.legal_json,
+      `SELECT d.id, d.name, d.price_yen, d.status, d.legal_json, d.nudge_json, d.nudge_at,
+              -- 公開から nudge_days 日たって、その間に注文のない商品（責めずに次の一歩を出す）
+              (d.status = 'published'
+                AND julianday('now','localtime') - julianday(COALESCE(d.published_at, d.updated_at)) >= ?
+                AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.draft_id = d.id AND julianday('now','localtime') - julianday(o.created_at) < ?)) AS quiet,
               (SELECT file FROM product_photos p WHERE p.draft_id = d.id ORDER BY sort LIMIT 1) AS main_photo
        FROM drafts d WHERE d.shop_id = ? ORDER BY d.id DESC`,
     )
-    .all(shop.id) as { id: number; name: string; price_yen: number; status: string; legal_json: string | null; main_photo: string | null }[];
-  const products = rows.map(({ legal_json, main_photo, ...r }) => ({
+    .all(getSetting("nudge_days"), getSetting("nudge_days"), shop.id) as { id: number; name: string; price_yen: number; status: string; legal_json: string | null; main_photo: string | null; nudge_json: string | null; quiet: number }[];
+  const products = rows.map(({ legal_json, main_photo, nudge_json, ...r }) => ({
     ...r,
+    quiet: !!r.quiet,
+    nudge: nudge_json ? JSON.parse(nudge_json) : null,
     verdict: legal_json ? (JSON.parse(legal_json) as { verdict: string }).verdict : null,
     photo: main_photo ? `/api/photos/${main_photo}` : null,
   }));

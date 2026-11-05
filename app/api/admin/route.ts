@@ -1,5 +1,5 @@
 import { connection } from "next/server";
-import { getDb, getText } from "@/lib/db";
+import { getDb, getSetting, getText } from "@/lib/db";
 import { thisMonth } from "@/lib/checkin";
 import { codeOf, hashPin, isPin, requireAdmin } from "@/lib/auth";
 import { ITEM_RATE_LIMIT } from "@/lib/split";
@@ -46,7 +46,7 @@ export async function GET() {
        FROM orders o JOIN drafts d ON d.id = o.draft_id JOIN shops s ON s.id = o.shop_id ORDER BY o.id DESC LIMIT 50`,
     )
     .all();
-  return Response.json({ me: a, users, shops, blocked, orders, payment_terms: getText("payment_terms") });
+  return Response.json({ me: a, users, shops, blocked, orders, payment_terms: getText("payment_terms"), nudge_days: getSetting("nudge_days") });
 }
 
 export async function POST(req: Request) {
@@ -106,6 +106,12 @@ export async function POST(req: Request) {
     case "resetShopPin": {
       // 店主さんが暗証番号を忘れたとき：消して、次にお店のページを開いたときに決め直してもらう
       db.prepare("UPDATE shops SET release_pin_hash = NULL WHERE id = ?").run(Number(b.shopId));
+      return Response.json({ ok: true });
+    }
+    case "setNudgeDays": {
+      const n = Number(b.days);
+      if (!Number.isInteger(n) || n < 0 || n > 365) return bad("0〜365 日で入れてください");
+      db.prepare("UPDATE settings SET value = ? WHERE key = 'nudge_days'").run(String(n));
       return Response.json({ ok: true });
     }
     case "setPaymentTerms": {

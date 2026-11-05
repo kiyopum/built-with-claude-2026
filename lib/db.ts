@@ -169,6 +169,8 @@ function open(): DatabaseSync {
     INSERT OR IGNORE INTO settings (key, value) VALUES ('payment_terms', '');
     -- サービス（ライブ配信・講座・体験など）の YMM の取り分の既定（2026-11-05 きよさん：5割。講師（お店）5割、残りから手数料を引いて YMM とパートナーで半分ずつ）
     INSERT OR IGNORE INTO settings (key, value) VALUES ('ymm_rate_service', '0.50');
+    -- 売れなくても責めない伴走（2026-11-05 きよさん）：公開からこの日数、注文がない商品に「次の小さな一歩」を出す
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('nudge_days', '30');
   `);
 
   // 後から足した列（すでにある DB にも足す）
@@ -234,6 +236,13 @@ function open(): DatabaseSync {
   // 種類：goods（もの）/ service（ライブ配信・講座・体験など。送らない）。ymm_rate：この商品だけの YMM の取り分（空なら種類ごとの既定。変えられるのは YMM 管理だけ）
   if (!cols.includes("kind")) db.exec("ALTER TABLE drafts ADD COLUMN kind TEXT NOT NULL DEFAULT 'goods'");
   if (!cols.includes("ymm_rate")) db.exec("ALTER TABLE drafts ADD COLUMN ymm_rate REAL");
+  // 公開した日（updated_at は修正で動くので別に持つ）・次の小さな一歩（Claude が考えたもの・考えた日）
+  if (!cols.includes("published_at")) {
+    db.exec("ALTER TABLE drafts ADD COLUMN published_at TEXT");
+    db.exec("UPDATE drafts SET published_at = updated_at WHERE status = 'published'");
+  }
+  if (!cols.includes("nudge_json")) db.exec("ALTER TABLE drafts ADD COLUMN nudge_json TEXT");
+  if (!cols.includes("nudge_at")) db.exec("ALTER TABLE drafts ADD COLUMN nudge_at TEXT");
   if (!scols.includes("prefecture")) db.exec("ALTER TABLE shops ADD COLUMN prefecture TEXT");
   // ネットで宛名ラベルを作る送り方（クリックポスト）を使うか。初めは使わない（IT が苦手なお店でも出せる送り方だけにする）
   if (!scols.includes("online_label")) db.exec("ALTER TABLE shops ADD COLUMN online_label INTEGER NOT NULL DEFAULT 0");
@@ -336,7 +345,7 @@ export function getText(key: "payment_terms"): string {
   return row?.value ?? "";
 }
 
-export function getSetting(key: "ymm_rate" | "ymm_rate_service" | "partner_share" | "stripe_fee_rate"): number {
+export function getSetting(key: "ymm_rate" | "ymm_rate_service" | "partner_share" | "stripe_fee_rate" | "nudge_days"): number {
   const row = getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;
   return Number(row?.value ?? 0);
 }

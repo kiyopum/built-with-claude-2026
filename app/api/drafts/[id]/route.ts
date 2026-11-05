@@ -64,7 +64,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       console.error(e);
       return Response.json({ error: e instanceof Error ? e.message : "Stripe に商品を登録できませんでした" }, { status: 500 });
     }
-    db.prepare("UPDATE drafts SET status = 'published', updated_at = datetime('now','localtime') WHERE id = ?").run(d.id);
+    db.prepare("UPDATE drafts SET status = 'published', updated_at = datetime('now','localtime'), published_at = COALESCE(published_at, datetime('now','localtime')) WHERE id = ?").run(d.id);
     return Response.json({ ok: true });
   }
 

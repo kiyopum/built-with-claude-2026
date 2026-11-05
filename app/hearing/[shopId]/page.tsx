@@ -32,7 +32,17 @@ type Data = {
     partner_resting?: boolean;
     seller: Seller;
   };
-  products: { id: number; name: string; price_yen: number; status: string; verdict: string | null; photo: string | null }[];
+  products: {
+    id: number;
+    name: string;
+    price_yen: number;
+    status: string;
+    verdict: string | null;
+    photo: string | null;
+    quiet: boolean;
+    nudge: { step: string; why: string; how: string[] } | null;
+    nudge_at: string | null;
+  }[];
 };
 
 const STATUS = { draft: "店主さんの確認待ち", published: "公開中", rejected: "却下" } as Record<string, string>;
@@ -123,6 +133,7 @@ function ShopPageInner() {
                 📷 Instagram で紹介する
               </Link>
             )}
+            {p.status === "published" && (p.quiet || p.nudge) && <NudgeCard draftId={p.id} initial={p.nudge} at={p.nudge_at} />}
           </div>
         ))}
       </section>
@@ -133,6 +144,41 @@ function ShopPageInner() {
         <div className="font-bold">📖 お店の言葉の本</div>
         <div className="text-sm text-black/60">店主さんが大事にしてきたことを1冊にまとめて、印刷して渡します（後を継ぐ人・家族へ）</div>
       </Link>
+    </div>
+  );
+}
+
+// ---------- 売れなくても責めない伴走：次の小さな一歩（2026-11-05 きよさん） ----------
+
+function NudgeCard({ draftId, initial, at }: { draftId: number; initial: { step: string; why: string; how: string[] } | null; at: string | null }) {
+  const [n, setN] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function think() {
+    setError("");
+    setBusy(true);
+    const { error, json } = await post(`/api/drafts/${draftId}/nudge`, {});
+    setBusy(false);
+    if (error) return setError(error);
+    setN(json.nudge as typeof n);
+  }
+  return (
+    <div className="rounded-2xl bg-leaf/5 border border-leaf/20 p-3 text-sm space-y-2">
+      <div className="font-bold text-leaf">🌱 もっと届くように、次の小さな一歩</div>
+      {n ? (
+        <>
+          <p className="font-bold">{n.step}</p>
+          <p className="text-black/70">{n.why}</p>
+          <ol className="list-decimal pl-5 text-black/70">{n.how.map((h, i) => <li key={i}>{h}</li>)}</ol>
+          {at && <p className="text-xs text-black/40">{at} に Claude が考えました</p>}
+        </>
+      ) : (
+        <p className="text-black/70">公開してしばらくたちました。届く人を少し広げる工夫を、Claude と1つだけ考えてみませんか。</p>
+      )}
+      <button className="w-full rounded-xl border border-leaf text-leaf py-2 font-bold disabled:opacity-50" onClick={think} disabled={busy}>
+        {busy ? <Working text="考えています" /> : n ? "別の一歩を考える" : "一歩を考える"}
+      </button>
+      {error && <p className="rounded-xl bg-red-50 text-red-700 p-2 text-xs">{error}</p>}
     </div>
   );
 }
