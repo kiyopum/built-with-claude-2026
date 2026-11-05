@@ -3,7 +3,7 @@
 // パートナー：商品を1つ追加する。写真を撮る → Claude がラベルを読んで質問を作る → 録音 → 商品ページ1件
 //   ?kind=service：サービス（ライブ配信・講座・体験など）。写真はなくてもよい。送らないので送料も要らない
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { VoiceInput, appendRecordings } from "@/components/VoiceInput";
@@ -21,7 +21,18 @@ type Analysis = {
 function NewProductInner() {
   const { shopId } = useParams<{ shopId: string }>();
   const router = useRouter();
-  const service = useSearchParams().get("kind") === "service";
+  const params = useSearchParams();
+  const service = params.get("kind") === "service";
+  // 「次の商品を提案する」の案から来たとき（?seed=案の番号）。案の中身はサーバーに残してあるものを見せる
+  const seed = service ? params.get("seed") : null;
+  const [idea, setIdea] = useState<{ name: string; form: string; what: string; check: string } | null>(null);
+  useEffect(() => {
+    if (seed == null) return;
+    fetch(`/api/shops/${shopId}`)
+      .then((r) => r.json())
+      .then((j) => setIdea(j.shop?.proposals?.[Number(seed)] ?? null))
+      .catch(() => {});
+  }, [shopId, seed]);
   const [photos, setPhotos] = useState<PickedPhoto[]>([]);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [transcript, setTranscript] = useState("");
@@ -33,6 +44,7 @@ function NewProductInner() {
     const fd = new FormData();
     photos.forEach((p, i) => fd.append("photo", p.blob, `photo-${i + 1}.jpg`));
     if (service) fd.append("kind", "service");
+    if (seed != null) fd.append("seed", seed);
     return fd;
   }
 
@@ -74,6 +86,16 @@ function NewProductInner() {
         <h1 className="text-xl font-bold mt-1">{service ? "サービスを追加" : "商品を追加"}</h1>
         {service && <p className="text-sm text-black/60">ライブ配信・オンライン講座・教室・体験など、ものを送らないもの。申し込んだ人には、お店からメールで案内を送ります。</p>}
       </div>
+
+      {idea && (
+        <section className="rounded-2xl bg-leaf/10 p-4 space-y-1">
+          <div className="text-xs font-bold text-leaf">🌱 提案から始めます（{idea.form}）</div>
+          <div className="font-bold">{idea.name}</div>
+          <p className="text-sm">{idea.what}</p>
+          <p className="text-xs text-black/60">これは案です。日時・値段・中身は、店主さんのお話で決まります。聞いたとおりに申し込みページを作ります。</p>
+          {idea.check && <p className="text-xs text-amber-700">出す前に確かめること：{idea.check}</p>}
+        </section>
+      )}
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
         <div className="text-sm font-bold text-leaf">1) 写真を撮る{service && <span className="font-normal text-black/50">（チラシや講師・会場の写真。なくても大丈夫）</span>}</div>

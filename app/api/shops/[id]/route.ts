@@ -2,6 +2,7 @@ import { parseShipDays, prefFromAddress } from "@/lib/shipping";
 import { guardShop } from "@/lib/auth";
 import { getDb, getSetting, SELLER_KEYS, type Shop, REVISE_LIMIT } from "@/lib/db";
 import { thisMonth } from "@/lib/checkin";
+import { proposalsOf } from "@/lib/proposals";
 
 // お店のページ用：お店の情報（理念）と商品の一覧
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -56,6 +57,12 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       // 都道府県の初期値の候補（住所の書き出しから。決めるのは人）
       prefecture_hint: prefFromAddress(shop.seller_address),
       has_pin: !!shop.release_pin_hash,
+      // 次の商品の提案（Claude が出した案）。材料（お店の話か商品）ができてから出せる
+      proposals: proposalsOf(shop),
+      proposals_left: Math.max(0, REVISE_LIMIT - (shop.proposals_count ?? 0)),
+      can_propose: !!(shop.philosophy_text || shop.philosophy_transcript || rows.some((r) => r.status !== "rejected")),
+      // 取り分の今の決まり（提案の画面で「1つ売れると、あなたにいくら」を出すため。明細の画面と同じ数字）
+      split: { goods: getSetting("ymm_rate"), service: getSetting("ymm_rate_service"), share: getSetting("partner_share"), fee: getSetting("stripe_fee_rate") },
       // 担当がお休み中か（理由は持たない・出さない）
       partner_resting: shop.partner_id != null && (db.prepare("SELECT rest_month FROM users WHERE id = ?").get(shop.partner_id) as { rest_month: string | null } | undefined)?.rest_month === thisMonth(),
       seller: Object.fromEntries(SELLER_KEYS.map((k) => [k, shop[k] ?? ""])),

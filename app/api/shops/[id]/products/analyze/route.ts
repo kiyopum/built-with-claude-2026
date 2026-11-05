@@ -4,6 +4,7 @@ import { getDb, type Shop } from "@/lib/db";
 import { analyzeProductPhotos, analyzeService } from "@/lib/claude";
 import { photosFromForm } from "@/lib/files";
 import { getResearch } from "@/lib/research";
+import { proposalFromForm, proposalText } from "@/lib/proposals";
 
 // 商品の写真を Claude に見せる → ラベルの読み取り＋足りないことだけの質問
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -17,7 +18,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const form = await req.formData();
     const photos = await photosFromForm(form);
     // サービス（ライブ配信・講座など）は写真がなくてもよい
-    if (form.get("kind") === "service") return Response.json(await analyzeService(shop, photos));
+    if (form.get("kind") === "service") {
+      // パートナーの提案から始めたときは、その案を手がかりに質問を作る（案はサーバーに残してあるものを番号で引く）
+      const seed = proposalFromForm(shop, form.get("seed"));
+      return Response.json(await analyzeService(shop, photos, seed ? proposalText(seed) : undefined));
+    }
     if (!photos.length) return Response.json({ error: "写真がありません" }, { status: 400 });
     return Response.json(await analyzeProductPhotos(shop, photos));
   } catch (e) {

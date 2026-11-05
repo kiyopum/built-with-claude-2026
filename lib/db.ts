@@ -282,6 +282,13 @@ function open(): DatabaseSync {
   for (const c of ["rest_month", "career_json", "career_at"]) if (!ucols.includes(c)) db.exec(`ALTER TABLE users ADD COLUMN ${c} TEXT`);
   if (!scols.includes("cover_partner_id")) db.exec("ALTER TABLE shops ADD COLUMN cover_partner_id INTEGER REFERENCES users(id)");
 
+  // 次の商品の提案（2026-11-05 きよさん：物販の1割は入り口。パートナーが、送らない商品を店主さんに提案できるように）
+  //   proposals_json：Claude が出した案／proposals_count：出してもらった回数（REVISE_LIMIT まで）／drafts.proposal_name：どの提案から生まれた商品か
+  if (!scols.includes("proposals_json")) db.exec("ALTER TABLE shops ADD COLUMN proposals_json TEXT");
+  if (!scols.includes("proposals_at")) db.exec("ALTER TABLE shops ADD COLUMN proposals_at TEXT");
+  if (!scols.includes("proposals_count")) db.exec("ALTER TABLE shops ADD COLUMN proposals_count INTEGER NOT NULL DEFAULT 0");
+  if (!cols.includes("proposal_name")) db.exec("ALTER TABLE drafts ADD COLUMN proposal_name TEXT");
+
   // みんなの声が、お客さまのお便り（QR から）で届いたものか
   const vcols = (db.prepare("PRAGMA table_info(voices)").all() as { name: string }[]).map((c) => c.name);
   if (!vcols.includes("via")) db.exec("ALTER TABLE voices ADD COLUMN via TEXT");
@@ -335,6 +342,9 @@ export type Shop = {
   prep_questions: string | null;
   prep_at: string | null;
   intro_revise_count: number;
+  proposals_json: string | null;
+  proposals_at: string | null;
+  proposals_count: number;
 };
 export const SELLER_KEYS = ["seller_name", "seller_rep", "seller_address", "seller_phone", "seller_email"] as const;
 export type Draft = {

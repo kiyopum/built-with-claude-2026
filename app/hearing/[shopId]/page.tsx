@@ -17,6 +17,7 @@ import { apiFetch } from "@/lib/api";
 import { gyojiOf, gyojiWhen, upcomingGyoji } from "@/lib/events";
 import { sceneOf } from "@/lib/scenes";
 import { PREFS, WEEKDAYS, fullPref, nextShipDate, shipDaysLabel } from "@/lib/shipping";
+import { splitAmount } from "@/lib/split";
 
 type Data = {
   shop: {
@@ -36,6 +37,10 @@ type Data = {
     has_pin: boolean;
     partner_resting?: boolean;
     seller: Seller;
+    proposals: Proposal[];
+    proposals_left: number;
+    can_propose: boolean;
+    split: { goods: number; service: number; share: number; fee: number };
   };
   products: {
     id: number;
@@ -50,6 +55,8 @@ type Data = {
   }[];
 };
 
+type Proposal = { name: string; form: string; what: string; who: string; why_here: string; quote: string; start_small: string; ask: string; check: string };
+
 const STATUS = { draft: "店主さんの確認待ち", published: "公開中", rejected: "却下" } as Record<string, string>;
 const VERDICT = {
   販売できる: "text-leaf",
@@ -61,6 +68,124 @@ async function post(url: string, body: unknown): Promise<{ error: string; json: 
   const r = await apiFetch(url, { method: "POST", body: JSON.stringify(body) });
   const j = await r.json();
   return { error: r.ok ? "" : (j.error ?? "うまくいきませんでした"), json: j };
+}
+
+// 次の商品を提案する（2026-11-05 きよさん）
+//   ものを売る1割は入り口。お店の話の中にある「送らない商品」のたねを Claude が案にし、パートナーが店主さんに見せて相談する。
+//   取り分は、明細の画面と同じ今の決まりで計算する（値段は店主さんが決めるので、金額は「たとえば」）
+function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const s = shop.split;
+  const yen = (n: number) => `${n.toLocaleString()}円`;
+  const goods = (a: number) => splitAmount(a, s.goods, s.fee, s.share).partner;
+  const service = (a: number) => splitAmount(a, s.service, s.fee, s.share);
+
+  async function make() {
+    setError("");
+    setBusy(true);
+    const r = await post(`/api/shops/${shop.id}/proposals`, {});
+    setBusy(false);
+    if (r.error) return setError(r.error);
+    setOpen(true);
+    onChanged();
+  }
+
+  return (
+    <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-leaf/30 space-y-3">
+      <div className="font-bold text-leaf">🌱 次の商品を提案する</div>
+      <p className="text-sm">
+        ものを売るのは、入り口です。お店の話の中には、<b>送らない商品</b>（配信・教室・動画・レシピなど）のたねがあります。よさそうな案を店主さんに見せて、相談してみてください。
+      </p>
+      <p className="text-xs text-black/60">出すかどうかを決めるのは、店主さんです。提案は、してもしなくても大丈夫です。</p>
+
+      <div className="rounded-xl bg-leaf/10 p-3 text-sm space-y-2">
+        <div className="text-xs font-bold text-leaf">あなたの取り分（今の決まり）</div>
+        <div className="flex justify-between gap-2">
+          <span>入り口：もの（1,000円売れると）</span>
+          <b className="shrink-0">{yen(goods(1000))}</b>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span>次の商品：送らないもの（1,000円の申し込みで）</span>
+          <b className="shrink-0 text-carrot">{yen(service(1000).partner)}</b>
+        </div>
+        <div className="border-t border-leaf/20 pt-2 text-xs text-black/70 space-y-1">
+          <div>たとえば（値段は店主さんが決めます）</div>
+          {[3000, 5000].map((a) => (
+            <div key={a}>
+              <div>{yen(a)} のとき、申し込み1つごとに</div>
+              <div className="text-right">
+                あなたに <b className="text-sm">{yen(service(a).partner)}</b>・店主さんに {yen(service(a).owner)}
+              </div>
+            </div>
+          ))}
+          <div className="text-black/50">サービスごとに、YMM が割合を決めることがあります。</div>
+        </div>
+      </div>
+
+      {!shop.can_propose ? (
+        <p className="rounded-xl bg-black/[0.03] p-3 text-sm">お店のヒアリングか、商品を1つ作ったあとで、Claude が案を出せます（お店の話が材料になります）。</p>
+      ) : shop.proposals.length === 0 ? (
+        <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" onClick={make} disabled={busy}>
+          {busy ? <Working text="Claude がお店の話から案を考えています" est={25} /> : "このお店の案を、Claude に出してもらう"}
+        </button>
+      ) : (
+        <>
+          <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold" onClick={() => setOpen(!open)}>
+            {open ? "案を閉じる" : `Claude の案を見る（${shop.proposals.length}つ）`}
+          </button>
+          {open && (
+            <div className="space-y-3">
+              {shop.proposals.map((p, i) => (
+                <div key={i} className="rounded-xl border border-black/10 p-3 space-y-2 text-sm">
+                  <div>
+                    <span className="rounded-full bg-leaf/10 text-leaf text-xs font-bold px-2 py-0.5">{p.form}</span>
+                    <div className="font-bold text-base mt-1">{p.name}</div>
+                  </div>
+                  <p>{p.what}</p>
+                  <dl className="space-y-1.5 text-xs">
+                    <div>
+                      <dt className="text-black/50">こんな方に</dt>
+                      <dd>{p.who}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-black/50">このお店に合う理由</dt>
+                      <dd>{p.why_here}</dd>
+                      {p.quote && <dd className="mt-0.5 border-l-2 border-leaf/40 pl-2 text-black/70">お店の話から：「{p.quote}」</dd>}
+                    </div>
+                    <div>
+                      <dt className="text-black/50">小さく試すなら</dt>
+                      <dd>{p.start_small}</dd>
+                    </div>
+                    <div className="rounded-lg bg-carrot/10 p-2">
+                      <dt className="text-carrot font-bold">店主さんへの聞き方</dt>
+                      <dd className="text-sm">「{p.ask}」</dd>
+                    </div>
+                    {p.check && (
+                      <div>
+                        <dt className="text-amber-700">出す前に確かめること</dt>
+                        <dd>{p.check}</dd>
+                      </div>
+                    )}
+                  </dl>
+                  <Link href={`/hearing/${shop.id}/new?kind=service&seed=${i}`} className="block text-center rounded-xl bg-carrot text-white py-2.5 font-bold">
+                    店主さんが「やってみたい」なら、この案で作る
+                  </Link>
+                </div>
+              ))}
+              {shop.proposals_left > 0 && (
+                <button className="w-full text-sm text-leaf underline disabled:opacity-50" onClick={make} disabled={busy}>
+                  {busy ? <Working text="Claude が案を考え直しています" est={25} /> : `別の案を出してもらう（あと${shop.proposals_left}回）`}
+                </button>
+              )}
+            </div>
+          )}
+        </>
+      )}
+      {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
+    </section>
+  );
 }
 
 function ShopPageInner() {
@@ -111,6 +236,7 @@ function ShopPageInner() {
         <Link href={`/hearing/${shop.id}/new`} className="block text-center rounded-2xl bg-carrot text-white py-4 text-lg font-bold">
           ＋ 商品を追加
         </Link>
+        <ProposalCard shop={shop} onChanged={load} />
         <Link href={`/hearing/${shop.id}/new?kind=service`} className="block text-center rounded-2xl border-2 border-carrot text-carrot py-3 font-bold">
           ＋ サービスを追加（ライブ配信・講座・体験など）
         </Link>
