@@ -62,7 +62,7 @@ export async function GET() {
   const byShop = db
     .prepare(
       `SELECT s.name AS shop_name, COUNT(*) AS count, SUM(o.amount_yen) AS amount, SUM(o.owner_yen) AS owner
-       FROM orders o JOIN shops s ON s.id = o.shop_id GROUP BY s.id ORDER BY amount DESC`,
+       FROM orders o JOIN shops s ON s.id = o.shop_id GROUP BY s.id ORDER BY s.id`,
     )
     .all();
   // パートナーごとの取り分（担当分＋紹介分）

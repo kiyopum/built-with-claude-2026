@@ -22,7 +22,41 @@ type Product = {
   photos: string[];
   shop_intro: string | null;
   shipping: ShippingInfo;
+  made: { heard: boolean; photos: boolean; legal: boolean; sns: boolean };
 };
+
+// この商品ができるまで（2026-11-05 きよさん：AI を怖いと思う人にも「決めているのは人」と見えるように）
+//   記録があることだけを書く。パートナーの名前はお客さまに出さない
+function MadeBy({ made, svc }: { made: Product["made"]; svc: boolean }) {
+  const ai = [
+    made.heard && "お話から、紹介文の下書きを書きました",
+    made.legal && "表示や言葉が法律に合っているか、確かめる手伝いをしました",
+    made.sns && "紹介の投稿の下書きを書きました",
+  ].filter(Boolean) as string[];
+  const human = [
+    made.heard && `YaoBiz のパートナーが、お店の方から${svc ? "サービス" : "商品"}のお話を聞きました`,
+    made.photos && "写真を撮りました",
+    "お店の方が中身を読んで確かめ、自分の暗証番号で公開しました",
+  ].filter(Boolean) as string[];
+  return (
+    <section className="rounded-2xl bg-white p-4 border border-black/5 space-y-3">
+      <h2 className="font-bold">この{svc ? "サービス" : "商品"}のページができるまで</h2>
+      <div className="grid gap-3 sm:grid-cols-2 text-sm">
+        <div className="rounded-xl bg-leaf/5 p-3">
+          <div className="font-bold text-leaf mb-1">🙋 人がしたこと</div>
+          <ul className="list-disc pl-5 space-y-1">{human.map((t) => <li key={t}>{t}</li>)}</ul>
+        </div>
+        {ai.length > 0 && (
+          <div className="rounded-xl bg-black/[0.03] p-3">
+            <div className="font-bold text-black/70 mb-1">🤖 AI（Claude）がしたこと</div>
+            <ul className="list-disc pl-5 space-y-1">{ai.map((t) => <li key={t}>{t}</li>)}</ul>
+          </div>
+        )}
+      </div>
+      <p className="text-xs text-black/60">AI は手伝いをしました。出すかどうかを決めたのは、お店の方です。</p>
+    </section>
+  );
+}
 
 function ProductPageInner() {
   const { id } = useParams<{ id: string }>();
@@ -184,6 +218,11 @@ function ProductPageInner() {
               ? ""
               : "送料（お店が準備中のため、まだ購入できません）"}
         </p>
+        {ok && !svc && !ship.pickup && ship.yen > 0 && (
+          <p className="text-xs text-black/60 text-right">
+            🚚 この送料で、{inc ? `${fullPref(info.from)}から${ship.pref ? fullPref(ship.pref) : "お届け先"}まで` : "お届け先まで"}、人の手で運ばれます。送料から YaoBiz の取り分はいただきません。
+          </p>
+        )}
         {inc && info.perBox > 1 && (
           <p className="text-xs text-leaf text-right">{info.perBox}個までは1つの箱で送るので、送料は1回分です。</p>
         )}
@@ -203,6 +242,8 @@ function ProductPageInner() {
       <Link href={`/owner/p/${id}`} className="block text-center text-sm text-black/50 underline">
         お店の方へ：この商品をお店の Instagram で紹介する
       </Link>
+
+      <MadeBy made={p.made} svc={svc} />
 
       {p.shop_intro && (
         <section className="rounded-2xl bg-leaf/5 p-4 space-y-2">
