@@ -22,7 +22,7 @@ type Product = {
   photos: string[];
   shop_intro: string | null;
   shipping: ShippingInfo;
-  made: { heard: boolean; photos: boolean; legal: boolean; sns: boolean };
+  made: { heard: boolean; photos: boolean; legal: boolean; sns: boolean; pin: boolean };
   ship_days: string | null;
 };
 
@@ -37,7 +37,7 @@ function MadeBy({ made, svc }: { made: Product["made"]; svc: boolean }) {
   const human = [
     made.heard && `YaoBiz のパートナーが、お店の方から${svc ? "サービス" : "商品"}のお話を聞きました`,
     made.photos && "写真を撮りました",
-    "お店の方が中身を読んで確かめ、自分の暗証番号で公開しました",
+    made.pin ? "お店の方が中身を読んで確かめ、自分の暗証番号で公開しました" : "お店の方が中身を確かめて、公開しました",
   ].filter(Boolean) as string[];
   return (
     <section className="rounded-2xl bg-white p-4 border border-black/5 space-y-3">

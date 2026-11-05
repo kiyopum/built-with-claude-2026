@@ -24,7 +24,9 @@ export async function GET() {
     ...v,
     thanked: !!v.thanked,
     mine: v.user_id === u.id,
-    original: u.role === "admin" || v.user_id === u.id ? original : undefined,
+    // お客さまのお便り（QR から）は、担当パートナーにも原文を見せない（お客さまには「名前や連絡先を消して分け合う」と伝えている）。
+    //   原文を読むのは店主さん（注文の画面・暗証番号）と YMM 管理だけ
+    original: u.role === "admin" || (v.user_id === u.id && (v as { via?: string | null }).via !== "letter") ? original : undefined,
   }));
   // 声を書くときに選ぶお店（パートナーは担当のお店、管理者は全部）
   const shops = db
