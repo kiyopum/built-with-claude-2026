@@ -14,7 +14,7 @@ import { PinPad } from "@/components/PinPad";
 import { OwnerApprove } from "@/components/OwnerApprove";
 import { Working } from "@/components/Working";
 import { apiFetch } from "@/lib/api";
-import { PREFS, fullPref } from "@/lib/shipping";
+import { PREFS, WEEKDAYS, fullPref, nextShipDate, shipDaysLabel } from "@/lib/shipping";
 
 type Data = {
   shop: {
@@ -27,6 +27,8 @@ type Data = {
     prefecture: string | null;
     pickup_ok: boolean;
     online_label: boolean;
+    ship_days: number[];
+    neighbor_days: Record<string, number>;
     prefecture_hint: string | null;
     has_pin: boolean;
     partner_resting?: boolean;
@@ -96,6 +98,7 @@ function ShopPageInner() {
       <SellerSection shopId={shop.id} initial={shop.seller} />
 
       <ShippingCard shopId={shop.id} initial={shop.shipping_yen} prefecture={shop.prefecture} hint={shop.prefecture_hint} pickupOk={shop.pickup_ok} onlineLabel={shop.online_label} onSaved={load} />
+      <ShipDaysCard shopId={shop.id} days={shop.ship_days} neighbors={shop.neighbor_days} prefecture={shop.prefecture} onSaved={load} />
 
       {/* 商品（1つずつ、写真を撮って聞く）。タップで修正・リリースの画面 */}
       <section className="space-y-3">
@@ -138,7 +141,7 @@ function ShopPageInner() {
         ))}
       </section>
 
-      <OrdersCard shopId={shop.id} hasPin={shop.has_pin} />
+      <OrdersCard shopId={shop.id} hasPin={shop.has_pin} shipDays={shop.ship_days} />
 
       <Link href={`/hearing/${shop.id}/book`} className="block rounded-2xl bg-white p-4 shadow-sm border border-black/5">
         <div className="font-bold">📖 お店の言葉の本</div>
@@ -325,6 +328,46 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
           {shop.philosophy_text ? "聞き直す" : "お店のヒアリングを始める"}
         </Link>
       )}
+    </section>
+  );
+}
+
+// ---------- 発送する曜日（2026-11-05 きよさん：近所のお店で出す日をそろえると、集荷が1回で済む） ----------
+
+function ShipDaysCard({ shopId, days, neighbors, prefecture, onSaved }: { shopId: number; days: number[]; neighbors: Record<string, number>; prefecture: string | null; onSaved: () => void }) {
+  const [error, setError] = useState("");
+  async function toggle(d: number) {
+    setError("");
+    const next = days.includes(d) ? days.filter((x) => x !== d) : [...days, d];
+    const { error } = await post(`/api/shops/${shopId}/shipping`, { ship_days: next });
+    if (error) return setError(error);
+    onSaved();
+  }
+  const best = Object.entries(neighbors).sort((a, b) => b[1] - a[1])[0];
+  return (
+    <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
+      <div className="text-sm font-bold text-leaf">📅 発送する曜日</div>
+      <div className="grid grid-cols-7 gap-1">
+        {WEEKDAYS.map((w, i) => (
+          <button
+            key={w}
+            className={`rounded-lg py-2 text-sm font-bold relative ${days.includes(i) ? "bg-leaf text-white" : "bg-black/5 text-black/60"}`}
+            onClick={() => toggle(i)}
+          >
+            {w}
+            {neighbors[i] ? <span className="absolute -top-1.5 -right-1 rounded-full bg-carrot text-white text-[10px] leading-4 px-1">{neighbors[i]}</span> : null}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-black/60">
+        決めると、商品ページに「発送は毎週{days.length ? shipDaysLabel(days) : "○曜"}」と出て、注文には次の発送日が出ます。
+        {prefecture
+          ? best
+            ? ` オレンジの数字は、${fullPref(prefecture)}で同じ曜日に出しているほかのお店の数です。近所で出す日をそろえると、運ぶ人の集荷が1回で済むかもしれません（まとめて集荷できるかは、運送会社の営業所に相談してください）。`
+            : ` ${fullPref(prefecture)}で、ほかに発送する曜日を決めたお店はまだありません。`
+          : " 送り出す都道府県を決めると、同じ県で同じ曜日に出しているお店の数が出ます。"}
+      </p>
+      {error && <p className="rounded-xl bg-red-50 text-red-700 p-2 text-xs">{error}</p>}
     </section>
   );
 }
@@ -537,7 +580,7 @@ function LetterThread({ o, onReply }: { o: Order; onReply: (letterId: number, te
   );
 }
 
-function OrdersCard({ shopId, hasPin }: { shopId: number; hasPin: boolean }) {
+function OrdersCard({ shopId, hasPin, shipDays }: { shopId: number; hasPin: boolean; shipDays: number[] }) {
   const [orders, setOrders] = useState<Order[] | null>(null);
   // 開いている間だけ、お返事に使う暗証番号を覚えておく（閉じたら消える）
   const [pin, setPin] = useState("");
@@ -585,6 +628,10 @@ function OrdersCard({ shopId, hasPin }: { shopId: number; hasPin: boolean }) {
                   </div>
                 )}
                 {o.ship_method && <div className="text-xs">送り方：{o.ship_method}</div>}
+                {o.kind !== "service" && o.ship_method !== "お店で受け取り" && shipDays.length > 0 && (() => {
+                  const d = nextShipDate(new Date(o.created_at.replace(" ", "T")), shipDays);
+                  return d && <div className="text-xs">📅 次の発送日：{d.getMonth() + 1}/{d.getDate()}（{WEEKDAYS[d.getDay()]}）</div>;
+                })()}
                 {o.ship_warning && <div className="rounded-lg bg-amber-50 text-amber-800 p-2 text-xs">⚠️ {o.ship_warning}</div>}
                 <div className="text-xs">
                   お支払い {o.amount_yen.toLocaleString()}円{o.kind !== "service" && `（うち送料 ${o.shipping_yen.toLocaleString()}円）`}／ 店主さんの受け取り <b>{o.owner_yen.toLocaleString()}円</b>

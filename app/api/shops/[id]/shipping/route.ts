@@ -1,6 +1,6 @@
 import { getDb } from "@/lib/db";
 import { guardShop } from "@/lib/auth";
-import { prefOf } from "@/lib/shipping";
+import { parseShipDays, prefOf } from "@/lib/shipping";
 
 // 送料の設定
 //   yen：全国一律の送料（大きさ・重さを入れていない商品で使う。0 円なら送料込み）
@@ -11,7 +11,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const { id } = await ctx.params;
   const g = await guardShop(id);
   if (g instanceof Response) return g;
-  const body = (await req.json()) as { yen?: unknown; prefecture?: unknown; pickup_ok?: unknown; online_label?: unknown };
+  const body = (await req.json()) as { yen?: unknown; prefecture?: unknown; pickup_ok?: unknown; online_label?: unknown; ship_days?: unknown };
   const db = getDb();
   if (body.yen !== undefined) {
     const n = Number(body.yen);
@@ -25,5 +25,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
   if (body.online_label !== undefined) db.prepare("UPDATE shops SET online_label = ? WHERE id = ?").run(body.online_label ? 1 : 0, g.shop.id);
   if (body.pickup_ok !== undefined) db.prepare("UPDATE shops SET pickup_ok = ? WHERE id = ?").run(body.pickup_ok ? 1 : 0, g.shop.id);
+  if (body.ship_days !== undefined) {
+    const days = parseShipDays(Array.isArray(body.ship_days) ? body.ship_days.join(",") : "");
+    db.prepare("UPDATE shops SET ship_days = ? WHERE id = ?").run(days.length ? days.join(",") : null, g.shop.id);
+  }
   return Response.json({ ok: true });
 }

@@ -11,12 +11,10 @@ function CardInner() {
   const t = useSearchParams().get("t") ?? "";
   const [data, setData] = useState<Data | null>(null);
   const [qr, setQr] = useState("");
-  const [url, setUrl] = useState("");
+  const url = typeof window === "undefined" ? "" : `${window.location.origin}/t/${t}`;
 
   useEffect(() => {
-    const u = `${window.location.origin}/t/${t}`;
-    setUrl(u);
-    QRCode.toDataURL(u, { margin: 1, width: 360 }).then(setQr);
+    QRCode.toDataURL(`${window.location.origin}/t/${t}`, { margin: 1, width: 360 }).then(setQr);
     fetch(`/api/letters/${t}`)
       .then((r) => (r.ok ? r.json() : null))
       .then(setData);

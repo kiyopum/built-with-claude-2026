@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import { Working } from "@/components/Working";
 import { apiFetch } from "@/lib/api";
 import { shippingForOrder, type ShippingInfo } from "@/lib/shipquote";
-import { PREFS, fullPref } from "@/lib/shipping";
+import { PREFS, fullPref, parseShipDays, shipDaysLabel } from "@/lib/shipping";
 
 type Product = {
   id: number;
@@ -23,6 +23,7 @@ type Product = {
   shop_intro: string | null;
   shipping: ShippingInfo;
   made: { heard: boolean; photos: boolean; legal: boolean; sns: boolean };
+  ship_days: string | null;
 };
 
 // この商品ができるまで（2026-11-05 きよさん：AI を怖いと思う人にも「決めているのは人」と見えるように）
@@ -222,6 +223,9 @@ function ProductPageInner() {
           <p className="text-xs text-black/60 text-right">
             🚚 この送料で、{inc ? `${fullPref(info.from)}から${ship.pref ? fullPref(ship.pref) : "お届け先"}まで` : "お届け先まで"}、人の手で運ばれます。送料から YaoBiz の取り分はいただきません。
           </p>
+        )}
+        {!svc && parseShipDays(p.ship_days).length > 0 && (
+          <p className="text-xs text-black/60 text-right">📅 このお店の発送は、毎週{shipDaysLabel(parseShipDays(p.ship_days))}曜日です。</p>
         )}
         {inc && info.perBox > 1 && (
           <p className="text-xs text-leaf text-right">{info.perBox}個までは1つの箱で送るので、送料は1回分です。</p>

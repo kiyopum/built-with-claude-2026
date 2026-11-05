@@ -125,3 +125,19 @@ export function boxesFor(quantity: number, perBox: number): number {
 export function isIncluded(d: { size_class?: string | null; weight_g?: number | null }, shop: { prefecture?: string | null }): boolean {
   return !!sizeClassOf(d.size_class) && !!d.weight_g && d.weight_g > 0 && !!prefOf(shop.prefecture);
 }
+
+// 発送する曜日（0=日〜6=土）。"2,5" ⇔ [2, 5]
+export const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"] as const;
+export function parseShipDays(s: string | null | undefined): number[] {
+  return [...new Set((s ?? "").split(",").map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))].sort();
+}
+export const shipDaysLabel = (days: number[]) => days.map((d) => WEEKDAYS[d]).join("・");
+// 注文の日から見て、次の発送日（その日の注文は翌日以降の発送日に回す）
+export function nextShipDate(from: Date, days: number[]): Date | null {
+  if (!days.length) return null;
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i);
+    if (days.includes(d.getDay())) return d;
+  }
+  return null;
+}

@@ -1,4 +1,4 @@
-import { prefFromAddress } from "@/lib/shipping";
+import { parseShipDays, prefFromAddress } from "@/lib/shipping";
 import { guardShop } from "@/lib/auth";
 import { getDb, getSetting, SELLER_KEYS, type Shop } from "@/lib/db";
 import { thisMonth } from "@/lib/checkin";
@@ -42,6 +42,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       shipping_yen: shop.shipping_yen,
       prefecture: shop.prefecture,
       pickup_ok: !!shop.pickup_ok,
+      ship_days: parseShipDays(shop.ship_days),
+      // 同じ都道府県で、発送する曜日を決めているほかのお店の数（曜日ごと）。名前は出さない
+      neighbor_days: shop.prefecture
+        ? (db.prepare("SELECT ship_days FROM shops WHERE prefecture = ? AND id != ? AND ship_days IS NOT NULL").all(shop.prefecture, shop.id) as { ship_days: string }[])
+            .flatMap((r) => parseShipDays(r.ship_days))
+            .reduce((a, d) => ((a[d] = (a[d] ?? 0) + 1), a), {} as Record<number, number>)
+        : {},
       online_label: !!shop.online_label,
       // 都道府県の初期値の候補（住所の書き出しから。決めるのは人）
       prefecture_hint: prefFromAddress(shop.seller_address),
