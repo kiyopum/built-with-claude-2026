@@ -1,6 +1,7 @@
 import { getDb, type Draft } from "@/lib/db";
 import { guardDraft } from "@/lib/auth";
 import { makeNudge } from "@/lib/claude";
+import { gyojiWhen, upcomingGyoji } from "@/lib/events";
 
 // 売れなくても責めない伴走：次の小さな一歩を Claude が1つ考える（考えたものは商品に残す）
 export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -17,7 +18,11 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     .get(Number(id)) as Draft & { photos: number; days: number };
   if (d.status !== "published") return Response.json({ error: "公開している商品だけです" }, { status: 400 });
   try {
+    // 日本の日付で、これから来る行事
+    const jst = new Date(Date.now() + (9 * 60 + new Date().getTimezoneOffset()) * 60_000);
+    const gyoji = upcomingGyoji(jst).map((g) => ({ key: g.key, name: g.name, when: gyojiWhen(g), days: g.days, scene: g.scene }));
     const n = await makeNudge({
+      gyoji,
       name: d.name,
       kind: d.kind ?? "goods",
       description: d.description,

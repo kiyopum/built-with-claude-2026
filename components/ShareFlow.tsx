@@ -16,13 +16,14 @@ import { Working } from "@/components/Working";
 import { renderCarousel } from "@/components/carousel";
 import type { Legal } from "@/components/LegalPanel";
 import { SCENES, sceneOf } from "@/lib/scenes";
+import { gyojiOf } from "@/lib/events";
 
 type Post = {
   caption: string;
   hashtags: string[];
   slides: { cover: string; point_title: string; point_text: string; story_text: string };
 };
-type Saved = { post: Post; legal: Legal; scene?: string | null };
+type Saved = { post: Post; legal: Legal; scene?: string | null; gyoji?: string | null };
 type Product = { name: string; price_yen: number; shop_name: string; photos: string[] };
 
 // 広告であることを示すため、いちばん最初に「#PR」を必ず入れる（ステマ規制。店主さんの投稿も同じ）
@@ -57,7 +58,10 @@ function copyNow(text: string): boolean {
   return ok;
 }
 
-export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; backHref: string; shopPin?: string }) {
+export function ShareFlow({ draftId, backHref, shopPin, initialScene, gyoji }: { draftId: string; backHref: string; shopPin?: string; initialScene?: string; gyoji?: string }) {
+  // 行事に向けて開いたとき（次の小さな一歩から）。場面は行事に合うものを先に選んでおく
+  const g = gyojiOf(gyoji);
+  const pre = sceneOf(initialScene);
   const [ref, setRef] = useState("");
   // 店主さんのときは、お店の暗証番号をつけて呼ぶ
   const call = useCallback(
@@ -100,10 +104,10 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
   );
 
   const write = useCallback(
-    async (p: Product, action: "generate" | "check", current?: Post, scene?: string) => {
+    async (p: Product, action: "generate" | "check", current?: Post, scene?: string, gyojiKey?: string) => {
       setError("");
       setStep(action === "generate" ? "write" : "check");
-      const r = await call(`/api/drafts/${draftId}/sns`, { method: "POST", body: JSON.stringify({ action, post: current, scene }) });
+      const r = await call(`/api/drafts/${draftId}/sns`, { method: "POST", body: JSON.stringify({ action, post: current, scene, gyoji: gyojiKey }) });
       const j = await r.json();
       if (!r.ok) {
         setError(j.error);
@@ -132,7 +136,14 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
           return;
         }
         setProduct(p.product);
-        if (s.saved) {
+        if (pre) {
+          // 行事に向けて書くので、前の投稿があっても場面を選ぶ画面から
+          if (s.saved) {
+            setSaved(s.saved);
+            setPost(s.saved.post);
+          }
+          setStep("pick");
+        } else if (s.saved) {
           setSaved(s.saved);
           setPost(s.saved.post);
           if (s.saved.legal.verdict === "このままでは販売できない") setStep("ready");
@@ -140,7 +151,7 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
         } else setStep("pick");
       },
     );
-  }, [draftId, draw, write, call]);
+  }, [draftId, draw, write, call, pre]);
 
   const legal = saved?.legal ?? null;
   const scene = sceneOf(saved?.scene);
@@ -193,6 +204,18 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
         <div className="space-y-3">
           <div className="text-lg font-bold">どんな場面に贈る？</div>
           <p className="text-sm text-black/60">選んだ場面に合わせて、Claude が紹介文と画像の言葉を書きます。</p>
+          {g && pre && (
+            <button
+              className="w-full rounded-2xl bg-carrot text-white p-4 text-left shadow-sm active:scale-[0.98]"
+              onClick={() => write(product, "generate", undefined, pre.key, g.key)}
+            >
+              <div className="text-xs opacity-90">🌱 次の小さな一歩から</div>
+              <div className="text-lg font-bold">
+                {pre.emoji} {g.name}に向けて書く
+              </div>
+              <div className="text-xs opacity-90">場面「{pre.label}」で、{g.name}のころに合わせた紹介文を作ります（届く日は約束しない書き方にします）</div>
+            </button>
+          )}
           <div className="grid grid-cols-2 gap-2">
             {SCENES.map((s) => (
               <button
@@ -217,6 +240,7 @@ export function ShareFlow({ draftId, backHref, shopPin }: { draftId: string; bac
         <div className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 border border-black/5 text-sm">
           <span>
             場面：<b>{scene ? `${scene.emoji} ${scene.label}` : "とくになし"}</b>
+            {gyojiOf(saved?.gyoji) && <span className="text-xs text-black/60">（{gyojiOf(saved?.gyoji)?.name}に向けて）</span>}
           </span>
           <button className="shrink-0 rounded-lg border border-carrot text-carrot px-3 py-1.5 font-bold" onClick={() => setStep("pick")}>
             場面を変える

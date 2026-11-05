@@ -14,6 +14,8 @@ import { PinPad } from "@/components/PinPad";
 import { OwnerApprove } from "@/components/OwnerApprove";
 import { Working } from "@/components/Working";
 import { apiFetch } from "@/lib/api";
+import { gyojiOf, gyojiWhen, upcomingGyoji } from "@/lib/events";
+import { sceneOf } from "@/lib/scenes";
 import { PREFS, WEEKDAYS, fullPref, nextShipDate, shipDaysLabel } from "@/lib/shipping";
 
 type Data = {
@@ -42,7 +44,7 @@ type Data = {
     verdict: string | null;
     photo: string | null;
     quiet: boolean;
-    nudge: { step: string; why: string; how: string[] } | null;
+    nudge: { step: string; why: string; how: string[]; gyoji?: string; gyoji_idea?: string } | null;
     nudge_at: string | null;
   }[];
 };
@@ -138,7 +140,7 @@ function ShopPageInner() {
                 📷 Instagram で紹介する
               </Link>
             )}
-            {p.status === "published" && (p.quiet || p.nudge || demo) && <NudgeCard draftId={p.id} initial={p.nudge} at={p.nudge_at} />}
+            {p.status === "published" && (p.quiet || p.nudge || demo) && <NudgeCard shopId={shop.id} draftId={p.id} initial={p.nudge} at={p.nudge_at} />}
           </div>
         ))}
       </section>
@@ -155,7 +157,7 @@ function ShopPageInner() {
 
 // ---------- 売れなくても責めない伴走：次の小さな一歩（2026-11-05 きよさん） ----------
 
-function NudgeCard({ draftId, initial, at }: { draftId: number; initial: { step: string; why: string; how: string[] } | null; at: string | null }) {
+function NudgeCard({ shopId, draftId, initial, at }: { shopId: number; draftId: number; initial: { step: string; why: string; how: string[]; gyoji?: string; gyoji_idea?: string } | null; at: string | null }) {
   const [n, setN] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -175,6 +177,25 @@ function NudgeCard({ draftId, initial, at }: { draftId: number; initial: { step:
           <p className="font-bold">{n.step}</p>
           <p className="text-black/70">{n.why}</p>
           <ol className="list-decimal pl-5 text-black/70">{n.how.map((h, i) => <li key={i}>{h}</li>)}</ol>
+          {(() => {
+            // 行事に結びつけた一歩なら、その場面を選んだ状態で投稿を作る画面へ
+            const g = gyojiOf(n.gyoji);
+            const sc = g && sceneOf(g.scene);
+            return (
+              g &&
+              sc && (
+                <div className="rounded-xl bg-white border border-carrot/30 p-2 space-y-2">
+                  <div className="text-xs font-bold text-carrot">
+                    🎁 もうすぐ {g.name}・{(() => { const up = upcomingGyoji(new Date(), 0, 120).find((x) => x.key === g.key); return up ? gyojiWhen(up) : (g.note ?? ""); })()}
+                  </div>
+                  {n.gyoji_idea && <p className="text-black/70">{n.gyoji_idea}</p>}
+                  <Link href={`/hearing/${shopId}/p/${draftId}/share?scene=${sc.key}&gyoji=${g.key}`} className="block rounded-xl bg-carrot text-white text-center py-3 font-bold">
+                    {sc.emoji} {g.name}に向けて、投稿を作る
+                  </Link>
+                </div>
+              )
+            );
+          })()}
           {at && <p className="text-xs text-black/40">{at} に Claude が考えました</p>}
         </>
       ) : (
