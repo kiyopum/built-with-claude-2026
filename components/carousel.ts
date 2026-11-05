@@ -39,20 +39,73 @@ function cover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, 
   ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
 }
 
-// 日本語を1文字ずつ測って折り返す。句読点や閉じかっこは行の頭に来ないようにする
+// ぼかした写真を敷き、上に色を重ねる（使えない端末では、ぼかさずに敷くだけ。色を重ねるので文字の邪魔にはならない）
+function blurred(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number, shade: string) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.filter = "blur(28px)";
+  cover(ctx, img, x - 40, y - 40, w + 80, h + 80);
+  ctx.filter = "none";
+  ctx.fillStyle = shade;
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+}
+
+// 写真を枠に入れる（2026-11-05 きよさん：ラベルの文字が端で切れていた）。
+//   切れるのが少し（各辺1.5%まで）なら枠いっぱいに。それより多く切れるときは、写真を丸ごと見せ、余白はぼかした同じ写真で埋める
+function photo(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number, shade: string) {
+  const sc = Math.max(w / img.width, h / img.height);
+  const keep = Math.min(w / sc / img.width, h / sc / img.height); // 枠いっぱいにしたとき、写真のどれだけが残るか
+  if (keep >= 0.97) return cover(ctx, img, x, y, w, h);
+  ctx.save();
+  blurred(ctx, img, x, y, w, h, shade);
+  const s = Math.min(w / img.width, h / img.height);
+  const dw = img.width * s;
+  const dh = img.height * s;
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  ctx.restore();
+}
+
 const NO_HEAD = "、。，．）」』】！？・ーっゃゅょァィゥェォッャュョ";
 const NO_TAIL = "「『（【";
+// 言葉の切れ目（Intl.Segmenter）で折り返す。「干し|芋」のように言葉の途中で切れないようにする（2026-11-05）。
+//   1つの言葉が1行に入らないときだけ、1文字ずつに分ける。句読点・閉じかっこは行の頭に来ないようにする
+function tokens(para: string): string[] {
+  const Seg = (Intl as unknown as { Segmenter?: new (l: string, o: { granularity: "word" }) => { segment: (s: string) => Iterable<{ segment: string }> } }).Segmenter;
+  if (!Seg) return Array.from(para);
+  const out: string[] = [];
+  for (const { segment } of new Seg("ja", { granularity: "word" }).segment(para)) {
+    // 句読点・閉じかっこは前の言葉にくっつける。開きかっこは次の言葉にくっつける
+    if (out.length && NO_HEAD.includes(segment[0])) out[out.length - 1] += segment;
+    else if (out.length && NO_TAIL.includes(out[out.length - 1].slice(-1)) && out[out.length - 1].length === 1) out[out.length - 1] += segment;
+    else out.push(segment);
+  }
+  return out;
+}
 function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const lines: string[] = [];
+  const fits = (s: string) => ctx.measureText(s).width <= maxWidth;
   for (const para of text.split("\n")) {
     let line = "";
-    for (const ch of Array.from(para)) {
-      if (ctx.measureText(line + ch).width > maxWidth && line && !NO_HEAD.includes(ch)) {
-        // 開きかっこは行の終わりに残さず、次の行へ送る
-        const tail = NO_TAIL.includes(line.slice(-1)) && line.length > 1 ? line.slice(-1) : "";
-        lines.push(tail ? line.slice(0, -1) : line);
-        line = tail + ch;
-      } else line += ch;
+    for (const tok of tokens(para)) {
+      if (fits(line + tok)) {
+        line += tok;
+        continue;
+      }
+      if (line && fits(tok)) {
+        lines.push(line);
+        line = tok;
+        continue;
+      }
+      // 1つの言葉が長すぎる：1文字ずつ詰める（行の頭に句読点を置かない）
+      for (const ch of Array.from(tok)) {
+        if (!fits(line + ch) && line && !NO_HEAD.includes(ch)) {
+          lines.push(line);
+          line = ch;
+        } else line += ch;
+      }
     }
     lines.push(line);
   }
@@ -66,16 +119,27 @@ function drawText(
   y: number,
   o: { size: number; weight?: number; color: string; maxWidth: number; lineHeight?: number; maxLines?: number; align?: CanvasTextAlign },
 ): number {
-  ctx.font = `${o.weight ?? 400} ${o.size}px ${FONT}`;
   ctx.fillStyle = o.color;
   ctx.textAlign = o.align ?? "left";
   ctx.textBaseline = "top";
-  let lines = wrap(ctx, text, o.maxWidth);
+  // 文字が切れないように：決めた行数に収まるまで、文字を少しずつ小さくする（元の大きさの6割まで）。
+  //   それでも入らないときだけ、最後を「…」にする（2026-11-05 きよさん：画像の文字が切れる）
+  let size = o.size;
+  const min = Math.round(o.size * 0.6);
+  let lines: string[];
+  for (;;) {
+    ctx.font = `${o.weight ?? 400} ${size}px ${FONT}`;
+    lines = wrap(ctx, text, o.maxWidth);
+    if (!o.maxLines || lines.length <= o.maxLines || size <= min) break;
+    size = Math.max(min, size - 2);
+  }
   if (o.maxLines && lines.length > o.maxLines) {
     lines = lines.slice(0, o.maxLines);
-    lines[lines.length - 1] = lines[lines.length - 1].replace(/.$/, "…");
+    let last = lines[lines.length - 1];
+    while (last && ctx.measureText(last + "…").width > o.maxWidth) last = last.slice(0, -1);
+    lines[lines.length - 1] = last + "…";
   }
-  const lh = o.lineHeight ?? o.size * 1.5;
+  const lh = (o.lineHeight ?? o.size * 1.5) * (size / o.size);
   lines.forEach((l, i) => ctx.fillText(l, x, y + i * lh));
   return y + lines.length * lh;
 }
@@ -104,8 +168,12 @@ export async function renderCarousel(input: SlideInput): Promise<Blob[]> {
     const [c, ctx] = canvas();
     ctx.fillStyle = CREAM;
     ctx.fillRect(0, 0, W, H);
-    if (main) cover(ctx, main, 0, 0, W, H);
-    const g = ctx.createLinearGradient(0, H * 0.45, 0, H);
+    // 写真は上の部分に。下の文字と重ならないようにする（写真の文字や商品が文字の下に隠れないように）
+    if (main) {
+      blurred(ctx, main, 0, 0, W, H, "rgba(0,0,0,0.3)");
+      photo(ctx, main, 0, 130, W, H - 480 - 130, "rgba(0,0,0,0.25)"); // 上は店名と PR、下は文字の場所
+    }
+    const g = ctx.createLinearGradient(0, H - 560, 0, H);
     g.addColorStop(0, "rgba(0,0,0,0)");
     g.addColorStop(1, "rgba(0,0,0,0.78)");
     ctx.fillStyle = g;
@@ -124,7 +192,7 @@ export async function renderCarousel(input: SlideInput): Promise<Blob[]> {
     ctx.beginPath();
     ctx.roundRect(64, y + 28, 420, 84, 42);
     ctx.fill();
-    drawText(ctx, yen(input.price), 64 + 210, y + 50, { size: 38, weight: 800, color: "#fff", maxWidth: 400, align: "center" });
+    drawText(ctx, yen(input.price), 64 + 210, y + 50, { size: 38, weight: 800, color: "#fff", maxWidth: 380, align: "center", maxLines: 1 });
     out.push(await toBlob(c));
   }
 
@@ -133,7 +201,7 @@ export async function renderCarousel(input: SlideInput): Promise<Blob[]> {
     const [c, ctx] = canvas();
     ctx.fillStyle = CREAM;
     ctx.fillRect(0, 0, W, H);
-    if (second) cover(ctx, second, 0, 0, W, 760);
+    if (second) photo(ctx, second, 0, 0, W, 760, "rgba(250,246,238,0.45)");
     drawText(ctx, "こだわり", 64, 820, { size: 32, weight: 700, color: LEAF, maxWidth: 400 });
     const y = drawText(ctx, input.slides.point_title, 64, 870, { size: 60, weight: 800, color: CARROT, maxWidth: W - 128, maxLines: 2, lineHeight: 78 });
     drawText(ctx, input.slides.point_text, 64, y + 24, { size: 38, color: INK, maxWidth: W - 128, maxLines: 5, lineHeight: 60 });

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { OFFICIAL_DOMAINS, ShopQuestionsSchema } from "@/lib/claude";
+import { nextCheckOf } from "@/lib/research";
 
 export async function GET() {
   await connection();
@@ -80,9 +81,9 @@ export async function POST(req: Request) {
     const notes = site ? r.website_notes?.trim() || null : null;
     db.prepare(
       `UPDATE shops SET website_url = COALESCE(?, website_url), website_notes = COALESCE(?, website_notes),
-         legal_research = ?, legal_researched_at = datetime('now', 'localtime'),
+         legal_research = ?, legal_researched_at = datetime('now', 'localtime'), law_next_check = ?, law_from_shop = NULL,
          prep_questions = ?, prep_at = datetime('now', 'localtime') WHERE id = ?`,
-    ).run(site, notes, JSON.stringify({ notes: r.legal_research.notes, sources }), JSON.stringify(r.questions), shop.id);
+    ).run(site, notes, JSON.stringify({ notes: r.legal_research.notes, sources }), nextCheckOf(r.legal_research.notes), JSON.stringify(r.questions), shop.id);
     done.push(shop.name);
   }
   return Response.json({ ok: true, done, skipped });

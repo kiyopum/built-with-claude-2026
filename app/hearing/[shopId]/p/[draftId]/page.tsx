@@ -34,6 +34,7 @@ type Draft = {
   shop_online_label: number;
   kind: "goods" | "service";
   ymm_rate?: number | null;
+  revise_left: number;
 };
 type Rates = { effective: number; goods: number; service: number };
 
@@ -254,9 +255,10 @@ function EditInner() {
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
-        <button className="w-full rounded-xl border-2 border-carrot text-carrot py-3 font-bold disabled:opacity-50" onClick={revise} disabled={busy !== "" || !note.trim()}>
-          {busy === "revise" ? <Working text="Claude が作り直して、法律も確かめ直しています" est={60} /> : "この内容で作り直す"}
+        <button className="w-full rounded-xl border-2 border-carrot text-carrot py-3 font-bold disabled:opacity-50" onClick={revise} disabled={busy !== "" || !note.trim() || draft.revise_left <= 0}>
+          {busy === "revise" ? <Working text="Claude が作り直して、法律も確かめ直しています" est={60} /> : draft.revise_left > 0 ? `この内容で作り直す（あと${draft.revise_left}回）` : "作り直しは5回まで使いました"}
         </button>
+        {draft.revise_left <= 0 && <p className="text-xs text-black/60">ここからは上の「手で直す」で直してください。保存すると法律チェックはやり直します。</p>}
       </section>
 
       {legal && (

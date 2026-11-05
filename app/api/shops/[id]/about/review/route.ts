@@ -1,5 +1,5 @@
 import { shopPinError, guardShop } from "@/lib/auth";
-import { getDb, type Shop } from "@/lib/db";
+import { REVISE_LIMIT, getDb, type Shop } from "@/lib/db";
 import { summarizeShop } from "@/lib/claude";
 
 // 店主が「このお店について」を確認する：approve（公開OK）/ edit（手で直す）/ revise（AIに作り直してもらう）
@@ -26,9 +26,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
   if (action === "revise") {
     if (!note?.trim()) return Response.json({ error: "直してほしいことを一言入れてください" }, { status: 400 });
+    if ((shop.intro_revise_count ?? 0) >= REVISE_LIMIT) {
+      return Response.json({ error: `AI に直してもらえるのは${REVISE_LIMIT}回までです。ここからは「手で直す」で直してください。` }, { status: 400 });
+    }
     try {
       const s = await summarizeShop(shop, shop.philosophy_transcript ?? "", shop.philosophy_text, note.trim());
-      db.prepare("UPDATE shops SET philosophy_text = ?, philosophy_points = ?, philosophy_status = 'draft' WHERE id = ?").run(
+      db.prepare("UPDATE shops SET philosophy_text = ?, philosophy_points = ?, philosophy_status = 'draft', intro_revise_count = intro_revise_count + 1 WHERE id = ?").run(
         s.intro,
         JSON.stringify(s.points),
         shop.id,

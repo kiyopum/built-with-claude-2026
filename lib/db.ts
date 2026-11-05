@@ -180,6 +180,8 @@ function open(): DatabaseSync {
   if (!cols.includes("legal_json")) db.exec("ALTER TABLE drafts ADD COLUMN legal_json TEXT");
   // SNS 投稿（Claude が作った文と、その法律チェック）
   if (!cols.includes("sns_json")) db.exec("ALTER TABLE drafts ADD COLUMN sns_json TEXT");
+  // 「AI に作り直してもらう」を使った回数（REVISE_LIMIT まで。API の料金を YMM が持つため）
+  if (!cols.includes("revise_count")) db.exec("ALTER TABLE drafts ADD COLUMN revise_count INTEGER NOT NULL DEFAULT 0");
   const hcols = (db.prepare("PRAGMA table_info(hearings)").all() as { name: string }[]).map((c) => c.name);
   if (!hcols.includes("legal_research")) db.exec("ALTER TABLE hearings ADD COLUMN legal_research TEXT");
   const scols = (db.prepare("PRAGMA table_info(shops)").all() as { name: string }[]).map((c) => c.name);
@@ -202,6 +204,11 @@ function open(): DatabaseSync {
   // お店の言葉の本（Claude がまとめたもの・作った日）
   // 事前調査（2026-11-05 きよさん）：パートナーが訪問の予定を先に登録 → 事務局がローカルの Claude Code で調べて取り込む（API を使わない）
   //   調べた中身は website_url / website_notes / legal_research に入れ、質問だけ prep_questions に入れる
+  // お店の紹介を「AI に直してもらう」を使った回数（REVISE_LIMIT まで）
+  if (!scols.includes("intro_revise_count")) db.exec("ALTER TABLE shops ADD COLUMN intro_revise_count INTEGER NOT NULL DEFAULT 0");
+  // 法律の調査をいつ調べ直すか（調査に書かれた「施行予定」のいちばん早い日。なければ調べ直さない）と、どのお店の調査を使い回したか
+  if (!scols.includes("law_next_check")) db.exec("ALTER TABLE shops ADD COLUMN law_next_check TEXT");
+  if (!scols.includes("law_from_shop")) db.exec("ALTER TABLE shops ADD COLUMN law_from_shop INTEGER");
   if (!scols.includes("visit_on")) db.exec("ALTER TABLE shops ADD COLUMN visit_on TEXT");
   if (!scols.includes("prep_questions")) db.exec("ALTER TABLE shops ADD COLUMN prep_questions TEXT");
   if (!scols.includes("prep_at")) db.exec("ALTER TABLE shops ADD COLUMN prep_at TEXT");
@@ -297,6 +304,9 @@ export function getDb(): DatabaseSync {
   return globalThis.__yaobizDb;
 }
 
+// 「AI に作り直してもらう」は1つにつき5回まで（2026-11-05 きよさん。手で直す・法律チェックのやり直しは数えない）
+export const REVISE_LIMIT = 5;
+
 export type Shop = {
   id: number;
   name: string;
@@ -324,6 +334,7 @@ export type Shop = {
   visit_on: string | null;
   prep_questions: string | null;
   prep_at: string | null;
+  intro_revise_count: number;
 };
 export const SELLER_KEYS = ["seller_name", "seller_rep", "seller_address", "seller_phone", "seller_email"] as const;
 export type Draft = {
@@ -349,6 +360,7 @@ export type Draft = {
   ymm_rate?: number | null;
   created_at: string;
   updated_at: string;
+  revise_count: number;
 };
 
 export function getText(key: "payment_terms"): string {

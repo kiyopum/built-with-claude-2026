@@ -25,6 +25,7 @@ type Data = {
     category: string;
     philosophy_text: string | null;
     philosophy_status: "none" | "draft" | "approved";
+    intro_revise_left: number;
     shipping_yen: number | null;
     prefecture: string | null;
     pickup_ok: boolean;
@@ -307,8 +308,8 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
             <button className="rounded-xl border-2 border-leaf text-leaf py-2.5 font-bold" onClick={() => setMode("edit")}>
               手で直す
             </button>
-            <button className="rounded-xl border-2 border-carrot text-carrot py-2.5 font-bold text-sm" onClick={() => setMode("revise")}>
-              AI に直してもらう
+            <button className="rounded-xl border-2 border-carrot text-carrot py-2.5 font-bold text-sm disabled:opacity-40" disabled={shop.intro_revise_left <= 0} onClick={() => setMode("revise")}>
+              {shop.intro_revise_left > 0 ? `AI に直してもらう（あと${shop.intro_revise_left}回）` : "AI に直すのは5回まで"}
             </button>
           </div>
         </div>

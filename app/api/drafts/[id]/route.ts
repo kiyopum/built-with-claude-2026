@@ -1,6 +1,6 @@
 import { shopPinError, guardDraft } from "@/lib/auth";
 import { isIncluded } from "@/lib/shipping";
-import { getDb, getSetting, ymmRateOf, type Draft } from "@/lib/db";
+import { REVISE_LIMIT, getDb, getSetting, ymmRateOf, type Draft } from "@/lib/db";
 import { reviseDraft, recheckLegal, type Legal, type DraftFields } from "@/lib/claude";
 import { loadProductContext } from "@/lib/context";
 import { ensureStripePrice } from "@/lib/stripe";
@@ -18,7 +18,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   // 分け方（YMM の取り分）は YMM 管理だけに見せる・変えさせる
   const admin = g.user.role === "admin";
   return Response.json({
-    draft: { ...d, photos: photoUrls(d.id), ymm_rate: admin ? d.ymm_rate : undefined },
+    draft: { ...d, photos: photoUrls(d.id), ymm_rate: admin ? d.ymm_rate : undefined, revise_left: Math.max(0, REVISE_LIMIT - (d.revise_count ?? 0)) },
     is_admin: admin,
     rates: admin ? { effective: ymmRateOf(d), goods: getSetting("ymm_rate"), service: getSetting("ymm_rate_service") } : null,
   });
@@ -101,10 +101,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     if (body.action === "revise") {
       const note = body.note?.trim();
       if (!note) return Response.json({ error: "直してほしいことを一言入れてください" }, { status: 400 });
+      if ((d.revise_count ?? 0) >= REVISE_LIMIT) {
+        return Response.json({ error: `AI に作り直してもらえるのは${REVISE_LIMIT}回までです。ここからは「手で直す」で直してください（法律チェックはやり直します）。` }, { status: 400 });
+      }
       const p = await reviseDraft(c, current, note, loadPhotos(d.id));
       db.prepare(
         `UPDATE drafts SET name = ?, description = ?, price_yen = ?, recommend_reason = ?, target_customer = ?, legal_json = ?,
-         status = 'draft', revision_note = ?, stripe_product_id = NULL, stripe_price_id = NULL,
+         status = 'draft', revision_note = ?, stripe_product_id = NULL, stripe_price_id = NULL, revise_count = revise_count + 1,
          updated_at = datetime('now','localtime') WHERE id = ?`,
       ).run(p.name, p.description, p.price_yen, p.recommend_reason, p.target_customer, JSON.stringify(p.legal), note, d.id);
       return Response.json({ ok: true });

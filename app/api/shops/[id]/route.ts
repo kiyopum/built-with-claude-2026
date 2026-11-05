@@ -1,6 +1,6 @@
 import { parseShipDays, prefFromAddress } from "@/lib/shipping";
 import { guardShop } from "@/lib/auth";
-import { getDb, getSetting, SELLER_KEYS, type Shop } from "@/lib/db";
+import { getDb, getSetting, SELLER_KEYS, type Shop, REVISE_LIMIT } from "@/lib/db";
 import { thisMonth } from "@/lib/checkin";
 
 // お店のページ用：お店の情報（理念）と商品の一覧
@@ -39,6 +39,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       philosophy_status: shop.philosophy_status,
       website_url: shop.website_url,
       website_notes: shop.website_notes,
+      intro_revise_left: Math.max(0, REVISE_LIMIT - (shop.intro_revise_count ?? 0)),
       prepared: !!shop.prep_questions, // 事務局が先に調べてある（質問・ホームページ・法律）
       visit_on: shop.visit_on,
       shipping_yen: shop.shipping_yen,

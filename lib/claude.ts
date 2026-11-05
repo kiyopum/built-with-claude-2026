@@ -340,7 +340,10 @@ const RESEARCH_SYSTEM = `あなたは、日本の小さなお店がネットで�
 書き方:
 - 箇条書きで、法律の名前、何をしなければならないか（または何をしてはいけないか）、このお店の商品にどう当てはまるか、を短く書く
 - 調べて分かったことには出典のURLを付ける。調べても確かめられなかったことは「未確認」と書く
-- 推測で断定しない`;
+- 推測で断定しない
+- お店の名前は書かず「このお店」と書く（同じ業種のほかのお店でも使い回すため）
+- 国のサイトに「○年○月○日施行」「経過措置は○年○月○日まで」と書いてあれば、その日付も書く
+- いちばん最後に、今日より後に施行される改正や、今日より後に終わる経過措置を、国のサイトで確かめられたものだけ1行ずつ「施行予定: YYYY-MM-DD（法律の名前と中身）」の形で書く。ひとつもなければ「施行予定: なし」と1行だけ書く（この日付が来たら調べ直すため）`;
 
 // お店の業種で調べる（質問リストを作った時点で裏で始め、ヒアリング中に終わらせる）
 export async function researchLaw(shop: { name: string; category: string }, transcript?: string): Promise<LegalResearch> {
@@ -348,7 +351,7 @@ export async function researchLaw(shop: { name: string; category: string }, tran
   const messages: Anthropic.Beta.BetaMessageParam[] = [
     {
       role: "user",
-      content: `お店の名前: ${shop.name}\n業種: ${shop.category}${hearing}\n\nこのお店の商品をネットで売るときに関係する法律を調べてまとめてください。`,
+      content: `今日: ${new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" })}\nお店の名前: ${shop.name}\n業種: ${shop.category}${hearing}\n\nこのお店の商品をネットで売るときに関係する法律を調べてまとめてください。`,
     },
   ];
   const sources = new Map<string, string>();
@@ -817,4 +820,26 @@ export async function makeNudge(input: {
     n.gyoji_idea = "";
   }
   return n;
+}
+
+// ---------- 12) 法律の調査の使い回し（2026-11-05 きよさん：同じ材料なら同じ法律に準拠できる） ----------
+//   新しいお店の業種が、もう調べてあるお店の業種と「売る物の種類が同じ（またはその一部）」なら、その調査を使う。
+//   迷うときは使わない（足りない法律があると、店主さんが知らずに違反してしまうため）
+
+const SameLawSchema = z.object({
+  match: z.number().int().describe("使い回せる業種の番号。なければ -1"),
+  reason: z.string().describe("そう判断した理由。30字以内"),
+});
+
+const SAME_LAW_SYSTEM = `あなたは、日本の小さなお店がネットで商品を売るときの法律の調査を、使い回してよいかを判断する担当者です。
+新しいお店の業種と、もう法律を調べてある業種の一覧を比べます。
+- 新しいお店が売りそうな物・サービスの種類が、調べてある業種の中に全部ふくまれるときだけ、その番号を返す（例：「味噌の店」は「味噌と漬物の店」の調査を使える。逆の「味噌と漬物の店」に「味噌の店」の調査は使えない＝漬物の分が足りない）
+- 自家製か仕入れか、食品かどうか、生ものか加工品か、酒類・医薬品・動物などの特別な許可が要るかが違うときは使えない
+- 少しでも迷うときは -1`;
+
+export async function findSameLaw(category: string, researched: string[]): Promise<number> {
+  if (researched.length === 0) return -1;
+  const list = researched.map((c, i) => `${i}: ${c}`).join("\n");
+  const r = await ask(SameLawSchema, SAME_LAW_SYSTEM, `<new_shop>\n業種: ${category}\n</new_shop>\n\n<researched>\n${list}\n</researched>\n\n新しいお店に使い回せる調査はありますか？`);
+  return r.match >= 0 && r.match < researched.length ? r.match : -1;
 }
