@@ -12,7 +12,7 @@ export async function GET() {
   const db = getDb();
   const rows = db
     .prepare(
-      `SELECT v.id, v.user_id, v.source, v.kind, v.original, v.title, v.message, v.step, v.created_at,
+      `SELECT v.id, v.user_id, v.source, v.kind, v.original, v.title, v.message, v.step, v.via, v.created_at,
               s.name AS shop_name, us.name AS user_name,
               (SELECT COUNT(*) FROM voice_thanks t WHERE t.voice_id = v.id) AS thanks,
               EXISTS (SELECT 1 FROM voice_thanks t WHERE t.voice_id = v.id AND t.user_id = ?) AS thanked
@@ -52,6 +52,8 @@ export async function POST(req: Request) {
     if (!v) return Response.json({ error: "見つかりません" }, { status: 404 });
     if (v.user_id !== u.id && u.role !== "admin") return Response.json({ error: "書いた人と YMM 管理だけが消せます" }, { status: 403 });
     db.prepare("DELETE FROM voice_thanks WHERE voice_id = ?").run(id);
+    // お客さまのお便りそのものは店主さんに残す（みんなの声から外すだけ）
+    db.prepare("UPDATE letters SET voice_id = NULL WHERE voice_id = ?").run(id);
     db.prepare("DELETE FROM voices WHERE id = ?").run(id);
     return Response.json({ ok: true });
   }

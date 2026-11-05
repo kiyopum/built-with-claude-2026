@@ -428,10 +428,66 @@ type Order = {
   customer_email: string | null;
   kind: "goods" | "service";
   product_name: string;
+  letter_token: string;
+  letters: { id: number; original: string; owner_reply: string | null; replied_at: string | null; created_at: string; title: string | null; kind: string | null }[];
 };
+
+// ありがとうの往復便：お客さまからのお便りと、店主さんのお返事
+function LetterThread({ o, onReply }: { o: Order; onReply: (letterId: number, text: string) => Promise<string> }) {
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [busy, setBusy] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  if (!o.letters.length) return null;
+  return (
+    <div className="space-y-2 pt-1">
+      {o.letters.map((l) => (
+        <div key={l.id} className="rounded-lg bg-white p-2 space-y-2 border border-black/5">
+          <div className="text-xs text-black/50">📮 お客さまからのお便り・{l.created_at.slice(0, 10)}</div>
+          <p className="whitespace-pre-wrap">{l.original}</p>
+          {l.title && (
+            <div className="text-xs text-black/60">
+              みんなの声には「{l.kind === "request" ? "🌱" : "🌸"} {l.title}」として、名前を消して載りました。
+            </div>
+          )}
+          {l.owner_reply ? (
+            <div className="rounded-lg bg-leaf/10 p-2">
+              <div className="text-xs text-leaf font-bold">お返事（{l.replied_at?.slice(0, 10)}）</div>
+              <p className="whitespace-pre-wrap">{l.owner_reply}</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <textarea
+                className="w-full min-h-20 rounded-lg border border-black/20 p-2 text-base"
+                placeholder="店主さんのお返事（お客さまが同じ QR を開くと読めます）"
+                value={drafts[l.id] ?? ""}
+                onChange={(e) => setDrafts((d) => ({ ...d, [l.id]: e.target.value }))}
+              />
+              <button
+                className="w-full rounded-xl bg-leaf text-white py-2 font-bold disabled:opacity-50"
+                disabled={busy !== null || !(drafts[l.id] ?? "").trim()}
+                onClick={async () => {
+                  setError("");
+                  setBusy(l.id);
+                  const err = await onReply(l.id, drafts[l.id] ?? "");
+                  setBusy(null);
+                  if (err) setError(err);
+                }}
+              >
+                {busy === l.id ? <Working text="お返事を届けています" /> : "お返事を届ける"}
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+      {error && <p className="rounded-xl bg-red-50 text-red-700 p-2 text-xs">{error}</p>}
+    </div>
+  );
+}
 
 function OrdersCard({ shopId, hasPin }: { shopId: number; hasPin: boolean }) {
   const [orders, setOrders] = useState<Order[] | null>(null);
+  // 開いている間だけ、お返事に使う暗証番号を覚えておく（閉じたら消える）
+  const [pin, setPin] = useState("");
   if (!hasPin) return null;
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
@@ -441,9 +497,12 @@ function OrdersCard({ shopId, hasPin }: { shopId: number; hasPin: boolean }) {
           button="店主さん：注文を見る"
           label="店主さん：お店の暗証番号"
           note="お客さまの住所が入っているので、店主さんの暗証番号で開きます。"
-          onPin={async (pin) => {
-            const { error, json } = await post(`/api/shops/${shopId}/orders`, { shopPin: pin });
-            if (!error) setOrders(json.orders as Order[]);
+          onPin={async (p) => {
+            const { error, json } = await post(`/api/shops/${shopId}/orders`, { shopPin: p });
+            if (!error) {
+              setOrders(json.orders as Order[]);
+              setPin(p);
+            }
             return error;
           }}
         />
@@ -477,10 +536,29 @@ function OrdersCard({ shopId, hasPin }: { shopId: number; hasPin: boolean }) {
                 <div className="text-xs">
                   お支払い {o.amount_yen.toLocaleString()}円{o.kind !== "service" && `（うち送料 ${o.shipping_yen.toLocaleString()}円）`}／ 店主さんの受け取り <b>{o.owner_yen.toLocaleString()}円</b>
                 </div>
+                {o.kind !== "service" && (
+                  <Link href={`/hearing/${shopId}/card?t=${o.letter_token}`} className="inline-block text-xs text-leaf underline">
+                    📮 箱に入れるお手紙カードを印刷する
+                  </Link>
+                )}
+                <LetterThread
+                  o={o}
+                  onReply={async (letterId, text) => {
+                    const { error, json } = await post(`/api/shops/${shopId}/orders`, { shopPin: pin, reply: { letterId, text } });
+                    if (!error) setOrders(json.orders as Order[]);
+                    return error;
+                  }}
+                />
               </li>
             ))}
           </ul>
-          <button className="w-full text-sm text-black/50" onClick={() => setOrders(null)}>
+          <button
+            className="w-full text-sm text-black/50"
+            onClick={() => {
+              setOrders(null);
+              setPin("");
+            }}
+          >
             閉じる（届け先を隠す）
           </button>
         </>

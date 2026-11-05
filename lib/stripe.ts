@@ -1,7 +1,7 @@
 // Stripe（テストモード専用）。本番キー（sk_live_）は受け付けない。
 import { fullPref, prefOf } from "@/lib/shipping";
 import Stripe from "stripe";
-import { getDb, getSetting, ymmRateOf, type Draft } from "@/lib/db";
+import { getDb, getSetting, letterTokenOf, ymmRateOf, type Draft } from "@/lib/db";
 import { splitAmount, splitPartner } from "@/lib/split";
 import { idOfCode } from "@/lib/auth";
 
@@ -89,4 +89,10 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
     chosen, service ? "メールでご案内" : session.metadata?.ship_method || null, pickup ? 1 : 0, warning, session.customer_details?.email ?? null,
   );
   return { created: true };
+}
+
+// 決済の番号から、ありがとうの往復便の合言葉を出す（決済完了ページで「お店に一言」に使う）
+export function letterTokenForSession(sessionId: string): string | null {
+  const o = getDb().prepare("SELECT id FROM orders WHERE stripe_session_id = ?").get(sessionId) as { id: number } | undefined;
+  return o ? letterTokenOf(o.id) : null;
 }

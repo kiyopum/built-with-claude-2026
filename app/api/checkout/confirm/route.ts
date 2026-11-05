@@ -1,4 +1,4 @@
-import { stripe, recordOrder } from "@/lib/stripe";
+import { stripe, recordOrder, letterTokenForSession } from "@/lib/stripe";
 
 // 決済完了ページから呼ぶ。Stripe に支払い状況を問い合わせて、払われていれば注文を記録する。
 // （本番は Webhook で記録する。手元の Mac には Stripe から Webhook が届かないので、こちらでも同じ記録をする。二重にはならない）
@@ -8,7 +8,10 @@ export async function POST(req: Request) {
   try {
     const session = await stripe().checkout.sessions.retrieve(sessionId);
     const r = recordOrder(session);
-    return Response.json({ paid: session.payment_status === "paid", amount: session.amount_total, created: r.created });
+    const paid = session.payment_status === "paid";
+    // お店に一言送るページの合言葉（払われた注文だけ）
+    const letter = paid ? letterTokenForSession(session.id) : null;
+    return Response.json({ paid, amount: session.amount_total, created: r.created, letter });
   } catch (e) {
     console.error(e);
     return Response.json({ error: e instanceof Error ? e.message : "支払いを確認できませんでした" }, { status: 500 });

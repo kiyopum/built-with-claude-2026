@@ -19,6 +19,7 @@ type Item = {
   created_at: string;
   shop_name: string | null;
   user_name: string;
+  via: string | null;
   thanks: number;
   thanked: boolean;
   mine: boolean;
@@ -142,7 +143,7 @@ function VoicesInner() {
                 </p>
               )}
               <div className="text-xs text-black/50">
-                {WHO[v.source]}の声{v.shop_name && `・${v.shop_name}`}・{v.user_name} さんが聞きました・{v.created_at.slice(0, 16)}
+                {WHO[v.source]}の声{v.shop_name && `・${v.shop_name}`}・{v.via === "letter" ? "📮 カードの QR から届きました" : `${v.user_name} さんが聞きました`}・{v.created_at.slice(0, 16)}
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <button className={`rounded-full px-3 py-1 border ${v.thanked ? "bg-carrot text-white border-carrot" : "border-black/15 bg-white"}`} onClick={() => post({ action: "thanks", id: v.id })}>

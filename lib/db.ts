@@ -2,6 +2,7 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
+import { randomBytes } from "node:crypto";
 
 // テストのときだけ YAOBIZ_DATA_DIR で別の場所に向ける（本物のデータを汚さない）
 const DATA_DIR = process.env.YAOBIZ_DATA_DIR || path.join(process.cwd(), "data");
@@ -140,6 +141,20 @@ function open(): DatabaseSync {
       UNIQUE (user_id, month)
     );
 
+    -- ありがとうの往復便（2026-11-05 きよさん）：箱に入れたカードの QR から、お客さまがお店に一言送る。店主さんが返事をする。
+    --   返事はメールでは送らない。お客さまが同じ QR を開くと読める（お客さまの連絡先を増やさない）
+    --   original はお客さまが書いたそのままの言葉。みんなの声には Claude が整えた文（voice_id）が載る
+    CREATE TABLE IF NOT EXISTS letters (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER NOT NULL REFERENCES orders(id),
+      shop_id INTEGER NOT NULL REFERENCES shops(id),
+      original TEXT NOT NULL,
+      voice_id INTEGER REFERENCES voices(id),
+      owner_reply TEXT,
+      replied_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+
     -- 料率などの設定
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
@@ -228,9 +243,15 @@ function open(): DatabaseSync {
     ["ship_warning", "TEXT"],
     // お客さまのメールアドレス（サービスの案内＝配信の URL などを講師がメールで送るため）
     ["customer_email", "TEXT"],
+    // ありがとうの往復便の合言葉（QR に入れる。注文ごとに1つ）
+    ["letter_token", "TEXT"],
   ] as const) {
     if (!ocols.includes(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} ${t}`);
   }
+
+  // みんなの声が、お客さまのお便り（QR から）で届いたものか
+  const vcols = (db.prepare("PRAGMA table_info(voices)").all() as { name: string }[]).map((c) => c.name);
+  if (!vcols.includes("via")) db.exec("ALTER TABLE voices ADD COLUMN via TEXT");
 
   // デモ用のダミーの店（架空）。1件もなければ入れる。
   const count = db.prepare("SELECT COUNT(*) AS n FROM shops").get() as { n: number };
@@ -313,4 +334,15 @@ export function getSetting(key: "ymm_rate" | "ymm_rate_service" | "partner_share
 export function ymmRateOf(d: Pick<Draft, "kind" | "ymm_rate">): number {
   if (d.ymm_rate != null) return d.ymm_rate;
   return getSetting(d.kind === "service" ? "ymm_rate_service" : "ymm_rate");
+}
+
+// ありがとうの往復便の合言葉（注文ごと）。なければ作る
+export function letterTokenOf(orderId: number): string {
+  const db = getDb();
+  const row = db.prepare("SELECT letter_token FROM orders WHERE id = ?").get(orderId) as { letter_token: string | null } | undefined;
+  if (!row) throw new Error("注文が見つかりません");
+  if (row.letter_token) return row.letter_token;
+  const t = randomBytes(12).toString("base64url");
+  db.prepare("UPDATE orders SET letter_token = ? WHERE id = ?").run(t, orderId);
+  return t;
 }
