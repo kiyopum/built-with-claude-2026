@@ -55,7 +55,7 @@ type Data = {
   }[];
 };
 
-type Proposal = { name: string; form: string; what: string; who: string; why_here: string; quote: string; start_small: string; ask: string; check: string };
+type Proposal = { name: string; form: string; what: string; who: string; unit?: string; why_here: string; quote: string; start_small: string; ask: string; check: string };
 
 const STATUS = { draft: "店主さんの確認待ち", published: "公開中", rejected: "却下" } as Record<string, string>;
 const VERDICT = {
@@ -96,7 +96,7 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
     <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-leaf/30 space-y-3">
       <div className="font-bold text-leaf">🌱 次の商品を提案する</div>
       <p className="text-sm">
-        ものを売るのは、入り口です。お店の話の中には、<b>送らない商品</b>（配信・教室・動画・レシピなど）のたねがあります。よさそうな案を店主さんに見せて、相談してみてください。
+        ものを売るのは、入り口です。売上が少しでも、店主さんとの話のたねになります。お店の話の中には、<b>送らない商品</b>（配信・教室・動画・レシピなど）のたねがあります。Claude は、申し込みがまとまりやすい形から案を出します。よさそうな案を店主さんに見せて、相談してみてください。
       </p>
       <p className="text-xs text-black/60">出すかどうかを決めるのは、店主さんです。提案は、してもしなくても大丈夫です。</p>
 
@@ -112,9 +112,12 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
         </div>
         <div className="border-t border-leaf/20 pt-2 text-xs text-black/70 space-y-1">
           <div>たとえば（値段は店主さんが決めます）</div>
-          {[3000, 5000].map((a) => (
+          {[
+            { a: 5000, label: `${yen(5000)} の申し込み1つで` },
+            { a: 20000, label: `4人ひと組 ${yen(20000)} の申し込み1つで` },
+          ].map(({ a, label }) => (
             <div key={a}>
-              <div>{yen(a)} のとき、申し込み1つごとに</div>
+              <div>{label}</div>
               <div className="text-right">
                 あなたに <b className="text-sm">{yen(service(a).partner)}</b>・店主さんに {yen(service(a).owner)}
               </div>
@@ -149,6 +152,12 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
                       <dt className="text-black/50">こんな方に</dt>
                       <dd>{p.who}</dd>
                     </div>
+                    {p.unit && (
+                      <div>
+                        <dt className="text-black/50">申し込みのまとまり</dt>
+                        <dd>{p.unit}</dd>
+                      </div>
+                    )}
                     <div>
                       <dt className="text-black/50">このお店に合う理由</dt>
                       <dd>{p.why_here}</dd>

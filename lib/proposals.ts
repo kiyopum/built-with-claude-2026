@@ -21,5 +21,5 @@ export function proposalFromForm(shop: { proposals_json: string | null }, seed: 
 
 // Claude に渡す形（質問づくり・申し込みページの下書きの手がかり）
 export function proposalText(p: Proposal): string {
-  return `名前: ${p.name}\n届け方: ${p.form}\n何をするか: ${p.what}\nどんな人に: ${p.who}\n出す前に確かめること: ${p.check}`;
+  return `名前: ${p.name}\n届け方: ${p.form}\n何をするか: ${p.what}\nどんな人に: ${p.who}${p.unit ? `\n申し込みのまとまり: ${p.unit}` : ""}\n出す前に確かめること: ${p.check}`;
 }
