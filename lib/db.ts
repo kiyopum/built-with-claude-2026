@@ -197,6 +197,9 @@ function open(): DatabaseSync {
   if (!scols.includes("philosophy_status")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_status TEXT NOT NULL DEFAULT 'none'");
   // お店のホームページ（あれば Claude が読んで、お店のヒアリングの土台にする。ヒアリングは補足になる）
   if (!scols.includes("website_url")) db.exec("ALTER TABLE shops ADD COLUMN website_url TEXT");
+  // お店の言葉の本（Claude がまとめたもの・作った日）
+  if (!scols.includes("book_json")) db.exec("ALTER TABLE shops ADD COLUMN book_json TEXT");
+  if (!scols.includes("book_at")) db.exec("ALTER TABLE shops ADD COLUMN book_at TEXT");
   if (!scols.includes("website_notes")) db.exec("ALTER TABLE shops ADD COLUMN website_notes TEXT");
   // 販売者の情報（特定商取引法の表示用）。ヒアリングでは聞かず、名刺の写真か手入力で登録する
   for (const c of ["seller_name", "seller_rep", "seller_address", "seller_phone", "seller_email"]) {
@@ -249,6 +252,13 @@ function open(): DatabaseSync {
     if (!ocols.includes(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} ${t}`);
   }
 
+  // 休んでいい仕組み（2026-11-05 きよさん）：rest_month＝お休みする月（2026-11）。翌月には自然に戻る。
+  //   お休みの間、担当のお店は見守りの人（cover_partner_id。空なら YMM 管理）が見る。担当・取り分・記録は変えない
+  //   career_json：わたしの歩み（できるようになったこと）を Claude がまとめたもの
+  const ucols = (db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name);
+  for (const c of ["rest_month", "career_json", "career_at"]) if (!ucols.includes(c)) db.exec(`ALTER TABLE users ADD COLUMN ${c} TEXT`);
+  if (!scols.includes("cover_partner_id")) db.exec("ALTER TABLE shops ADD COLUMN cover_partner_id INTEGER REFERENCES users(id)");
+
   // みんなの声が、お客さまのお便り（QR から）で届いたものか
   const vcols = (db.prepare("PRAGMA table_info(voices)").all() as { name: string }[]).map((c) => c.name);
   if (!vcols.includes("via")) db.exec("ALTER TABLE voices ADD COLUMN via TEXT");
@@ -288,6 +298,7 @@ export type Shop = {
   seller_phone: string | null;
   seller_email: string | null;
   partner_id: number | null;
+  cover_partner_id: number | null;
   release_pin_hash: string | null;
   shipping_yen: number | null;
   prefecture: string | null;

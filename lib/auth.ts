@@ -5,6 +5,7 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { getDb, type Shop } from "@/lib/db";
+import { thisMonth } from "@/lib/checkin";
 
 export type User = { id: number; name: string; role: "partner" | "admin"; code: string };
 const COOKIE = "yaobiz_session";
@@ -85,8 +86,13 @@ export async function requireAdmin(): Promise<User | Response> {
 }
 
 // そのお店を触ってよいか（担当パートナーか管理者）
-export function canEditShop(u: User, shop: Pick<Shop, "partner_id">): boolean {
-  return u.role === "admin" || shop.partner_id === u.id;
+//   見守りの人（担当がお休みの間に YMM 管理が決めた人）も触れる
+export function canEditShop(u: User, shop: Pick<Shop, "partner_id"> & Partial<Pick<Shop, "cover_partner_id">>): boolean {
+  if (u.role === "admin" || shop.partner_id === u.id) return true;
+  // 見守りは、担当がお休みの月の間だけ（もどったら自然に外れる）
+  if (shop.cover_partner_id == null || shop.cover_partner_id !== u.id || shop.partner_id == null) return false;
+  const p = getDb().prepare("SELECT rest_month FROM users WHERE id = ?").get(shop.partner_id) as { rest_month: string | null } | undefined;
+  return p?.rest_month === thisMonth();
 }
 
 // お店の暗証番号（店主が決めた4桁）を確かめる。リリースと届け先を見るときに使う

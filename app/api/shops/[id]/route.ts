@@ -1,6 +1,7 @@
 import { prefFromAddress } from "@/lib/shipping";
 import { guardShop } from "@/lib/auth";
 import { getDb, SELLER_KEYS, type Shop } from "@/lib/db";
+import { thisMonth } from "@/lib/checkin";
 
 // お店のページ用：お店の情報（理念）と商品の一覧
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -39,6 +40,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       // 都道府県の初期値の候補（住所の書き出しから。決めるのは人）
       prefecture_hint: prefFromAddress(shop.seller_address),
       has_pin: !!shop.release_pin_hash,
+      // 担当がお休み中か（理由は持たない・出さない）
+      partner_resting: shop.partner_id != null && (db.prepare("SELECT rest_month FROM users WHERE id = ?").get(shop.partner_id) as { rest_month: string | null } | undefined)?.rest_month === thisMonth(),
       seller: Object.fromEntries(SELLER_KEYS.map((k) => [k, shop[k] ?? ""])),
     },
     products,

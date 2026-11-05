@@ -41,6 +41,7 @@ export function Nav() {
             {pill("/statement", "明細")}
             {pill("/voices", "みんなの声")}
             {pill("/checkin", "月1")}
+            {pill("/me", "歩み")}
             {me.role === "admin" && pill("/admin", "管理")}
           </>
         ) : (

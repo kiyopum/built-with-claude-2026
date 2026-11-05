@@ -14,6 +14,7 @@ type Person = {
   name: string;
   answers: Record<string, string | number> | null;
   care_level: "元気" | "気にかける" | "早めに話す" | null;
+  resting?: number;
   care_summary: string | null;
   talk_points: string[];
   created_at: string | null;
@@ -191,7 +192,9 @@ function People({ data, allQ }: { data: Data; allQ: { id: string; text: string }
       {people.map((p) => (
         <section key={p.id} className={`rounded-2xl p-4 border space-y-2 ${p.care_level ? LEVEL[p.care_level] : "bg-white border-black/5"}`}>
           <div className="flex justify-between items-center gap-2">
-            <b className="text-black">{p.name} さん</b>
+            <b className="text-black">
+              {p.name} さん{p.resting ? <span className="text-xs font-normal">・🌿 今月お休み中</span> : null}
+            </b>
             <span className="text-xs font-bold">{p.care_level ?? "まだ答えていません"}</span>
           </div>
           {p.care_level && (
@@ -203,6 +206,9 @@ function People({ data, allQ }: { data: Data; allQ: { id: string; text: string }
                 </div>
               )}
               <p className="text-sm text-black">{p.care_summary}</p>
+              {p.care_level === "早めに話す" && !p.resting && (
+                <p className="text-xs text-black/70">面談で「今月はお休みしても大丈夫」と伝えることもできます（本人が「歩み」の画面で押すだけ。担当・取り分はそのまま）。</p>
+              )}
               <div className="text-sm text-black">
                 <div className="text-xs font-bold">面談で聞いてみるとよいこと</div>
                 <ul className="list-disc pl-5">

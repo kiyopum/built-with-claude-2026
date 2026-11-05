@@ -10,8 +10,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
-type User = { id: number; name: string; role: string; active: number; code: string };
-type Shop = { id: number; name: string; category: string; partner_id: number | null; shipping_yen: number | null; has_pin: boolean; published: number; waiting: number };
+type User = { id: number; name: string; role: string; active: number; code: string; resting: boolean };
+type Shop = { id: number; name: string; category: string; partner_id: number | null; cover_partner_id: number | null; shipping_yen: number | null; has_pin: boolean; published: number; waiting: number };
 type Blocked = { id: number; shop_id: number; name: string; shop_name: string; partner_name: string | null; updated_at: string; reasons: string[] };
 type Order = { id: number; created_at: string; amount_yen: number; shipping_yen: number; ship_name: string | null; ship_address: string | null; ship_method: string | null; ship_warning: string | null; customer_email: string | null; product_name: string; shop_name: string };
 type Data = { me: { id: number }; users: User[]; shops: Shop[]; blocked: Blocked[]; orders: Order[]; payment_terms: string };
@@ -125,6 +125,25 @@ export default function AdminPage() {
                   ))}
                 </select>
               </div>
+              {data.users.find((u) => u.id === s.partner_id)?.resting && (
+                <div className="flex gap-2 items-center rounded-lg bg-leaf/10 p-2">
+                  <span className="text-xs shrink-0">🌿 担当がお休み中。見守り</span>
+                  <select
+                    className="flex-1 rounded-lg border border-black/15 p-2 bg-white"
+                    value={s.cover_partner_id ?? ""}
+                    onChange={(e) => act({ action: "setCover", shopId: s.id, partnerId: e.target.value || null }, `${s.name} の見守りを変えました`)}
+                  >
+                    <option value="">YMM 管理が見守る</option>
+                    {partners
+                      .filter((p) => p.id !== s.partner_id && !p.resting)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}（{p.code}）
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
               {s.has_pin && (
                 <button
                   className="text-xs text-black/50 underline"
@@ -194,7 +213,13 @@ function UsersCard({ users, meId, act }: { users: User[]; meId: number; act: (b:
                   {" "}
                   {u.role === "admin" ? "YMM 管理" : `パートナー ${u.code}`}
                   {!u.active && "・停止中"}
+                  {u.resting && "・🌿 今月お休み"}
                 </span>
+                {u.role !== "admin" && (
+                  <Link href={`/me?user=${u.id}`} className="ml-2 text-xs text-leaf underline">
+                    歩み
+                  </Link>
+                )}
               </span>
               <span className="flex gap-2 shrink-0 text-xs">
                 <button className="underline text-leaf" onClick={() => (setResetFor(resetFor === u.id ? null : u.id), setNewPin(""))}>

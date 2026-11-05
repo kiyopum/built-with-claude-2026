@@ -59,11 +59,11 @@ export async function GET(req: Request) {
   const people = (
     db
       .prepare(
-        `SELECT us.id, us.name, c.answers_json, c.care_level, c.care_summary, c.talk_points, c.created_at
+        `SELECT us.id, us.name, us.rest_month = ? AS resting, c.answers_json, c.care_level, c.care_summary, c.talk_points, c.created_at
          FROM users us LEFT JOIN checkins c ON c.user_id = us.id AND c.month = ?
          WHERE us.role = 'partner' AND us.active = 1 ORDER BY us.id`,
       )
-      .all(month) as { id: number; name: string; answers_json: string | null; care_level: string | null; care_summary: string | null; talk_points: string | null; created_at: string | null }[]
+      .all(month, month) as { id: number; name: string; answers_json: string | null; care_level: string | null; care_summary: string | null; talk_points: string | null; created_at: string | null }[]
   )
     .map((p) => ({ ...p, answers: p.answers_json ? JSON.parse(p.answers_json) : null, talk_points: p.talk_points ? JSON.parse(p.talk_points) : [], answers_json: undefined }))
     .sort((a, b) => (a.care_level ? ORDER[a.care_level] : 3) - (b.care_level ? ORDER[b.care_level] : 3));

@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { getDb, type Shop } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { thisMonth } from "@/lib/checkin";
 
 // パートナーが担当するお店の一覧（管理者は全部）
 export async function GET() {
@@ -11,7 +12,12 @@ export async function GET() {
   const shops = (
     u.role === "admin"
       ? db.prepare("SELECT id, name, category, area FROM shops ORDER BY id DESC").all()
-      : db.prepare("SELECT id, name, category, area FROM shops WHERE partner_id = ? ORDER BY id DESC").all(u.id)
+      : db
+          .prepare(
+            `SELECT s.id, s.name, s.category, s.area, COALESCE(s.partner_id, 0) != ? AS covering FROM shops s LEFT JOIN users p ON p.id = s.partner_id
+             WHERE s.partner_id = ? OR (s.cover_partner_id = ? AND p.rest_month = ?) ORDER BY s.id DESC`,
+          )
+          .all(u.id, u.id, u.id, thisMonth())
   ) as Shop[];
   return Response.json({ shops });
 }

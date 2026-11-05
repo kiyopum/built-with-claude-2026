@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
-type Shop = { id: number; name: string; category: string; area: string };
+type Shop = { id: number; name: string; category: string; area: string; covering?: number };
 
 export default function HearingTop() {
   const router = useRouter();
@@ -31,6 +31,9 @@ export default function HearingTop() {
 
   return (
     <div className="space-y-5">
+      <Link href="/me" className="block rounded-2xl bg-leaf/5 p-3 text-sm">
+        🌱 <b>わたしの歩み</b>：これまでしてきたこと・今月のお休み →
+      </Link>
       <h1 className="text-xl font-bold">担当のお店</h1>
       {shops?.length === 0 && <p className="text-sm text-black/60">まだ担当のお店がありません。下から登録するか、YMM にお店を割り当ててもらってください。</p>}
       {shops === null && <p className="text-black/50">読み込み中…</p>}
@@ -38,6 +41,7 @@ export default function HearingTop() {
         {shops?.map((s) => (
           <Link key={s.id} href={`/hearing/${s.id}`} className="block rounded-2xl bg-white p-4 shadow-sm border border-black/5">
             <div className="font-bold">{s.name}</div>
+            {!!s.covering && <div className="text-xs text-leaf font-bold">🌿 見守り中（担当の方がお休みの間）</div>}
             <div className="text-sm text-black/60">{s.category}</div>
           </Link>
         ))}

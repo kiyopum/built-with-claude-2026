@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { getDb, getText } from "@/lib/db";
+import { thisMonth } from "@/lib/checkin";
 import { codeOf, hashPin, isPin, requireAdmin } from "@/lib/auth";
 import { ITEM_RATE_LIMIT } from "@/lib/split";
 
@@ -9,14 +10,15 @@ export async function GET() {
   const a = await requireAdmin();
   if (a instanceof Response) return a;
   const db = getDb();
-  const users = (db.prepare("SELECT id, name, role, active, created_at FROM users ORDER BY role = 'admin' DESC, id").all() as { id: number }[]).map((u) => ({
+  const users = (db.prepare("SELECT id, name, role, active, created_at, rest_month FROM users ORDER BY role = 'admin' DESC, id").all() as { id: number; rest_month: string | null }[]).map(({ rest_month, ...u }) => ({
     ...u,
     code: codeOf(u.id),
+    resting: rest_month === thisMonth(),
   }));
   const shops = (
     db
       .prepare(
-        `SELECT s.id, s.name, s.category, s.partner_id, s.shipping_yen, s.release_pin_hash IS NOT NULL AS has_pin,
+        `SELECT s.id, s.name, s.category, s.partner_id, s.cover_partner_id, s.shipping_yen, s.release_pin_hash IS NOT NULL AS has_pin,
                 (SELECT COUNT(*) FROM drafts d WHERE d.shop_id = s.id AND d.status = 'published') AS published,
                 (SELECT COUNT(*) FROM drafts d WHERE d.shop_id = s.id AND d.status = 'draft') AS waiting
          FROM shops s ORDER BY s.id DESC`,
@@ -92,6 +94,13 @@ export async function POST(req: Request) {
       const pid = b.partnerId ? Number(b.partnerId) : null;
       if (pid && !db.prepare("SELECT 1 FROM users WHERE id = ? AND role = 'partner'").get(pid)) return bad("そのパートナーはいません");
       db.prepare("UPDATE shops SET partner_id = ? WHERE id = ?").run(pid, Number(b.shopId));
+      return Response.json({ ok: true });
+    }
+    case "setCover": {
+      // 担当がお休みの間に見守る人（空なら YMM 管理が見守る）
+      const pid = b.partnerId ? Number(b.partnerId) : null;
+      if (pid && !db.prepare("SELECT 1 FROM users WHERE id = ? AND role = 'partner' AND active = 1").get(pid)) return bad("そのパートナーはいません");
+      db.prepare("UPDATE shops SET cover_partner_id = ? WHERE id = ?").run(pid, Number(b.shopId));
       return Response.json({ ok: true });
     }
     case "resetShopPin": {

@@ -29,6 +29,7 @@ type Data = {
     online_label: boolean;
     prefecture_hint: string | null;
     has_pin: boolean;
+    partner_resting?: boolean;
     seller: Seller;
   };
   products: { id: number; name: string; price_yen: number; status: string; verdict: string | null; photo: string | null }[];
@@ -74,6 +75,7 @@ function ShopPageInner() {
       <div>
         <Link href="/hearing" className="text-sm text-leaf">← お店の一覧</Link>
         <h1 className="text-xl font-bold mt-1">{shop.name}</h1>
+        {shop.partner_resting && <p className="mt-1 rounded-lg bg-leaf/10 p-2 text-xs">🌿 担当の方は今月お休み中です。そのあいだ、みんなで見守っています。</p>}
         <p className="text-sm text-black/60">{shop.category}</p>
       </div>
 
@@ -126,6 +128,11 @@ function ShopPageInner() {
       </section>
 
       <OrdersCard shopId={shop.id} hasPin={shop.has_pin} />
+
+      <Link href={`/hearing/${shop.id}/book`} className="block rounded-2xl bg-white p-4 shadow-sm border border-black/5">
+        <div className="font-bold">📖 お店の言葉の本</div>
+        <div className="text-sm text-black/60">店主さんが大事にしてきたことを1冊にまとめて、印刷して渡します（後を継ぐ人・家族へ）</div>
+      </Link>
     </div>
   );
 }
