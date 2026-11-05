@@ -23,6 +23,7 @@ function AboutInner() {
   const [url, setUrl] = useState("");
   const [notes, setNotes] = useState<string | null>(null);
   const [showNotes, setShowNotes] = useState(false);
+  const [prepared, setPrepared] = useState(false);
 
   useEffect(() => {
     fetch(`/api/shops/${shopId}`)
@@ -31,6 +32,7 @@ function AboutInner() {
         if (j.shop) setShopLabel([j.shop.name, j.shop.area].filter(Boolean).join("・"));
         if (j.shop?.website_url) setUrl(j.shop.website_url);
         if (j.shop?.website_notes) setNotes(j.shop.website_notes);
+        if (j.shop?.prepared) setPrepared(true);
       })
       .catch(() => {});
   }, [shopId]);
@@ -56,6 +58,7 @@ function AboutInner() {
     setNotes(j.website_notes);
     setUrl(j.website_url);
     setShowNotes(true);
+    setPrepared(false);
     setQuestions([]); // 質問はホームページの中身に合わせて作り直す
   }
   async function clearWebsite() {
@@ -65,6 +68,7 @@ function AboutInner() {
     setNotes(null);
     setUrl("");
     setCands(null);
+    setPrepared(false);
     setQuestions([]);
   }
   const [error, setError] = useState("");
@@ -103,6 +107,11 @@ function AboutInner() {
         <h1 className="text-xl font-bold mt-1">お店のヒアリング</h1>
         <p className="text-sm text-black/60">お店を始めたきっかけや、大事にしていることを聞きます。商品のことは、あとで写真を撮りながら1つずつ聞きます。</p>
       </div>
+      {prepared && (
+        <p className="rounded-2xl bg-leaf/10 p-3 text-sm">
+          ✅ <b>事務局が先に調べてあります</b>（ホームページ・法律・聞くことリスト）。下の「聞くことリスト」を開いて、そのままお話を聞いてください。
+        </p>
+      )}
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
         <div className="text-sm font-bold text-leaf">1) お店のホームページ（あれば）</div>
@@ -130,9 +139,14 @@ function AboutInner() {
           </div>
         ) : (
           <div className="space-y-3">
-            <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={findWebsite} disabled={busy !== ""}>
-              {busy === "find" ? <Working text="Claude が探しています" est={20} /> : `🔍 ホームページを探す${shopLabel ? `（${shopLabel}）` : ""}`}
-            </button>
+            {prepared ? (
+              // 事務局が探して、使えるホームページがなかった（SNS だけ・見つからない）。もう一度 Claude に探させない
+              <p className="rounded-xl bg-black/[0.03] p-3 text-sm">事務局が探しましたが、使えるホームページはありませんでした。このまま下でお話を聞いてください。</p>
+            ) : (
+              <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={findWebsite} disabled={busy !== ""}>
+                {busy === "find" ? <Working text="Claude が探しています" est={20} /> : `🔍 ホームページを探す${shopLabel ? `（${shopLabel}）` : ""}`}
+              </button>
+            )}
             {cands && cands.length === 0 && (
               <p className="rounded-xl bg-black/[0.03] p-3 text-sm">見つかりませんでした。ホームページのないお店は、このまま下でお話を聞いてください。</p>
             )}
@@ -185,7 +199,7 @@ function AboutInner() {
         <div className="text-sm font-bold text-leaf">2) 聞くことリスト{notes && <span className="font-normal text-black/50">（ホームページに載っていないことだけ）</span>}</div>
         {questions.length === 0 ? (
           <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={makeQuestions} disabled={busy !== ""}>
-            {busy === "q" ? <Working text="Claude が質問を考えています" est={15} /> : "このお店向けの質問を Claude に作ってもらう"}
+            {busy === "q" ? <Working text="Claude が質問を考えています" est={15} /> : prepared ? "事務局が用意した質問を開く" : "このお店向けの質問を Claude に作ってもらう"}
           </button>
         ) : (
           <QuestionList questions={questions} />

@@ -26,3 +26,6 @@ certificates/
 
 # サーバーに置く手順（接続先を含むので GitHub に上げない）
 deploy.local/
+
+# 事務局の事前調査（お店の情報を含むので GitHub に上げない）
+事務局/

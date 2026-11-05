@@ -200,6 +200,11 @@ function open(): DatabaseSync {
   // お店のホームページ（あれば Claude が読んで、お店のヒアリングの土台にする。ヒアリングは補足になる）
   if (!scols.includes("website_url")) db.exec("ALTER TABLE shops ADD COLUMN website_url TEXT");
   // お店の言葉の本（Claude がまとめたもの・作った日）
+  // 事前調査（2026-11-05 きよさん）：パートナーが訪問の予定を先に登録 → 事務局がローカルの Claude Code で調べて取り込む（API を使わない）
+  //   調べた中身は website_url / website_notes / legal_research に入れ、質問だけ prep_questions に入れる
+  if (!scols.includes("visit_on")) db.exec("ALTER TABLE shops ADD COLUMN visit_on TEXT");
+  if (!scols.includes("prep_questions")) db.exec("ALTER TABLE shops ADD COLUMN prep_questions TEXT");
+  if (!scols.includes("prep_at")) db.exec("ALTER TABLE shops ADD COLUMN prep_at TEXT");
   if (!scols.includes("book_json")) db.exec("ALTER TABLE shops ADD COLUMN book_json TEXT");
   if (!scols.includes("book_at")) db.exec("ALTER TABLE shops ADD COLUMN book_at TEXT");
   if (!scols.includes("website_notes")) db.exec("ALTER TABLE shops ADD COLUMN website_notes TEXT");
@@ -316,6 +321,9 @@ export type Shop = {
   pickup_ok: number;
   online_label: number;
   ship_days: string | null;
+  visit_on: string | null;
+  prep_questions: string | null;
+  prep_at: string | null;
 };
 export const SELLER_KEYS = ["seller_name", "seller_rep", "seller_address", "seller_phone", "seller_email"] as const;
 export type Draft = {

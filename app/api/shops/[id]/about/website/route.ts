@@ -24,7 +24,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     }
   }
   if (body.clear) {
-    db.prepare("UPDATE shops SET website_url = NULL, website_notes = NULL WHERE id = ?").run(shop.id);
+    db.prepare("UPDATE shops SET website_url = NULL, website_notes = NULL, prep_questions = NULL WHERE id = ?").run(shop.id);
     return Response.json({ ok: true });
   }
   let raw = String(body.url ?? "").trim();
@@ -48,7 +48,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   try {
     const r = await readShopWebsite(shop, url.toString());
     const notes = `${r.notes}\n\n（読んだページ：${r.pages.join(" ／ ")}）`;
-    db.prepare("UPDATE shops SET website_url = ?, website_notes = ? WHERE id = ?").run(url.toString(), notes, shop.id);
+    db.prepare("UPDATE shops SET website_url = ?, website_notes = ?, prep_questions = NULL WHERE id = ?").run(url.toString(), notes, shop.id);
     return Response.json({ ok: true, website_url: url.toString(), website_notes: notes });
   } catch (e) {
     console.error(e);

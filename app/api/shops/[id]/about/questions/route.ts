@@ -11,6 +11,8 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
   if (g instanceof Response) return g;
   const shop = getDb().prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
   if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
+  // 事務局が先に調べてあれば、その質問を使う（Claude を呼ばない）
+  if (shop.prep_questions) return Response.json({ questions: JSON.parse(shop.prep_questions), prepared: true });
   // ヒアリングしているあいだに、裏で法律を調べておく
   after(() => getResearch(shop).catch((e) => console.error("法律の調査に失敗", e)));
   try {

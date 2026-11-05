@@ -12,7 +12,27 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import type { Scene } from "@/lib/scenes";
 
-const client = new Anthropic();
+// YAOBIZ_USAGE_LOG にファイルの場所を入れたときだけ、呼ぶたびに使った量（トークン・検索の回数）を1行ずつ記録する（費用の見積もり用）
+const usageLog = process.env.YAOBIZ_USAGE_LOG;
+const client = new Anthropic(
+  usageLog
+    ? {
+        fetch: async (url: RequestInfo | URL, init?: RequestInit) => {
+          const res = await fetch(url, init);
+          res
+            .clone()
+            .json()
+            .then(async (j) => {
+              if (!j?.usage) return;
+              const { appendFile } = await import("node:fs/promises");
+              await appendFile(usageLog, JSON.stringify({ at: new Date().toISOString(), model: j.model, stop: j.stop_reason, usage: j.usage }) + "\n");
+            })
+            .catch(() => {});
+          return res;
+        },
+      }
+    : {},
+);
 const MODEL = "claude-opus-5-5";
 
 // 安全判定で断られたときは、サーバー側で自動的に別のモデルに回す
@@ -84,7 +104,7 @@ export type Question = z.infer<typeof QuestionSchema>;
 
 // ---------- 1) お店のヒアリング（理念・思い。1回だけ） ----------
 
-const ShopQuestionsSchema = z.object({ questions: z.array(QuestionSchema) });
+export const ShopQuestionsSchema = z.object({ questions: z.array(QuestionSchema) });
 
 const SHOP_QUESTIONS_SYSTEM = `あなたは、地域の小さなお店の「らしさ」を引き出すヒアリングの名人です。
 聞き手は主婦のパートナーです。店主の前でそのまま読み上げられる質問を作ります。
@@ -293,7 +313,7 @@ export async function analyzeProductPhotos(shop: ShopInfo, photos: Photo[]): Pro
 // ---------- 3) 法律を調べる（国の公式サイトを検索） ----------
 
 // 調べに行く先は国の公式サイトだけ（まとめサイトの古い情報を根拠にしないため）
-const OFFICIAL_DOMAINS = [
+export const OFFICIAL_DOMAINS = [
   "caa.go.jp", // 消費者庁（食品表示法・景品表示法・特定商取引法・健康増進法）
   "mhlw.go.jp", // 厚生労働省（食品衛生法・薬機法）
   "maff.go.jp", // 農林水産省

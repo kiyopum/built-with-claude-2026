@@ -6,13 +6,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
-type Shop = { id: number; name: string; category: string; area: string; covering?: number };
+type Shop = { id: number; name: string; category: string; area: string; covering?: number; visit_on?: string | null; prepared?: number };
 
 export default function HearingTop() {
   const router = useRouter();
   const [shops, setShops] = useState<Shop[] | null>(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", category: "", area: "" });
+  const [form, setForm] = useState({ name: "", category: "", area: "", visit_on: "", website_url: "" });
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -43,6 +43,12 @@ export default function HearingTop() {
             <div className="font-bold">{s.name}</div>
             {!!s.covering && <div className="text-xs text-leaf font-bold">🌿 見守り中（担当の方がお休みの間）</div>}
             <div className="text-sm text-black/60">{s.category}</div>
+            {(s.visit_on || !!s.prepared) && (
+              <div className="text-xs mt-1">
+                {s.visit_on && <span className="text-black/60">📅 訪問 {Number(s.visit_on.slice(5, 7))}月{Number(s.visit_on.slice(8, 10))}日　</span>}
+                {s.prepared ? <span className="text-leaf font-bold">✅ 事務局が先に調べてあります</span> : s.visit_on ? <span className="text-black/50">事務局が調べています</span> : null}
+              </div>
+            )}
           </Link>
         ))}
       </div>
@@ -62,6 +68,20 @@ export default function HearingTop() {
             onChange={(e) => setForm({ ...form, category: e.target.value })}
           />
           <input className="w-full rounded-xl border border-black/15 p-3 text-base" placeholder="地域（なくても可）" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
+          <label className="block text-sm">
+            <span className="text-black/70">訪問の予定日（決まっていれば）</span>
+            <input type="date" className="mt-1 w-full rounded-xl border border-black/15 p-3 text-base" value={form.visit_on} onChange={(e) => setForm({ ...form, visit_on: e.target.value })} />
+          </label>
+          <input
+            className="w-full rounded-xl border border-black/15 p-3 text-base"
+            placeholder="お店のホームページ（知っていれば）"
+            inputMode="url"
+            value={form.website_url}
+            onChange={(e) => setForm({ ...form, website_url: e.target.value })}
+          />
+          <p className="rounded-xl bg-leaf/5 p-3 text-xs text-black/70">
+            📮 訪問の予定日を入れて早めに登録すると、<b>事務局がお店のホームページと法律を先に調べて、質問も用意しておきます</b>。パートナーさんは、当日は商品のことに専念できます。すぐに始めるときは、今までどおりその場で Claude が調べます。
+          </p>
           {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
           <div className="flex gap-2">
             <button className="flex-1 rounded-xl bg-leaf text-white py-3 font-bold" onClick={add}>

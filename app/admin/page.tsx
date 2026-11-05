@@ -90,6 +90,8 @@ export default function AdminPage() {
         )}
       </section>
 
+      <PrepCard />
+
       <UsersCard users={data.users} meId={data.me.id} act={act} />
 
       {/* お店 */}
@@ -312,6 +314,104 @@ function PaymentTerms({ initial, act }: { initial: string; act: (b: Record<strin
       <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={text === initial} onClick={() => act({ action: "setPaymentTerms", text }, "支払期日を保存しました")}>
         保存する
       </button>
+    </section>
+  );
+}
+
+// 事前調査：訪問の予定が入ったお店を、事務局がローカルの Claude Code で先に調べる（API を使わない）。手順書は docs/事務局_事前調査.md
+type PrepReq = { id: number; name: string; category: string; area: string; visit_on: string; partner_name: string | null };
+function PrepCard() {
+  const [reqs, setReqs] = useState<PrepReq[] | null>(null);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    const r = await apiFetch("/api/admin/prep");
+    const j = await r.json();
+    if (r.ok) setReqs(j.requests);
+    else setErr(j.error);
+  }, []);
+  useEffect(() => {
+    fetch("/api/admin/prep")
+      .then(async (r) => ({ ok: r.ok, j: await r.json() }))
+      .then(({ ok, j }) => (ok ? setReqs(j.requests) : setErr(j.error)));
+  }, []);
+
+  async function download() {
+    const r = await apiFetch("/api/admin/prep");
+    const j = await r.json();
+    if (!r.ok) return setErr(j.error);
+    const blob = new Blob([JSON.stringify(j, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `事前調査の依頼_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function upload(file: File) {
+    setErr("");
+    setMsg("");
+    setBusy(true);
+    let body: unknown;
+    try {
+      body = JSON.parse(await file.text());
+    } catch {
+      setBusy(false);
+      return setErr("ファイルを読めませんでした（JSON の形になっていません）");
+    }
+    const r = await apiFetch("/api/admin/prep", { method: "POST", body: JSON.stringify(body) });
+    const j = await r.json();
+    setBusy(false);
+    if (!r.ok) return setErr(j.error);
+    setMsg([j.done.length ? `取り込みました：${j.done.join("、")}` : "", j.skipped.length ? `取り込めなかったもの：${j.skipped.join("、")}` : ""].filter(Boolean).join("　"));
+    await load();
+  }
+
+  return (
+    <section className={card}>
+      <div className="font-bold">
+        事前調査を待っているお店 <span className="text-leaf">{reqs?.length ?? "…"}件</span>
+      </div>
+      <p className="text-xs text-black/60">
+        パートナーさんが訪問の予定日を入れて登録したお店です。手元の Mac の Claude Code で調べて取り込むと、当日はお店の質問・ホームページ・法律の調査に Claude の API を使いません（お店1つで約95円＋ホームページを読む分が浮きます）。
+        やり方は <code>docs/事務局_事前調査.md</code> にあります。
+      </p>
+      {reqs && reqs.length > 0 && (
+        <ul className="space-y-1 text-sm">
+          {reqs.map((q) => (
+            <li key={q.id} className="rounded-xl bg-black/[0.03] p-2">
+              <b>{q.name}</b>
+              <span className="text-xs text-black/60">
+                {" "}
+                ・{q.category}・📅 {q.visit_on}・担当 {q.partner_name ?? "なし"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <button className="rounded-xl bg-leaf text-white px-4 py-2.5 font-bold disabled:opacity-40" disabled={!reqs?.length} onClick={download}>
+          1) 依頼のファイルを保存
+        </button>
+        <label className={`rounded-xl border border-leaf text-leaf px-4 py-2.5 font-bold cursor-pointer ${busy ? "opacity-40" : ""}`}>
+          2) 調べた結果を取り込む
+          <input
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            disabled={busy}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) upload(f);
+            }}
+          />
+        </label>
+      </div>
+      {msg && <p className="rounded-xl bg-leaf/10 text-leaf p-3 text-sm font-bold">{msg}</p>}
+      {err && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{err}</p>}
     </section>
   );
 }

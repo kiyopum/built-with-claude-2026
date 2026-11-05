@@ -39,6 +39,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       philosophy_status: shop.philosophy_status,
       website_url: shop.website_url,
       website_notes: shop.website_notes,
+      prepared: !!shop.prep_questions, // 事務局が先に調べてある（質問・ホームページ・法律）
+      visit_on: shop.visit_on,
       shipping_yen: shop.shipping_yen,
       prefecture: shop.prefecture,
       pickup_ok: !!shop.pickup_ok,
