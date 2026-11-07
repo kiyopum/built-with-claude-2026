@@ -96,19 +96,19 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
     <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-leaf/30 space-y-3">
       <div className="font-bold text-leaf">🌱 次の商品を提案する</div>
       <p className="text-sm">
-        ものを売るのは、入り口です。売上が少しでも、事業者さんとの話のたねになります。事業者の話の中には、<b>送らない商品</b>（配信・教室・動画・レシピなど）のたねがあります。Claude は、申し込みがまとまりやすい形から案を出します。よさそうな案を事業者さんに見せて、相談してみてください。
+        物販は、入り口です。売上が少しでも、事業者さんとの話のたねになります。事業者の話の中には、<b>サービス</b>（配信・講座・教室・動画・レシピなど。ものを送らない商品）のたねがあります。Claude は、申し込みがまとまりやすい形から案を出します。よさそうな案を事業者さんに見せて、相談してみてください。
       </p>
       <p className="text-xs text-black/60">出すかどうかを決めるのは、事業者さんです。提案は、してもしなくても大丈夫です。</p>
 
       <div className="rounded-xl bg-leaf/10 p-3 text-sm space-y-2">
         <div className="text-xs font-bold text-leaf">あなたの取り分（今の決まり）</div>
-        {/* 同じ金額で「もの」と「送らないもの」を横に並べる（片方だけ見せると、金額が急に大きくなったように見える） */}
+        {/* 同じ金額で「物販」と「サービス」を横に並べる（片方だけ見せると、金額が急に大きくなったように見える） */}
         <table className="w-full text-sm">
           <thead>
             <tr className="text-xs text-black/60">
               <th className="text-left font-normal pb-1">売れた金額</th>
-              <th className="text-right font-normal pb-1">もの<br />（入り口）</th>
-              <th className="text-right font-normal pb-1">送らないもの<br />（次の商品）</th>
+              <th className="text-right font-normal pb-1">物販<br />（入り口）</th>
+              <th className="text-right font-normal pb-1">サービス<br />（次の商品）</th>
             </tr>
           </thead>
           <tbody>
@@ -129,7 +129,7 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
           </tbody>
         </table>
         <div className="text-xs text-black/70 space-y-1">
-          <div>事業者さんには、ものは {Math.round((1 - s.goods) * 10)}割、送らないものは {Math.round((1 - s.service) * 10)}割（{yen(5000)} なら {yen(service(5000).owner)}）。値段は事業者さんが決めます。</div>
+          <div>事業者さんには、物販は {Math.round((1 - s.goods) * 10)}割、サービスは {Math.round((1 - s.service) * 10)}割（{yen(5000)} なら {yen(service(5000).owner)}）。値段は事業者さんが決めます。</div>
           <div className="text-black/50">サービスごとに、YMM が割合を決めることがあります。</div>
         </div>
       </div>
