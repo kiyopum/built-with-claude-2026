@@ -13,9 +13,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ja" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        <header className="bg-leaf text-white">
+        {/* 上のメニュー：ロゴの AI ダークブルー〜企業ブルー。下の細い線は、ロゴの3色（青・緑・オレンジ） */}
+        <header className="bg-gradient-to-r from-leaf-dark to-leaf text-white border-b-4 border-transparent [border-image:linear-gradient(90deg,#1685d3,#29b9e8,#76c442,#f6a21a)_1]">
           <div className="mx-auto max-w-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-            <Link href="/" className="font-bold text-lg">YaoBiz</Link>
+            <Link href="/" className="font-bold text-lg tracking-wide">
+              Yao<span className="text-[#f6a21a]">Biz</span>
+            </Link>
             <Suspense fallback={null}>
               <Nav />
             </Suspense>

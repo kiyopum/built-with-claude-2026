@@ -1,16 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf7f0;
-  --foreground: #2a2a2a;
+  /* サイトの色はロゴに合わせる（2026-11-07 きよさん。ロゴ仕様書の推奨カラー）
+     企業ブルー #1685D3／AI ダークブルー #103A76／パートナーグリーン #76C442／価値創造オレンジ #F6A21A／循環シアン #29B9E8／ロゴ文字ネイビー #082D5C */
+  --background: #f3f7fb; /* 青が映える、ごく薄い水色がかった白 */
+  --foreground: #1d2b3f; /* 文字はネイビー寄りの黒 */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-leaf: #2f7a4a;
-  --color-leaf-dark: #22593a;
-  --color-carrot: #e07a2e;
+  /* 名前は今までのまま（leaf＝主役の色、carrot＝押してほしい色）。値だけロゴの色に */
+  --color-leaf: #1685d3; /* 企業ブルー：見出し・主なボタン・上のメニュー */
+  --color-leaf-dark: #103a76; /* AI ダークブルー：上のメニューの下地 */
+  --color-carrot: #e8900f; /* 価値創造オレンジ。白い文字を載せるので、ロゴの #F6A21A より少し濃くしている */
+  --color-sprout: #76c442; /* パートナーグリーン：しるし・アクセント */
+  --color-sky: #29b9e8; /* 循環シアン：線・アクセント */
+  --color-navy: #082d5c; /* ロゴ文字ネイビー */
 }
 
 body {
