@@ -67,7 +67,7 @@ function MeInner() {
       <section className="grid grid-cols-3 gap-2">
         {TILES.map((t) => (
           <div key={t.key} className="rounded-xl bg-white border border-black/5 p-3 text-center">
-            <div className="text-2xl font-bold text-leaf">
+            <div className="text-2xl font-bold text-partner">
               {f[t.key]}
               <span className="text-xs font-normal text-black/60">{t.unit}</span>
             </div>
@@ -80,7 +80,7 @@ function MeInner() {
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-bold">できるようになったこと</h2>
           {data.career && (
-            <button className="no-print text-sm text-leaf underline" onClick={() => window.print()}>
+            <button className="no-print text-sm text-partner underline" onClick={() => window.print()}>
               🖨 印刷・PDF
             </button>
           )}
@@ -90,7 +90,7 @@ function MeInner() {
             <p className="leading-relaxed whitespace-pre-wrap">{data.career.summary}</p>
             <ul className="space-y-2">
               {data.career.skills.map((s, i) => (
-                <li key={i} className="rounded-xl bg-leaf/5 p-3">
+                <li key={i} className="rounded-xl bg-partner/5 p-3">
                   <div className="font-bold">{s.name}</div>
                   <div className="text-sm text-black/60">{s.evidence}</div>
                 </li>
@@ -101,7 +101,7 @@ function MeInner() {
         ) : (
           <p className="text-sm text-black/60">記録をもとに、履歴書や面接でも使える「してきた仕事」の文を Claude がまとめます。</p>
         )}
-        <button className="no-print w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={() => act("career")} disabled={!!busy}>
+        <button className="no-print w-full rounded-xl border-2 border-partner text-partner py-3 font-bold disabled:opacity-50" onClick={() => act("career")} disabled={!!busy}>
           {busy === "career" ? <Working text="まとめています" /> : data.career ? "今の記録でまとめ直す" : "まとめる"}
         </button>
       </section>
@@ -123,7 +123,7 @@ function MeInner() {
               <p className="text-sm text-black/70">
                 子どものこと、体のこと、家のこと。休みたいときは、理由を書かずにここを押すだけで大丈夫です。担当の事業者・取り分・これまでの記録は、そのままです。ほかのパートナーには「お休み中」とだけ出ます。
               </p>
-              <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" onClick={() => act("rest", true)} disabled={!!busy}>
+              <button className="w-full rounded-xl bg-partner text-white py-3 font-bold disabled:opacity-50" onClick={() => act("rest", true)} disabled={!!busy}>
                 {busy === "rest" ? <Working text="お休みにしています" /> : "今月はお休みする"}
               </button>
             </>

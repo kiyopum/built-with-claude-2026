@@ -103,7 +103,7 @@ export function SellerSection({ shopId, initial }: { shopId: number; initial: Se
       ) : (
         <div className="space-y-3">
           <button
-            className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50"
+            className="w-full rounded-xl bg-ai text-white py-3 font-bold disabled:opacity-50"
             onClick={() => inputRef.current?.click()}
             disabled={busy !== ""}
           >

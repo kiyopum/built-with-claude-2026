@@ -60,10 +60,10 @@ export default function AdminPage() {
       <div>
         <h1 className="text-xl font-bold">YMM 管理</h1>
         <p className="text-xs text-black/50">
-          売上・取り分・分け方の設定は <Link href="/statement" className="text-leaf underline">明細</Link> で見られます。
+          売上・取り分・分け方の設定は <Link href="/statement" className="text-ai underline">明細</Link> で見られます。
         </p>
       </div>
-      {msg && <p className="rounded-xl bg-leaf/10 text-leaf p-3 text-sm font-bold">{msg}</p>}
+      {msg && <p className="rounded-xl bg-ai/10 text-ai p-3 text-sm font-bold">{msg}</p>}
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
 
       {/* 止まっている商品 */}
@@ -128,7 +128,7 @@ export default function AdminPage() {
                 </select>
               </div>
               {data.users.find((u) => u.id === s.partner_id)?.resting && (
-                <div className="flex gap-2 items-center rounded-lg bg-leaf/10 p-2">
+                <div className="flex gap-2 items-center rounded-lg bg-ai/10 p-2">
                   <span className="text-xs shrink-0">🌿 担当がお休み中。見守り</span>
                   <select
                     className="flex-1 rounded-lg border border-black/15 p-2 bg-white"
@@ -221,13 +221,13 @@ function UsersCard({ users, meId, act }: { users: User[]; meId: number; act: (b:
                   {u.resting && "・🌿 今月お休み"}
                 </span>
                 {u.role !== "admin" && (
-                  <Link href={`/me?user=${u.id}`} className="ml-2 text-xs text-leaf underline">
+                  <Link href={`/me?user=${u.id}`} className="ml-2 text-xs text-ai underline">
                     歩み
                   </Link>
                 )}
               </span>
               <span className="flex gap-2 shrink-0 text-xs">
-                <button className="underline text-leaf" onClick={() => (setResetFor(resetFor === u.id ? null : u.id), setNewPin(""))}>
+                <button className="underline text-ai" onClick={() => (setResetFor(resetFor === u.id ? null : u.id), setNewPin(""))}>
                   暗証番号の再発行
                 </button>
                 {u.id !== meId && (
@@ -245,7 +245,7 @@ function UsersCard({ users, meId, act }: { users: User[]; meId: number; act: (b:
               <div className="flex gap-2">
                 <input className={input} inputMode="numeric" maxLength={4} placeholder="新しい数字4けた" value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))} />
                 <button
-                  className="rounded-xl bg-leaf text-white px-4 font-bold disabled:opacity-40 shrink-0"
+                  className="rounded-xl bg-ai text-white px-4 font-bold disabled:opacity-40 shrink-0"
                   disabled={newPin.length !== 4}
                   onClick={async () => {
                     if (await act({ action: "resetPin", id: u.id, pin: newPin }, `${u.name} さんの暗証番号を変えました。本人に伝えてください`)) setResetFor(null);
@@ -259,7 +259,7 @@ function UsersCard({ users, meId, act }: { users: User[]; meId: number; act: (b:
         ))}
       </ul>
       <div className="border-t border-black/5 pt-3 space-y-2">
-        <div className="text-sm font-bold text-leaf">新しく登録する</div>
+        <div className="text-sm font-bold text-ai">新しく登録する</div>
         <input className={input} placeholder="名前（例：架空 花子）" value={name} onChange={(e) => setName(e.target.value)} />
         <div className="flex gap-2">
           <input className={input} inputMode="numeric" maxLength={4} placeholder="はじめの暗証番号（数字4けた）" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} />
@@ -269,7 +269,7 @@ function UsersCard({ users, meId, act }: { users: User[]; meId: number; act: (b:
           </select>
         </div>
         <button
-          className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40"
+          className="w-full rounded-xl bg-ai text-white py-3 font-bold disabled:opacity-40"
           disabled={!name.trim() || pin.length !== 4}
           onClick={async () => {
             if (await act({ action: "addUser", name, pin, role }, `${name} さんを登録しました`)) {
@@ -298,7 +298,7 @@ function NudgeDays({ initial, act }: { initial: number; act: (b: Record<string, 
         <input className={input} inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value.replace(/\D/g, ""))} />
         <span className="shrink-0">日</span>
       </div>
-      <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={days === String(initial) || days === ""} onClick={() => act({ action: "setNudgeDays", days: Number(days) }, "日数を保存しました")}>
+      <button className="w-full rounded-xl bg-ai text-white py-3 font-bold disabled:opacity-40" disabled={days === String(initial) || days === ""} onClick={() => act({ action: "setNudgeDays", days: Number(days) }, "日数を保存しました")}>
         保存する
       </button>
     </section>
@@ -314,7 +314,7 @@ function PaymentTerms({ initial, act }: { initial: string; act: (b: Record<strin
       <div className="font-bold">パートナーへの支払期日</div>
       <p className="text-xs text-black/50">フリーランス新法で、パートナーに明示が必要です。明細の「契約の条件」にそのまま出ます。</p>
       <input className={input} placeholder="例：月末締め、翌月○日払い" value={text} onChange={(e) => setText(e.target.value)} />
-      <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={text === initial} onClick={() => act({ action: "setPaymentTerms", text }, "支払期日を保存しました")}>
+      <button className="w-full rounded-xl bg-ai text-white py-3 font-bold disabled:opacity-40" disabled={text === initial} onClick={() => act({ action: "setPaymentTerms", text }, "支払期日を保存しました")}>
         保存する
       </button>
     </section>
@@ -375,7 +375,7 @@ function PrepCard() {
   return (
     <section className={card}>
       <div className="font-bold">
-        事前調査を待っている事業者 <span className="text-leaf">{reqs?.length ?? "…"}件</span>
+        事前調査を待っている事業者 <span className="text-ai">{reqs?.length ?? "…"}件</span>
       </div>
       <p className="text-xs text-black/60">
         パートナーさんが訪問の予定日を入れて登録した事業者です。手元の Mac の Claude Code で調べて取り込むと、当日は事業者の質問・ホームページ・法律の調査に Claude の API を使いません（事業者1つで約95円＋ホームページを読む分が浮きます）。
@@ -395,10 +395,10 @@ function PrepCard() {
         </ul>
       )}
       <div className="flex flex-wrap gap-2">
-        <button className="rounded-xl bg-leaf text-white px-4 py-2.5 font-bold disabled:opacity-40" disabled={!reqs?.length} onClick={download}>
+        <button className="rounded-xl bg-ai text-white px-4 py-2.5 font-bold disabled:opacity-40" disabled={!reqs?.length} onClick={download}>
           1) 依頼のファイルを保存
         </button>
-        <label className={`rounded-xl border border-leaf text-leaf px-4 py-2.5 font-bold cursor-pointer ${busy ? "opacity-40" : ""}`}>
+        <label className={`rounded-xl border border-ai text-ai px-4 py-2.5 font-bold cursor-pointer ${busy ? "opacity-40" : ""}`}>
           2) 調べた結果を取り込む
           <input
             type="file"
@@ -413,7 +413,7 @@ function PrepCard() {
           />
         </label>
       </div>
-      {msg && <p className="rounded-xl bg-leaf/10 text-leaf p-3 text-sm font-bold">{msg}</p>}
+      {msg && <p className="rounded-xl bg-ai/10 text-ai p-3 text-sm font-bold">{msg}</p>}
       {err && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{err}</p>}
     </section>
   );
@@ -453,7 +453,7 @@ function UserEmail({ user, act }: { user: User; act: (b: Record<string, unknown>
     <div className="flex gap-2 items-center">
       <span className="text-xs shrink-0">✉️ 売れた知らせ</span>
       <input className="flex-1 rounded-lg border border-black/15 p-2 text-sm" type="email" placeholder="メールアドレス（空なら送らない）" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <button className="rounded-lg bg-leaf text-white px-3 py-2 text-sm font-bold disabled:opacity-40 shrink-0" disabled={same} onClick={() => act({ action: "setUserEmail", id: user.id, email }, `${user.name} さんの知らせ先を保存しました`)}>
+      <button className="rounded-lg bg-ai text-white px-3 py-2 text-sm font-bold disabled:opacity-40 shrink-0" disabled={same} onClick={() => act({ action: "setUserEmail", id: user.id, email }, `${user.name} さんの知らせ先を保存しました`)}>
         保存
       </button>
     </div>
@@ -470,7 +470,7 @@ function NotifyEmail({ initial, ready, act }: { initial: string; ready: boolean;
       </p>
       {!ready && <p className="rounded-xl bg-amber-50 text-amber-800 p-3 text-xs">メールを送る設定（SMTP_URL・MAIL_FROM）がまだサーバーにありません。設定が入るまで、知らせは画面だけです。</p>}
       <input className={input} type="email" placeholder="メールアドレス" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={email.trim() === initial} onClick={() => act({ action: "setNotifyEmail", email }, "知らせ先を保存しました")}>
+      <button className="w-full rounded-xl bg-ai text-white py-3 font-bold disabled:opacity-40" disabled={email.trim() === initial} onClick={() => act({ action: "setNotifyEmail", email }, "知らせ先を保存しました")}>
         保存する
       </button>
     </section>

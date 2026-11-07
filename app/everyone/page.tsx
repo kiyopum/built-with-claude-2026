@@ -47,7 +47,7 @@ export default function EveryonePage() {
             ["mine", "自分の担当"],
           ] as const
         ).map(([k, t]) => (
-          <button key={k} className={`rounded-xl py-2 ${filter === k ? "bg-leaf text-white" : "bg-white border border-black/10"}`} onClick={() => setFilter(k)}>
+          <button key={k} className={`rounded-xl py-2 ${filter === k ? "bg-partner text-white" : "bg-white border border-black/10"}`} onClick={() => setFilter(k)}>
             {t}
           </button>
         ))}

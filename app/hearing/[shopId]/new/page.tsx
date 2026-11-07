@@ -108,7 +108,7 @@ function NewProductInner() {
           disabled={busy !== ""}
         />
         {(photos.length > 0 || service) && !analysis && (
-          <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" onClick={analyze} disabled={busy !== ""}>
+          <button className="w-full rounded-xl bg-ai text-white py-3 font-bold disabled:opacity-50" onClick={analyze} disabled={busy !== ""}>
             {busy === "analyze" ? (
               <Working text={service ? "Claude が聞くことを考えています" : "Claude が写真とラベルを読んでいます"} est={25} />
             ) : service ? (
@@ -153,7 +153,7 @@ function NewProductInner() {
 
       {analysis && (
         <button
-          className="w-full rounded-2xl bg-carrot text-white py-4 text-lg font-bold disabled:opacity-50"
+          className="w-full rounded-2xl bg-ai text-white py-4 text-lg font-bold disabled:opacity-50"
           onClick={send}
           disabled={!transcript.trim() || busy !== ""}
         >

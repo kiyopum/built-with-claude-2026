@@ -125,7 +125,7 @@ function AboutInner() {
               <div className="font-bold text-leaf">✅ ホームページを読みました</div>
               <div className="text-xs text-black/60 break-all">{url}</div>
             </div>
-            <button className="text-sm text-leaf underline" onClick={() => setShowNotes(!showNotes)}>
+            <button className="text-sm text-ai underline" onClick={() => setShowNotes(!showNotes)}>
               {showNotes ? "まとめを閉じる" : "Claude のまとめを見る"}
             </button>
             {showNotes && <pre className="whitespace-pre-wrap break-all text-xs leading-relaxed bg-black/[0.03] rounded-xl p-3 font-sans">{notes}</pre>}
@@ -144,7 +144,7 @@ function AboutInner() {
               // 事務局が探して、使えるホームページがなかった（SNS だけ・見つからない）。もう一度 Claude に探させない
               <p className="rounded-xl bg-black/[0.03] p-3 text-sm">事務局が探しましたが、使えるホームページはありませんでした。このまま下でお話を聞いてください。</p>
             ) : (
-              <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={findWebsite} disabled={busy !== ""}>
+              <button className="w-full rounded-xl border-2 border-ai text-ai py-3 font-bold disabled:opacity-50" onClick={findWebsite} disabled={busy !== ""}>
                 {busy === "find" ? <Working text="Claude が探しています" est={20} /> : `🔍 ホームページを探す${shopLabel ? `（${shopLabel}）` : ""}`}
               </button>
             )}
@@ -165,7 +165,7 @@ function AboutInner() {
                     {c.kind === "SNS" ? (
                       <div className="text-xs text-black/50">SNS は中身が読めないので、お話で聞いてください</div>
                     ) : (
-                      <button className="w-full rounded-lg bg-leaf text-white py-2 font-bold" onClick={() => readWebsite(c.url)}>
+                      <button className="w-full rounded-lg bg-ai text-white py-2 font-bold" onClick={() => readWebsite(c.url)}>
                         これを Claude に読んでもらう
                       </button>
                     )}
@@ -200,7 +200,7 @@ function AboutInner() {
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
         <div className="text-sm font-bold text-leaf">2) 聞くことリスト{notes && <span className="font-normal text-black/50">（ホームページに載っていないことだけ）</span>}</div>
         {questions.length === 0 ? (
-          <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={makeQuestions} disabled={busy !== ""}>
+          <button className="w-full rounded-xl border-2 border-ai text-ai py-3 font-bold disabled:opacity-50" onClick={makeQuestions} disabled={busy !== ""}>
             {busy === "q" ? <Working text="Claude が質問を考えています" est={15} /> : prepared ? "事務局が用意した質問を開く" : "この事業者向けの質問を Claude に作ってもらう"}
           </button>
         ) : (
@@ -215,7 +215,7 @@ function AboutInner() {
 
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
       <button
-        className="w-full rounded-2xl bg-carrot text-white py-4 text-lg font-bold disabled:opacity-50"
+        className="w-full rounded-2xl bg-ai text-white py-4 text-lg font-bold disabled:opacity-50"
         onClick={send}
         disabled={(!transcript.trim() && !notes) || busy !== ""}
       >

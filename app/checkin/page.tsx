@@ -33,7 +33,7 @@ const card = "rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3
 const LEVEL = {
   早めに話す: "bg-red-50 text-red-700 border-red-200",
   気にかける: "bg-amber-50 text-amber-800 border-amber-200",
-  元気: "bg-leaf/10 text-leaf border-leaf/20",
+  元気: "bg-partner/10 text-partner border-partner/20",
 };
 
 function CheckinInner() {
@@ -74,7 +74,7 @@ function CheckinInner() {
   const form = (
     <div className="space-y-4">
       <section className={card}>
-        <div className="text-sm font-bold text-leaf">事業について（正解はありません。思ったままで大丈夫です）</div>
+        <div className="text-sm font-bold text-partner">事業について（正解はありません。思ったままで大丈夫です）</div>
         {data.questions.map((q, i) => (
           <label key={i} className="block space-y-1">
             <span className="block font-bold">
@@ -86,14 +86,14 @@ function CheckinInner() {
         ))}
       </section>
       <section className={card}>
-        <div className="text-sm font-bold text-leaf">あなたのこと</div>
+        <div className="text-sm font-bold text-partner">あなたのこと</div>
         {data.care.map((c) => (
           <div key={c.id} className="space-y-1">
             <div className="font-bold">{c.text}</div>
             {c.type === "scale" ? (
               <div className="grid grid-cols-5 gap-1">
                 {c.labels.map((l, i) => (
-                  <button key={l} className={`rounded-xl py-2 px-1 text-xs border leading-tight ${a[c.id] === i + 1 ? "bg-leaf text-white border-leaf font-bold" : "border-black/15"}`} onClick={() => setA({ ...a, [c.id]: i + 1 })}>
+                  <button key={l} className={`rounded-xl py-2 px-1 text-xs border leading-tight ${a[c.id] === i + 1 ? "bg-partner text-white border-partner font-bold" : "border-black/15"}`} onClick={() => setA({ ...a, [c.id]: i + 1 })}>
                     {l}
                   </button>
                 ))}
@@ -108,7 +108,7 @@ function CheckinInner() {
         ))}
       </section>
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
-      <button className="w-full rounded-2xl bg-carrot text-white py-4 text-lg font-bold disabled:opacity-50" onClick={send} disabled={busy}>
+      <button className="w-full rounded-2xl bg-ai text-white py-4 text-lg font-bold disabled:opacity-50" onClick={send} disabled={busy}>
         {busy ? <Working text="Claude が読んでいます" est={15} /> : "送る"}
       </button>
     </div>
@@ -119,9 +119,9 @@ function CheckinInner() {
       <p className="rounded-xl bg-sky-50 border border-sky-100 p-3 text-sm">🔒 答えは、<b>あなたと山﨑さんだけ</b>が読みます。ほかのパートナーには見えません。月に1回の面談で、ここに書いたことを手がかりにお話しします。</p>
       {data.mine && !edit ? (
         <section className={card}>
-          <div className="text-sm font-bold text-leaf">今月はもう答えてくれました。ありがとうございます</div>
+          <div className="text-sm font-bold text-partner">今月はもう答えてくれました。ありがとうございます</div>
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{data.mine.reply}</p>
-          <button className="text-sm text-leaf underline" onClick={() => setEdit(true)}>
+          <button className="text-sm text-partner underline" onClick={() => setEdit(true)}>
             答え直す（今月のうちなら何度でも）
           </button>
         </section>
@@ -148,10 +148,10 @@ function CheckinInner() {
       </div>
       {data.role === "admin" && (
         <div className="flex gap-2 text-sm">
-          <button className={`rounded-full px-3 py-1.5 border ${tab === "people" ? "bg-leaf text-white border-leaf font-bold" : "border-black/15"}`} onClick={() => setTab("people")}>
+          <button className={`rounded-full px-3 py-1.5 border ${tab === "people" ? "bg-partner text-white border-partner font-bold" : "border-black/15"}`} onClick={() => setTab("people")}>
             みんなの様子
           </button>
-          <button className={`rounded-full px-3 py-1.5 border ${tab === "me" ? "bg-leaf text-white border-leaf font-bold" : "border-black/15"}`} onClick={() => setTab("me")}>
+          <button className={`rounded-full px-3 py-1.5 border ${tab === "me" ? "bg-partner text-white border-partner font-bold" : "border-black/15"}`} onClick={() => setTab("me")}>
             自分も答える
           </button>
         </div>
@@ -179,7 +179,7 @@ function People({ data, allQ }: { data: Data; allQ: { id: string; text: string }
         今月答えた人 {done} / {people.length}人。気にかけたい人が上に出ます。Claude のまとめは手がかりで、決めつけではありません。最後は、本人と話して確かめてください。
       </p>
       <section className={card}>
-        <div className="text-sm font-bold text-leaf">今月の問い</div>
+        <div className="text-sm font-bold text-partner">今月の問い</div>
         <ol className="text-sm space-y-1">
           {data.questions.map((q, i) => (
             <li key={i}>

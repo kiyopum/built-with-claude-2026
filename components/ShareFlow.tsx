@@ -334,7 +334,7 @@ export function ShareFlow({ draftId, backHref, shopPin, initialScene, gyoji }: {
               <button className="rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={!edited} onClick={() => write(product, "check", post)}>
                 直したので確かめる
               </button>
-              <button className="rounded-xl border-2 border-carrot text-carrot py-3 font-bold" onClick={() => write(product, "generate", undefined, saved?.scene ?? undefined)}>
+              <button className="rounded-xl border-2 border-ai text-ai py-3 font-bold" onClick={() => write(product, "generate", undefined, saved?.scene ?? undefined)}>
                 Claude に書き直してもらう
               </button>
             </div>

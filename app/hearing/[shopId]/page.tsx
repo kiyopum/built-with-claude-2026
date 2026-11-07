@@ -102,15 +102,15 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
   }
 
   return (
-    <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-leaf/30 space-y-3">
-      <div className="font-bold text-leaf">🌱 次の商品を提案する</div>
+    <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-ai/30 space-y-3">
+      <div className="font-bold text-ai">🤖 次の商品を提案する（Claude）</div>
       <p className="text-sm">
         物販は、入り口です。売上が少しでも、事業者さんとの話のたねになります。事業者の話の中には、<b>サービス</b>（配信・講座・教室・動画・レシピなど。ものを送らない商品）のたねがあります。Claude は、申し込みがまとまりやすい形から案を出します。よさそうな案を事業者さんに見せて、相談してみてください。
       </p>
       <p className="text-xs text-black/60">出すかどうかを決めるのは、事業者さんです。提案は、してもしなくても大丈夫です。</p>
 
-      <div className="rounded-xl bg-leaf/10 p-3 text-sm space-y-2">
-        <div className="text-xs font-bold text-leaf">あなたの取り分（今の決まり）</div>
+      <div className="rounded-xl bg-partner/10 p-3 text-sm space-y-2">
+        <div className="text-xs font-bold text-partner">あなたの取り分（今の決まり）</div>
         {/* 同じ金額で「物販」と「サービス」を横に並べる（片方だけ見せると、金額が急に大きくなったように見える） */}
         <table className="w-full text-sm">
           <thead>
@@ -146,12 +146,12 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
       {!shop.can_propose ? (
         <p className="rounded-xl bg-black/[0.03] p-3 text-sm">事業者のヒアリングか、商品を1つ作ったあとで、Claude が案を出せます（事業者の話が材料になります）。</p>
       ) : shop.proposals.length === 0 ? (
-        <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" onClick={make} disabled={busy}>
+        <button className="w-full rounded-xl bg-ai text-white py-3 font-bold disabled:opacity-50" onClick={make} disabled={busy}>
           {busy ? <Working text="Claude が事業者の話から案を考えています" est={25} /> : "この事業者の案を、Claude に出してもらう"}
         </button>
       ) : (
         <>
-          <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold" onClick={() => setOpen(!open)}>
+          <button className="w-full rounded-xl border-2 border-ai text-ai py-3 font-bold" onClick={() => setOpen(!open)}>
             {open ? "案を閉じる" : `Claude の案を見る（${shop.proposals.length}つ）`}
           </button>
           {open && (
@@ -200,7 +200,7 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
                 </div>
               ))}
               {shop.proposals_left > 0 && (
-                <button className="w-full text-sm text-leaf underline disabled:opacity-50" onClick={make} disabled={busy}>
+                <button className="w-full text-sm text-ai underline disabled:opacity-50" onClick={make} disabled={busy}>
                   {busy ? <Working text="Claude が案を考え直しています" est={25} /> : `別の案を出してもらう（あと${shop.proposals_left}回）`}
                 </button>
               )}
@@ -332,7 +332,7 @@ function NudgeCard({ shopId, draftId, initial, at }: { shopId: number; draftId: 
   }
   return (
     <div className="rounded-2xl bg-leaf/5 border border-leaf/20 p-3 text-sm space-y-2">
-      <div className="font-bold text-leaf">🌱 もっと届くように、次の小さな一歩</div>
+      <div className="font-bold text-ai">🤖 もっと届くように、次の小さな一歩（Claude）</div>
       {n ? (
         <>
           <p className="font-bold">{n.step}</p>
@@ -493,7 +493,7 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
             onChange={(e) => setNote(e.target.value)}
           />
           <div className="flex gap-2">
-            <button className="flex-1 rounded-xl bg-carrot text-white py-3 font-bold disabled:opacity-50" disabled={busy || !note.trim()} onClick={() => act("revise")}>
+            <button className="flex-1 rounded-xl bg-ai text-white py-3 font-bold disabled:opacity-50" disabled={busy || !note.trim()} onClick={() => act("revise")}>
               {busy ? <Working text="Claude が書き直しています" est={10} /> : "この内容で書き直す"}
             </button>
             <button className="rounded-xl border border-black/15 px-4" disabled={busy} onClick={() => setMode("")}>

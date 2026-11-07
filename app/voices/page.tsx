@@ -93,10 +93,10 @@ function VoicesInner() {
       </div>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        <div className="text-sm font-bold text-leaf">聞いた声を伝える</div>
+        <div className="text-sm font-bold text-partner">聞いた声を伝える</div>
         <div className="flex gap-2">
           {SOURCES.map((s) => (
-            <button key={s.key} className={`flex-1 rounded-xl py-2 text-sm font-bold border ${source === s.key ? "bg-leaf text-white border-leaf" : "border-black/15"}`} onClick={() => setSource(s.key)}>
+            <button key={s.key} className={`flex-1 rounded-xl py-2 text-sm font-bold border ${source === s.key ? "bg-partner text-white border-partner" : "border-black/15"}`} onClick={() => setSource(s.key)}>
               {s.label}
             </button>
           ))}
@@ -114,14 +114,14 @@ function VoicesInner() {
         <VoiceInput voice={voice} value={text} onChange={setText} disabled={busy} placeholder="聞いたままの言葉で大丈夫です（例：箱を開けたら、瓶が少し動いていて心配だった）" />
         <p className="text-xs text-black/50">聞いたままの言葉は、あなたと YMM だけが見られます。みんなには、Claude が整えた文が載ります。名前や電話番号は書かれません。</p>
         {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
-        <button className="w-full rounded-2xl bg-carrot text-white py-3 font-bold disabled:opacity-50" onClick={send} disabled={!text.trim() || busy}>
+        <button className="w-full rounded-2xl bg-ai text-white py-3 font-bold disabled:opacity-50" onClick={send} disabled={!text.trim() || busy}>
           {busy ? <Working text="Claude が整えています" est={10} /> : "みんなに伝える"}
         </button>
       </section>
 
       <div className="flex gap-2 text-sm">
         {([["", `すべて ${data.voices.length}`], ["praise", `🌸 お褒め ${count("praise")}`], ["request", `🌱 もっと未来のために ${count("request")}`]] as const).map(([k, l]) => (
-          <button key={k} className={`rounded-full px-3 py-1.5 border ${filter === k ? "bg-leaf text-white border-leaf font-bold" : "border-black/15"}`} onClick={() => setFilter(k)}>
+          <button key={k} className={`rounded-full px-3 py-1.5 border ${filter === k ? "bg-partner text-white border-partner font-bold" : "border-black/15"}`} onClick={() => setFilter(k)}>
             {l}
           </button>
         ))}
@@ -132,8 +132,8 @@ function VoicesInner() {
       ) : (
         <ul className="space-y-3">
           {list.map((v) => (
-            <li key={v.id} className={`rounded-2xl p-4 space-y-2 border ${v.kind === "praise" ? "bg-pink-50 border-pink-100" : "bg-leaf/5 border-leaf/15"}`}>
-              <div className="text-xs font-bold">{v.kind === "praise" ? <span className="text-pink-700">🌸 お褒め</span> : <span className="text-leaf">🌱 もっと未来のために</span>}</div>
+            <li key={v.id} className={`rounded-2xl p-4 space-y-2 border ${v.kind === "praise" ? "bg-pink-50 border-pink-100" : "bg-partner/5 border-partner/15"}`}>
+              <div className="text-xs font-bold">{v.kind === "praise" ? <span className="text-pink-700">🌸 お褒め</span> : <span className="text-partner">🌱 もっと未来のために</span>}</div>
               <div className="font-bold">{v.title}</div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{v.message}</p>
               {v.step && (

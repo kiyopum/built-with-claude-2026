@@ -25,8 +25,11 @@ export function Nav() {
     router.push("/login");
   }
 
+  // 行き先の役割を色の点で示す（biz＝事業者のこと／partner＝パートナー自身のこと／ai＝システム・管理）
+  const DOT: Record<string, string> = { "/hearing": "bg-biz", "/everyone": "bg-partner-light", "/voices": "bg-partner-light", "/checkin": "bg-partner-light", "/me": "bg-partner-light", "/statement": "bg-value", "/admin": "bg-sky", "/demo": "bg-white/60", "/shop": "bg-value", "/login": "bg-white/60" };
   const pill = (href: string, text: string) => (
-    <Link href={href} className={`rounded-full px-2.5 py-1 ${path.startsWith(href) ? "bg-white text-leaf font-bold" : "bg-white/15"}`}>
+    <Link href={href} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 ${path.startsWith(href) ? "bg-white text-ai font-bold" : "bg-white/15"}`}>
+      <span className={`inline-block w-2 h-2 rounded-full ${DOT[href] ?? "bg-white/60"}`} aria-hidden />
       {text}
     </Link>
   );
@@ -56,7 +59,8 @@ export function Nav() {
       </nav>
       {me && (
         <div className="basis-full flex justify-end items-center gap-3 text-xs text-white/80">
-          <span>
+          <span className="inline-flex items-center gap-1">
+            <span className={`inline-block w-2 h-2 rounded-full ${me.role === "admin" ? "bg-sky" : "bg-partner-light"}`} aria-hidden />
             {me.name} さん（{me.role === "admin" ? "YMM 管理" : `パートナー番号 ${me.code}`}）
           </span>
           <button className="underline" onClick={logout}>
