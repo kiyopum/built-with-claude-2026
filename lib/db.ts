@@ -288,6 +288,9 @@ function open(): DatabaseSync {
   // 事業者さん専用ページ（2026-11-07 きよさん）：メールのリンク（長い合言葉）＋事業者さんの暗証番号で、注文と届け先を自分で見る。ログインなし
   const scols2 = (db.prepare("PRAGMA table_info(shops)").all() as { name: string }[]).map((c) => c.name);
   if (!scols2.includes("owner_token")) db.exec("ALTER TABLE shops ADD COLUMN owner_token TEXT");
+  // まとめ買いの値段（2026-11-07 きよさん）：事業者さんが「○個で○円」を決める（lib/bundles.ts）
+  const dcols2 = (db.prepare("PRAGMA table_info(drafts)").all() as { name: string }[]).map((c) => c.name);
+  if (!dcols2.includes("bundles_json")) db.exec("ALTER TABLE drafts ADD COLUMN bundles_json TEXT");
   db.exec("INSERT OR IGNORE INTO settings (key, value) VALUES ('notify_email', '')"); // YMM が売れた知らせを受けるアドレス（管理画面で入れる。推測で埋めない）
   if (!scols.includes("cover_partner_id")) db.exec("ALTER TABLE shops ADD COLUMN cover_partner_id INTEGER REFERENCES users(id)");
 
@@ -375,6 +378,7 @@ export type Draft = {
   size_class?: string | null;
   weight_g?: number | null;
   per_box?: number;
+  bundles_json?: string | null;
   kind?: "goods" | "service";
   ymm_rate?: number | null;
   created_at: string;

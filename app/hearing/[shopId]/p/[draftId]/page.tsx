@@ -31,6 +31,7 @@ type Draft = {
   size_class: string | null;
   weight_g: number | null;
   per_box: number;
+  bundles_json?: string | null;
   shop_prefecture: string | null;
   shop_shipping_yen: number | null;
   shop_online_label: number;
@@ -68,7 +69,7 @@ function EditInner() {
   const reloadPackage = () =>
     fetch(`/api/drafts/${draftId}`)
       .then((r) => r.json())
-      .then((j: { draft: Draft }) => setDraft((old) => (old ? { ...old, size_class: j.draft.size_class, weight_g: j.draft.weight_g, per_box: j.draft.per_box } : old)));
+      .then((j: { draft: Draft }) => setDraft((old) => (old ? { ...old, size_class: j.draft.size_class, weight_g: j.draft.weight_g, per_box: j.draft.per_box, bundles_json: j.draft.bundles_json } : old)));
 
   useEffect(() => {
     fetch(`/api/drafts/${draftId}`)
@@ -227,7 +228,7 @@ function EditInner() {
       <PackageCard
         draftId={draft.id}
         price={Number(fields.price_yen) || draft.price_yen}
-        initial={{ size_class: draft.size_class, weight_g: draft.weight_g, per_box: draft.per_box }}
+        initial={{ size_class: draft.size_class, weight_g: draft.weight_g, per_box: draft.per_box, bundles_json: draft.bundles_json }}
         shopPrefecture={draft.shop_prefecture}
         shopFlatYen={draft.shop_shipping_yen}
         onlineLabel={!!draft.shop_online_label}
