@@ -65,3 +65,13 @@ export async function saveAudios(form: FormData, prefix: string): Promise<{ file
   }
   return out;
 }
+
+// お店を消すとき：その商品の写真とヒアリングの録音のファイルを消す（行は呼び出し側が消す）
+export function removeShopFiles(shopId: number) {
+  const db = getDb();
+  const photos = db.prepare("SELECT p.file FROM product_photos p JOIN drafts d ON d.id = p.draft_id WHERE d.shop_id = ?").all(shopId) as { file: string }[];
+  const audio = db.prepare("SELECT a.file FROM hearing_audio a JOIN hearings h ON h.id = a.hearing_id WHERE h.shop_id = ?").all(shopId) as { file: string }[];
+  for (const { file } of photos) fs.rmSync(path.join(PHOTO_DIR, path.basename(file)), { force: true });
+  for (const { file } of audio) fs.rmSync(path.join(AUDIO_DIR, path.basename(file)), { force: true });
+}
+

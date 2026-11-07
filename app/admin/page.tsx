@@ -154,6 +154,7 @@ export default function AdminPage() {
                   店主さんが暗証番号を忘れたとき：消して決め直してもらう
                 </button>
               )}
+              <DeleteShop shop={s} act={act} />
             </li>
           ))}
         </ul>
@@ -415,3 +416,29 @@ function PrepCard() {
     </section>
   );
 }
+
+// お店を消す（テストや登録のやり直し用）。押し間違いを防ぐため2段階。注文のあるお店は API が断る
+function DeleteShop({ shop, act }: { shop: Shop; act: (body: Record<string, unknown>, done?: string) => Promise<boolean> }) {
+  const [arm, setArm] = useState(false);
+  if (!arm) {
+    return (
+      <button className="text-xs text-black/50 underline" onClick={() => setArm(true)}>
+        このお店を消す（テストややり直しのとき）
+      </button>
+    );
+  }
+  return (
+    <div className="rounded-lg bg-red-50 p-2 space-y-2">
+      <p className="text-xs text-red-700">{shop.name} を消します。商品・写真・ヒアリング・録音・提案も消えて、戻せません。注文のあるお店は消せません。</p>
+      <div className="flex gap-2">
+        <button className="flex-1 rounded-lg bg-red-600 text-white py-2 font-bold" onClick={async () => { if (!(await act({ action: "deleteShop", shopId: shop.id }, `${shop.name} を消しました`))) setArm(false); }}>
+          本当に消す
+        </button>
+        <button className="flex-1 rounded-lg border border-black/15 py-2" onClick={() => setArm(false)}>
+          やめる
+        </button>
+      </div>
+    </div>
+  );
+}
+

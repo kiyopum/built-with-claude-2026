@@ -3,6 +3,7 @@ import { getDb, getSetting, getText } from "@/lib/db";
 import { thisMonth } from "@/lib/checkin";
 import { codeOf, hashPin, isPin, requireAdmin } from "@/lib/auth";
 import { ITEM_RATE_LIMIT } from "@/lib/split";
+import { removeShopFiles } from "@/lib/files";
 
 // YMM の管理画面：人・お店の割り当て・止まっている商品・注文
 export async function GET() {
@@ -101,6 +102,30 @@ export async function POST(req: Request) {
       const pid = b.partnerId ? Number(b.partnerId) : null;
       if (pid && !db.prepare("SELECT 1 FROM users WHERE id = ? AND role = 'partner' AND active = 1").get(pid)) return bad("そのパートナーはいません");
       db.prepare("UPDATE shops SET cover_partner_id = ? WHERE id = ?").run(pid, Number(b.shopId));
+      return Response.json({ ok: true });
+    }
+    case "deleteShop": {
+      // テストややり直しのために、お店を丸ごと消す（商品・写真・ヒアリング・録音・提案も）。
+      // 注文のあるお店は消さない（明細と往復便が壊れるため）。Stripe のテストの商品はそのまま残る
+      const id = Number(b.shopId);
+      const shop = db.prepare("SELECT id, name FROM shops WHERE id = ?").get(id) as { id: number; name: string } | undefined;
+      if (!shop) return bad("お店が見つかりません");
+      const orders = (db.prepare("SELECT COUNT(*) AS n FROM orders WHERE shop_id = ?").get(id) as { n: number }).n;
+      if (orders > 0) return bad(`${shop.name} には注文が ${orders} 件あるので消せません（明細が消えてしまうため）。やり直すときは「2_最初からやり直す」で`);
+      removeShopFiles(id);
+      db.exec("BEGIN");
+      try {
+        db.prepare("DELETE FROM product_photos WHERE draft_id IN (SELECT id FROM drafts WHERE shop_id = ?)").run(id);
+        db.prepare("DELETE FROM hearing_audio WHERE hearing_id IN (SELECT id FROM hearings WHERE shop_id = ?)").run(id);
+        db.prepare("DELETE FROM drafts WHERE shop_id = ?").run(id);
+        db.prepare("DELETE FROM hearings WHERE shop_id = ?").run(id);
+        db.prepare("UPDATE voices SET shop_id = NULL WHERE shop_id = ?").run(id); // みんなの声は書いた人のものなので残す
+        db.prepare("DELETE FROM shops WHERE id = ?").run(id);
+        db.exec("COMMIT");
+      } catch (e) {
+        db.exec("ROLLBACK");
+        throw e;
+      }
       return Response.json({ ok: true });
     }
     case "resetShopPin": {
