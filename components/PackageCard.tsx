@@ -45,14 +45,14 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
 
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-      <div className="text-sm font-bold text-leaf">送り方（大きさと重さ）</div>
+      <div className="text-sm font-bold text-biz">送り方（大きさと重さ）</div>
       <p className="text-xs text-black/60">箱や袋に入れたときの大きさを選んでください。いちばん安い送り方を自動で選び、「送料込み」の値段にします。</p>
       <div className="grid grid-cols-3 gap-2">
         {SIZE_CLASSES.map((s) => (
           <button
             key={s.key}
             onClick={() => (setSize(s.key), setSaved(false))}
-            className={`rounded-xl border-2 p-2 text-left active:scale-[0.98] ${size === s.key ? "border-carrot bg-carrot/5" : "border-black/10 bg-white"}`}
+            className={`rounded-xl border-2 p-2 text-left active:scale-[0.98] ${size === s.key ? "border-biz bg-biz/5" : "border-black/10 bg-white"}`}
           >
             <div className="text-2xl">{s.emoji}</div>
             <div className="text-sm font-bold leading-tight">{s.label}</div>
@@ -82,7 +82,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
                 setCustom("");
                 setSaved(false);
               }}
-              className={`w-12 h-12 rounded-xl border-2 text-lg font-bold ${perBox === n && !custom ? "border-carrot bg-carrot/5 text-carrot" : "border-black/10"}`}
+              className={`w-12 h-12 rounded-xl border-2 text-lg font-bold ${perBox === n && !custom ? "border-biz bg-biz/5 text-biz" : "border-black/10"}`}
             >
               {n}
             </button>
@@ -106,7 +106,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
                   setSaved(false);
                 }
               }}
-              className={`w-20 h-12 rounded-xl border-2 text-lg font-bold text-center ${custom && perBox === Number(custom) ? "border-carrot bg-carrot/5 text-carrot" : "border-black/10"}`}
+              className={`w-20 h-12 rounded-xl border-2 text-lg font-bold text-center ${custom && perBox === Number(custom) ? "border-biz bg-biz/5 text-biz" : "border-black/10"}`}
             />
             <span className="text-black/60">個</span>
           </label>
@@ -122,13 +122,13 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
       ) : size && w > 0 && !quotes ? (
         <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">この大きさ・重さで送れる方法が見つかりません（重すぎるかもしれません。箱は25kgまで）。</p>
       ) : quotes && near ? (
-        <div className="rounded-xl bg-leaf/5 p-3 text-sm space-y-1">
+        <div className="rounded-xl bg-biz/5 p-3 text-sm space-y-1">
           <div>
             いちばん安い送り方：<b>{near.method}</b>
             {near.note && <span className="block text-xs text-black/60">{near.note}</span>}
           </div>
           <div>
-            お客さまには：{perBox > 1 && <b>{perBox}個入り </b>}{fullPref(from)}内なら <b className="text-carrot text-lg">送料込み {(price * perBox + near.yen).toLocaleString()}円</b>（うち商品 {(price * perBox).toLocaleString()}円{perBox > 1 && `＝1個 ${price.toLocaleString()}円 × ${perBox}個`}、送料 {near.yen.toLocaleString()}円）
+            お客さまには：{perBox > 1 && <b>{perBox}個入り </b>}{fullPref(from)}内なら <b className="text-biz text-lg">送料込み {(price * perBox + near.yen).toLocaleString()}円</b>（うち商品 {(price * perBox).toLocaleString()}円{perBox > 1 && `＝1個 ${price.toLocaleString()}円 × ${perBox}個`}、送料 {near.yen.toLocaleString()}円）
           </div>
 
           {Math.min(...yens) !== Math.max(...yens) && (
@@ -141,7 +141,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
       ) : null}
 
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
-      <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={busy || !size || !(w > 0) || !changed} onClick={save}>
+      <button className="w-full rounded-xl bg-biz text-white py-3 font-bold disabled:opacity-40" disabled={busy || !size || !(w > 0) || !changed} onClick={save}>
         {busy ? "保存しています" : saved && !changed ? "保存しました ✓" : "送り方を保存する"}
       </button>
       <p className="text-xs text-black/50">冷蔵・冷凍で送る商品には、まだ対応していません。</p>

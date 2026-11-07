@@ -38,12 +38,12 @@ function Inner() {
   return (
     <div className="space-y-5">
       <div>
-        <Link href={`/p/${id}`} className="text-sm text-leaf">← 商品のページ</Link>
+        <Link href={`/p/${id}`} className="text-sm text-biz">← 商品のページ</Link>
         <h1 className="text-xl font-bold mt-1">事業者の Instagram で紹介する</h1>
         <p className="text-sm text-black/60">事業者さん用です。事業者さんの暗証番号を押すと、紹介の画像と文章を Claude が作ります。</p>
       </div>
       {busy ? (
-        <div className="py-8 text-center text-leaf font-bold">
+        <div className="py-8 text-center text-biz font-bold">
           <Working text="確かめています" />
         </div>
       ) : (

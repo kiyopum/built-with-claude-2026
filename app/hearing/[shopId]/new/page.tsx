@@ -82,14 +82,14 @@ function NewProductInner() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← 事業者のページ</Link>
+        <Link href={`/hearing/${shopId}`} className="text-sm text-biz">← 事業者のページ</Link>
         <h1 className="text-xl font-bold mt-1">{service ? "サービスを追加" : "商品を追加"}</h1>
         {service && <p className="text-sm text-black/60">ライブ配信・オンライン講座・教室・体験など、ものを送らないもの。申し込んだ人には、事業者さんからメールで案内を送ります。</p>}
       </div>
 
       {idea && (
-        <section className="rounded-2xl bg-leaf/10 p-4 space-y-1">
-          <div className="text-xs font-bold text-leaf">🌱 提案から始めます（{idea.form}）</div>
+        <section className="rounded-2xl bg-biz/10 p-4 space-y-1">
+          <div className="text-xs font-bold text-biz">🌱 提案から始めます（{idea.form}）</div>
           <div className="font-bold">{idea.name}</div>
           <p className="text-sm">{idea.what}</p>
           <p className="text-xs text-black/60">これは案です。日時・値段・中身は、事業者さんのお話で決まります。聞いたとおりに申し込みページを作ります。</p>
@@ -98,7 +98,7 @@ function NewProductInner() {
       )}
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        <div className="text-sm font-bold text-leaf">1) 写真を撮る{service && <span className="font-normal text-black/50">（チラシや講師・会場の写真。なくても大丈夫）</span>}</div>
+        <div className="text-sm font-bold text-biz">1) 写真を撮る{service && <span className="font-normal text-black/50">（チラシや講師・会場の写真。なくても大丈夫）</span>}</div>
         <PhotoPicker
           photos={photos}
           onChange={(p) => {
@@ -123,7 +123,7 @@ function NewProductInner() {
       {analysis && (
         <>
           <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-            <div className="text-sm font-bold text-leaf">{service ? "2) 申し込みページに書くこと" : "2) 写真から分かったこと"}</div>
+            <div className="text-sm font-bold text-biz">{service ? "2) 申し込みページに書くこと" : "2) 写真から分かったこと"}</div>
             <p className="font-bold">{analysis.product_guess}</p>
             <table className="w-full text-sm">
               <tbody>
@@ -138,12 +138,12 @@ function NewProductInner() {
           </section>
 
           <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-            <div className="text-sm font-bold text-leaf">{service ? "3) 聞くこと" : "3) 聞くこと（写真で分かったことは省いています）"}</div>
+            <div className="text-sm font-bold text-biz">{service ? "3) 聞くこと" : "3) 聞くこと（写真で分かったことは省いています）"}</div>
             <QuestionList questions={analysis.questions} />
           </section>
 
           <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-            <div className="text-sm font-bold text-leaf">4) お話を聞く</div>
+            <div className="text-sm font-bold text-biz">4) お話を聞く</div>
             <VoiceInput voice={voice} value={transcript} onChange={setTranscript} disabled={busy !== ""} />
           </section>
         </>

@@ -68,7 +68,7 @@ type Proposal = { name: string; form: string; what: string; who: string; unit?: 
 
 const STATUS = { draft: "事業者さんの確認待ち", published: "公開中", rejected: "却下" } as Record<string, string>;
 const VERDICT = {
-  販売できる: "text-leaf",
+  販売できる: "text-biz",
   直せば販売できる: "text-amber-600",
   このままでは販売できない: "text-red-600",
 } as Record<string, string>;
@@ -126,13 +126,13 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
               { a: 5000, label: yen(5000), sub: "" },
               { a: 20000, label: yen(20000), sub: "4人ひと組" },
             ].map(({ a, label, sub }) => (
-              <tr key={a} className="border-t border-leaf/20">
+              <tr key={a} className="border-t border-biz/20">
                 <td className="py-1">
                   {label}
                   {sub && <div className="text-xs text-black/50">{sub}</div>}
                 </td>
                 <td className="py-1 text-right">{yen(goods(a))}</td>
-                <td className="py-1 text-right font-bold text-carrot">{yen(service(a).partner)}</td>
+                <td className="py-1 text-right font-bold text-biz">{yen(service(a).partner)}</td>
               </tr>
             ))}
           </tbody>
@@ -159,7 +159,7 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
               {shop.proposals.map((p, i) => (
                 <div key={i} className="rounded-xl border border-black/10 p-3 space-y-2 text-sm">
                   <div>
-                    <span className="rounded-full bg-leaf/10 text-leaf text-xs font-bold px-2 py-0.5">{p.form}</span>
+                    <span className="rounded-full bg-biz/10 text-biz text-xs font-bold px-2 py-0.5">{p.form}</span>
                     <div className="font-bold text-base mt-1">{p.name}</div>
                   </div>
                   <p>{p.what}</p>
@@ -177,14 +177,14 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
                     <div>
                       <dt className="text-black/50">この事業者さんに合う理由</dt>
                       <dd>{p.why_here}</dd>
-                      {p.quote && <dd className="mt-0.5 border-l-2 border-leaf/40 pl-2 text-black/70">事業者の話から：「{p.quote}」</dd>}
+                      {p.quote && <dd className="mt-0.5 border-l-2 border-biz/40 pl-2 text-black/70">事業者の話から：「{p.quote}」</dd>}
                     </div>
                     <div>
                       <dt className="text-black/50">小さく試すなら</dt>
                       <dd>{p.start_small}</dd>
                     </div>
-                    <div className="rounded-lg bg-carrot/10 p-2">
-                      <dt className="text-carrot font-bold">事業者さんへの聞き方</dt>
+                    <div className="rounded-lg bg-biz/10 p-2">
+                      <dt className="text-biz font-bold">事業者さんへの聞き方</dt>
                       <dd className="text-sm">「{p.ask}」</dd>
                     </div>
                     {p.check && (
@@ -194,7 +194,7 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
                       </div>
                     )}
                   </dl>
-                  <Link href={`/hearing/${shop.id}/new?kind=service&seed=${i}`} className="block text-center rounded-xl bg-carrot text-white py-2.5 font-bold">
+                  <Link href={`/hearing/${shop.id}/new?kind=service&seed=${i}`} className="block text-center rounded-xl bg-biz text-white py-2.5 font-bold">
                     事業者さんが「やってみたい」なら、この案で作る
                   </Link>
                 </div>
@@ -240,9 +240,9 @@ function ShopPageInner() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/hearing" className="text-sm text-leaf">← 事業者の一覧</Link>
+        <Link href="/hearing" className="text-sm text-biz">← 事業者の一覧</Link>
         <h1 className="text-xl font-bold mt-1">{shop.name}</h1>
-        {shop.partner_resting && <p className="mt-1 rounded-lg bg-leaf/10 p-2 text-xs">🌿 担当の方は今月お休み中です。そのあいだ、みんなで見守っています。</p>}
+        {shop.partner_resting && <p className="mt-1 rounded-lg bg-biz/10 p-2 text-xs">🌿 担当の方は今月お休み中です。そのあいだ、みんなで見守っています。</p>}
         <p className="text-sm text-black/60">{shop.category}</p>
       </div>
 
@@ -261,11 +261,11 @@ function ShopPageInner() {
       {/* 商品（1つずつ、写真を撮って聞く）。タップで修正・リリースの画面 */}
       <section className="space-y-3">
         <div className="font-bold">商品 {products.length}件</div>
-        <Link href={`/hearing/${shop.id}/new`} className="block text-center rounded-2xl bg-carrot text-white py-4 text-lg font-bold">
+        <Link href={`/hearing/${shop.id}/new`} className="block text-center rounded-2xl bg-biz text-white py-4 text-lg font-bold">
           ＋ 商品を追加
         </Link>
         <ProposalCard shop={shop} onChanged={load} />
-        <Link href={`/hearing/${shop.id}/new?kind=service`} className="block text-center rounded-2xl border-2 border-carrot text-carrot py-3 font-bold">
+        <Link href={`/hearing/${shop.id}/new?kind=service`} className="block text-center rounded-2xl border-2 border-biz text-biz py-3 font-bold">
           ＋ サービスを追加（ライブ配信・講座・体験など）
         </Link>
         {products.map((p) => (
@@ -292,12 +292,12 @@ function ShopPageInner() {
                   {p.verdict && <span className={`font-bold ${VERDICT[p.verdict] ?? ""}`}>{p.verdict}</span>}
                 </div>
               </div>
-              <span className="self-center shrink-0 rounded-lg border border-leaf/40 text-leaf text-xs font-bold px-2.5 py-1.5">
+              <span className="self-center shrink-0 rounded-lg border border-biz/40 text-biz text-xs font-bold px-2.5 py-1.5">
                 {p.status === "draft" ? "修正・リリース" : "修正"}
               </span>
             </Link>
             {p.status === "published" && (
-              <Link href={`/hearing/${shop.id}/p/${p.id}/share`} className="-mt-2 block rounded-b-2xl bg-carrot text-white text-center py-3 font-bold shadow-sm">
+              <Link href={`/hearing/${shop.id}/p/${p.id}/share`} className="-mt-2 block rounded-b-2xl bg-biz text-white text-center py-3 font-bold shadow-sm">
                 📷 Instagram で紹介する
               </Link>
             )}
@@ -331,7 +331,7 @@ function NudgeCard({ shopId, draftId, initial, at }: { shopId: number; draftId: 
     setN(json.nudge as typeof n);
   }
   return (
-    <div className="rounded-2xl bg-leaf/5 border border-leaf/20 p-3 text-sm space-y-2">
+    <div className="rounded-2xl bg-biz/5 border border-biz/20 p-3 text-sm space-y-2">
       <div className="font-bold text-ai">🤖 もっと届くように、次の小さな一歩（Claude）</div>
       {n ? (
         <>
@@ -345,12 +345,12 @@ function NudgeCard({ shopId, draftId, initial, at }: { shopId: number; draftId: 
             return (
               g &&
               sc && (
-                <div className="rounded-xl bg-white border border-carrot/30 p-2 space-y-2">
-                  <div className="text-xs font-bold text-carrot">
+                <div className="rounded-xl bg-white border border-biz/30 p-2 space-y-2">
+                  <div className="text-xs font-bold text-biz">
                     🎁 もうすぐ {g.name}・{(() => { const up = upcomingGyoji(new Date(), 0, 120).find((x) => x.key === g.key); return up ? gyojiWhen(up) : (g.note ?? ""); })()}
                   </div>
                   {n.gyoji_idea && <p className="text-black/70">{n.gyoji_idea}</p>}
-                  <Link href={`/hearing/${shopId}/p/${draftId}/share?scene=${sc.key}&gyoji=${g.key}`} className="block rounded-xl bg-carrot text-white text-center py-3 font-bold">
+                  <Link href={`/hearing/${shopId}/p/${draftId}/share?scene=${sc.key}&gyoji=${g.key}`} className="block rounded-xl bg-biz text-white text-center py-3 font-bold">
                     {sc.emoji} {g.name}に向けて、投稿を作る
                   </Link>
                 </div>
@@ -362,7 +362,7 @@ function NudgeCard({ shopId, draftId, initial, at }: { shopId: number; draftId: 
       ) : (
         <p className="text-black/70">公開してしばらくたちました。届く人を少し広げる工夫を、Claude と1つだけ考えてみませんか。</p>
       )}
-      <button className="w-full rounded-xl border border-leaf text-leaf py-2 font-bold disabled:opacity-50" onClick={think} disabled={busy}>
+      <button className="w-full rounded-xl border border-biz text-biz py-2 font-bold disabled:opacity-50" onClick={think} disabled={busy}>
         {busy ? <Working text="考えています" /> : n ? "別の一歩を考える" : "一歩を考える"}
       </button>
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-2 text-xs">{error}</p>}
@@ -400,13 +400,13 @@ function SetShopPin({ shopId, onDone }: { shopId: number; onDone: () => void }) 
   }
 
   return (
-    <section className="rounded-2xl border-2 border-carrot bg-carrot/5 p-4 space-y-3">
-      <div className="font-bold text-carrot">はじめに：事業者さんの暗証番号を決める</div>
+    <section className="rounded-2xl border-2 border-biz bg-biz/5 p-4 space-y-3">
+      <div className="font-bold text-biz">はじめに：事業者さんの暗証番号を決める</div>
       <p className="text-sm">
         商品を公開（リリース）できるのは事業者さんだけです。📱 スマホを事業者さんに渡して、数字4けたを決めてもらってください。パートナーさんは見ないでください。
       </p>
       {busy ? (
-        <div className="py-6 text-center text-leaf font-bold">
+        <div className="py-6 text-center text-biz font-bold">
           <Working text="保存しています" />
         </div>
       ) : (
@@ -441,8 +441,8 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-bold text-leaf">事業者の理念・思い</div>
-        <span className={`text-xs ${shop.philosophy_status === "draft" ? "text-carrot font-bold" : "text-black/50"}`}>{label}</span>
+        <div className="text-sm font-bold text-biz">事業者の理念・思い</div>
+        <span className={`text-xs ${shop.philosophy_status === "draft" ? "text-biz font-bold" : "text-black/50"}`}>{label}</span>
       </div>
       {!shop.philosophy_text ? (
         <p className="text-sm text-black/60">最初に一度だけ、事業を始めたきっかけや大事にしていることを聞きます。商品の紹介文にも生かされます。</p>
@@ -465,10 +465,10 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
             }}
           />
           <div className="grid grid-cols-2 gap-2">
-            <button className="rounded-xl border-2 border-leaf text-leaf py-2.5 font-bold" onClick={() => setMode("edit")}>
+            <button className="rounded-xl border-2 border-biz text-biz py-2.5 font-bold" onClick={() => setMode("edit")}>
               手で直す
             </button>
-            <button className="rounded-xl border-2 border-carrot text-carrot py-2.5 font-bold text-sm disabled:opacity-40" disabled={shop.intro_revise_left <= 0} onClick={() => setMode("revise")}>
+            <button className="rounded-xl border-2 border-biz text-biz py-2.5 font-bold text-sm disabled:opacity-40" disabled={shop.intro_revise_left <= 0} onClick={() => setMode("revise")}>
               {shop.intro_revise_left > 0 ? `AI に直してもらう（あと${shop.intro_revise_left}回）` : "AI に直すのは5回まで"}
             </button>
           </div>
@@ -476,7 +476,7 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
       )}
       {mode === "edit" && (
         <div className="flex gap-2">
-          <button className="flex-1 rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" disabled={busy} onClick={() => act("edit")}>
+          <button className="flex-1 rounded-xl bg-biz text-white py-3 font-bold disabled:opacity-50" disabled={busy} onClick={() => act("edit")}>
             保存する
           </button>
           <button className="rounded-xl border border-black/15 px-4" onClick={() => setMode("")}>
@@ -507,7 +507,7 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
       {mode === "" && (
         <Link
           href={`/hearing/${shop.id}/about`}
-          className={`block text-center rounded-xl py-3 font-bold ${shop.philosophy_text ? "border border-leaf/40 text-leaf" : "bg-leaf text-white"}`}
+          className={`block text-center rounded-xl py-3 font-bold ${shop.philosophy_text ? "border border-biz/40 text-biz" : "bg-biz text-white"}`}
         >
           {shop.philosophy_text ? "聞き直す" : "事業者のヒアリングを始める"}
         </Link>
@@ -530,16 +530,16 @@ function ShipDaysCard({ shopId, days, neighbors, prefecture, onSaved }: { shopId
   const best = Object.entries(neighbors).sort((a, b) => b[1] - a[1])[0];
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
-      <div className="text-sm font-bold text-leaf">📅 発送する曜日</div>
+      <div className="text-sm font-bold text-biz">📅 発送する曜日</div>
       <div className="grid grid-cols-7 gap-1">
         {WEEKDAYS.map((w, i) => (
           <button
             key={w}
-            className={`rounded-lg py-2 text-sm font-bold relative ${days.includes(i) ? "bg-leaf text-white" : "bg-black/5 text-black/60"}`}
+            className={`rounded-lg py-2 text-sm font-bold relative ${days.includes(i) ? "bg-biz text-white" : "bg-black/5 text-black/60"}`}
             onClick={() => toggle(i)}
           >
             {w}
-            {neighbors[i] ? <span className="absolute -top-1.5 -right-1 rounded-full bg-carrot text-white text-[10px] leading-4 px-1">{neighbors[i]}</span> : null}
+            {neighbors[i] ? <span className="absolute -top-1.5 -right-1 rounded-full bg-biz text-white text-[10px] leading-4 px-1">{neighbors[i]}</span> : null}
           </button>
         ))}
       </div>
@@ -583,7 +583,7 @@ function OriginCard({ shopId, prefecture, hint, pickupOk, onlineLabel, onSaved }
               </option>
             ))}
           </select>
-          <button className="rounded-xl bg-leaf text-white px-5 font-bold disabled:opacity-40" disabled={!pref || pref === prefecture} onClick={() => send({ prefecture: pref })}>
+          <button className="rounded-xl bg-biz text-white px-5 font-bold disabled:opacity-40" disabled={!pref || pref === prefecture} onClick={() => send({ prefecture: pref })}>
             保存
           </button>
         </div>
@@ -601,7 +601,7 @@ function OriginCard({ shopId, prefecture, hint, pickupOk, onlineLabel, onSaved }
           <span className="block text-xs text-black/50">近所の方は送料なしで買えます</span>
         </span>
         <button
-          className={`shrink-0 w-16 h-9 rounded-full font-bold text-sm ${pickupOk ? "bg-leaf text-white" : "bg-black/10 text-black/50"}`}
+          className={`shrink-0 w-16 h-9 rounded-full font-bold text-sm ${pickupOk ? "bg-biz text-white" : "bg-black/10 text-black/50"}`}
           onClick={() => send({ pickup_ok: !pickupOk })}
         >
           {pickupOk ? "できる" : "しない"}
@@ -615,7 +615,7 @@ function OriginCard({ shopId, prefecture, hint, pickupOk, onlineLabel, onSaved }
           </span>
         </span>
         <button
-          className={`shrink-0 w-16 h-9 rounded-full font-bold text-sm ${onlineLabel ? "bg-leaf text-white" : "bg-black/10 text-black/50"}`}
+          className={`shrink-0 w-16 h-9 rounded-full font-bold text-sm ${onlineLabel ? "bg-biz text-white" : "bg-black/10 text-black/50"}`}
           onClick={() => send({ online_label: !onlineLabel })}
         >
           {onlineLabel ? "使う" : "使わない"}
@@ -658,9 +658,9 @@ function ShippingCard({
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-bold text-leaf">送料</div>
+        <div className="text-sm font-bold text-biz">送料</div>
         {!editing && (
-          <button className="text-xs text-leaf underline" onClick={() => setEditing(true)}>
+          <button className="text-xs text-biz underline" onClick={() => setEditing(true)}>
             変える
           </button>
         )}
@@ -678,7 +678,7 @@ function ShippingCard({
               onChange={(e) => setYen(e.target.value.replace(/[^\d]/g, ""))}
             />
             <span>円</span>
-            <button className="ml-auto rounded-xl bg-leaf text-white px-5 py-3 font-bold disabled:opacity-40" disabled={yen === ""} onClick={save}>
+            <button className="ml-auto rounded-xl bg-biz text-white px-5 py-3 font-bold disabled:opacity-40" disabled={yen === ""} onClick={save}>
               保存
             </button>
           </div>
@@ -730,8 +730,8 @@ function LetterThread({ o, onReply }: { o: Order; onReply: (letterId: number, te
             </div>
           )}
           {l.owner_reply ? (
-            <div className="rounded-lg bg-leaf/10 p-2">
-              <div className="text-xs text-leaf font-bold">お返事（{l.replied_at?.slice(0, 10)}）</div>
+            <div className="rounded-lg bg-biz/10 p-2">
+              <div className="text-xs text-biz font-bold">お返事（{l.replied_at?.slice(0, 10)}）</div>
               <p className="whitespace-pre-wrap">{l.owner_reply}</p>
             </div>
           ) : (
@@ -743,7 +743,7 @@ function LetterThread({ o, onReply }: { o: Order; onReply: (letterId: number, te
                 onChange={(e) => setDrafts((d) => ({ ...d, [l.id]: e.target.value }))}
               />
               <button
-                className="w-full rounded-xl bg-leaf text-white py-2 font-bold disabled:opacity-50"
+                className="w-full rounded-xl bg-biz text-white py-2 font-bold disabled:opacity-50"
                 disabled={busy !== null || !(drafts[l.id] ?? "").trim()}
                 onClick={async () => {
                   setError("");
@@ -772,14 +772,14 @@ function OrdersCard({ shopId, hasPin, shipDays, ownerPath }: { shopId: number; h
   if (!hasPin) return null;
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-      <div className="text-sm font-bold text-leaf">注文と届け先（事業者さん用）</div>
+      <div className="text-sm font-bold text-biz">注文と届け先（事業者さん用）</div>
       {/* 事業者さん専用ページ（2026-11-07 きよさん）：事業者さんが自分のスマホで、暗証番号を入れて注文を見る。売れたときのメールにも同じリンクが入る */}
-      <div className="rounded-xl bg-leaf/10 p-3 text-xs space-y-2">
+      <div className="rounded-xl bg-biz/10 p-3 text-xs space-y-2">
         <div>
           <b>事業者さん専用ページ</b>：事業者さんが自分のスマホで、暗証番号を入れて注文と届け先を見られます。売れたときのメールにも、このリンクが入ります。
         </div>
         <button
-          className="w-full rounded-lg bg-white border border-leaf text-leaf py-2 font-bold"
+          className="w-full rounded-lg bg-white border border-biz text-biz py-2 font-bold"
           onClick={async () => {
             const url = `${window.location.origin}${ownerPath}`;
             try {
@@ -821,7 +821,7 @@ function OrdersCard({ shopId, hasPin, shipDays, ownerPath }: { shopId: number; h
                 </div>
                 <div className="text-xs text-black/50">{o.created_at}</div>
                 {o.kind === "service" ? (
-                  <div className="rounded-lg bg-leaf/10 p-2">
+                  <div className="rounded-lg bg-biz/10 p-2">
                     <b>案内を送る先：</b>
                     {o.ship_name ?? ""} <span className="break-all">{o.customer_email ?? "（メールアドレスなし）"}</span>
                     <div className="text-xs text-black/60">配信の URL や日時を、このアドレスにメールで送ってください。</div>
@@ -843,7 +843,7 @@ function OrdersCard({ shopId, hasPin, shipDays, ownerPath }: { shopId: number; h
                   お支払い {o.amount_yen.toLocaleString()}円{o.kind !== "service" && `（うち送料 ${o.shipping_yen.toLocaleString()}円）`}／ 事業者さんの受け取り <b>{o.owner_yen.toLocaleString()}円</b>
                 </div>
                 {o.kind !== "service" && (
-                  <Link href={`/hearing/${shopId}/card?t=${o.letter_token}`} className="inline-block text-xs text-leaf underline">
+                  <Link href={`/hearing/${shopId}/card?t=${o.letter_token}`} className="inline-block text-xs text-biz underline">
                     📮 箱に入れるお手紙カードを印刷する
                   </Link>
                 )}
@@ -893,8 +893,8 @@ function NewOrders({ shopId, orders, onSeen }: { shopId: number; orders: NewOrde
     onSeen();
   }
   return (
-    <section className="rounded-2xl bg-carrot/10 border-2 border-carrot p-4 space-y-3">
-      <div className="font-bold text-carrot">🛒 新しい注文が {orders.length} 件あります</div>
+    <section className="rounded-2xl bg-biz/10 border-2 border-biz p-4 space-y-3">
+      <div className="font-bold text-biz">🛒 新しい注文が {orders.length} 件あります</div>
       <ul className="space-y-2 text-sm">
         {orders.map((o) => (
           <li key={o.id} className="rounded-xl bg-white p-3 space-y-1">
@@ -915,7 +915,7 @@ function NewOrders({ shopId, orders, onSeen }: { shopId: number; orders: NewOrde
                   <span>
                     ✉️ メール：
                     {o.notice.sent.map((x) => (
-                      <span key={x.who} className={x.ok ? "text-leaf" : "text-red-600"}>
+                      <span key={x.who} className={x.ok ? "text-biz" : "text-red-600"}>
                         {" "}
                         {x.who} {x.ok ? "送りました" : `送れませんでした（${x.error ?? ""}）`}
                       </span>
@@ -928,7 +928,7 @@ function NewOrders({ shopId, orders, onSeen }: { shopId: number; orders: NewOrde
         ))}
       </ul>
       <p className="text-xs text-black/60">事業者さんに知らせて、手配をお願いしてください。</p>
-      <button className="w-full rounded-xl bg-carrot text-white py-3 font-bold disabled:opacity-50" disabled={busy} onClick={seen}>
+      <button className="w-full rounded-xl bg-biz text-white py-3 font-bold disabled:opacity-50" disabled={busy} onClick={seen}>
         確認した（この知らせを消す）
       </button>
     </section>
@@ -950,7 +950,7 @@ function PinLater({ visitOn, shopId, onDone }: { visitOn: string; shopId: number
       <span>
         📅 訪問 {Number(visitOn.slice(5, 7))}月{Number(visitOn.slice(8, 10))}日。事業者さんの暗証番号は、その日に事業者さんと一緒に決めます。
       </span>
-      <button className="shrink-0 text-xs text-leaf underline" onClick={() => setNow(true)}>
+      <button className="shrink-0 text-xs text-biz underline" onClick={() => setNow(true)}>
         今決める
       </button>
     </section>

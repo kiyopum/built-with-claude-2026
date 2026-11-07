@@ -67,7 +67,7 @@ export function LegalTodo({ legal, f }: { legal: Legal | null; f: FieldValues })
   const missingLabels = legal?.label_items.filter((l) => !l.value) ?? [];
   if (!legal) return null;
   if (!items.length && !missingLabels.length) {
-    return <p className="rounded-xl bg-leaf/10 text-leaf p-3 text-sm font-bold">法律チェックで直すところはありません。</p>;
+    return <p className="rounded-xl bg-biz/10 text-biz p-3 text-sm font-bold">法律チェックで直すところはありません。</p>;
   }
   return (
     <section className="rounded-xl border-2 border-red-200 bg-white p-3 space-y-2">
@@ -87,7 +87,7 @@ export function LegalTodo({ legal, f }: { legal: Legal | null; f: FieldValues })
               </div>
               <div className="text-black/70">{i.detail}</div>
               {at && <div className="text-xs font-bold text-red-600">↓ {FIELD_LABEL[at]}の「{i.quote}」</div>}
-              {gone && <div className="text-xs font-bold text-leaf">✓ 文から消えました（保存すると確かめ直します）</div>}
+              {gone && <div className="text-xs font-bold text-biz">✓ 文から消えました（保存すると確かめ直します）</div>}
               {!i.quote?.trim() && i.status === "missing" && <div className="text-xs text-black/50">→ 事業者さんに確かめて、分かったことを文に入れるか、AI への一言で伝えてください</div>}
             </li>
           );

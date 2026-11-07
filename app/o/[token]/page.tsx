@@ -83,25 +83,25 @@ function OwnerPageInner() {
         </section>
       ) : (
         <>
-          {newCount > 0 && <div className="rounded-2xl bg-carrot/10 border-2 border-carrot p-3 font-bold text-carrot">🛒 新しい注文が {newCount} 件あります</div>}
+          {newCount > 0 && <div className="rounded-2xl bg-biz/10 border-2 border-biz p-3 font-bold text-biz">🛒 新しい注文が {newCount} 件あります</div>}
           <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-            <div className="text-sm font-bold text-leaf">注文と届け先</div>
+            <div className="text-sm font-bold text-biz">注文と届け先</div>
             {orders.length === 0 ? (
               <p className="text-sm text-black/60">まだ注文はありません。</p>
             ) : (
               <ul className="space-y-2">
                 {orders.map((o) => (
-                  <li key={o.id} className={`rounded-xl p-3 text-sm space-y-1 ${o.is_new ? "bg-carrot/10" : "bg-black/[0.03]"}`}>
+                  <li key={o.id} className={`rounded-xl p-3 text-sm space-y-1 ${o.is_new ? "bg-biz/10" : "bg-black/[0.03]"}`}>
                     <div className="flex justify-between gap-2">
                       <b className="line-clamp-1">
-                        {o.is_new && <span className="mr-1 rounded-full bg-carrot text-white text-xs px-2 py-0.5">新しい</span>}
+                        {o.is_new && <span className="mr-1 rounded-full bg-biz text-white text-xs px-2 py-0.5">新しい</span>}
                         {o.product_name}
                       </b>
                       <span className="shrink-0">×{o.quantity}</span>
                     </div>
                     <div className="text-xs text-black/50">{o.created_at}</div>
                     {o.kind === "service" ? (
-                      <div className="rounded-lg bg-leaf/10 p-2">
+                      <div className="rounded-lg bg-biz/10 p-2">
                         <b>案内を送る先：</b>
                         {o.ship_name ?? ""} <span className="break-all">{o.customer_email ?? "（メールアドレスなし）"}</span>
                         <div className="text-xs text-black/60">配信の URL や日時を、このアドレスにメールで送ってください。</div>
@@ -128,7 +128,7 @@ function OwnerPageInner() {
                         {o.letters.map((l) => (
                           <div key={l.id}>
                             <div className="whitespace-pre-wrap">{l.original}</div>
-                            {l.owner_reply && <div className="text-leaf whitespace-pre-wrap">↩ {l.owner_reply}</div>}
+                            {l.owner_reply && <div className="text-biz whitespace-pre-wrap">↩ {l.owner_reply}</div>}
                           </div>
                         ))}
                         <div className="text-black/50">お返事は、担当のパートナーのスマホから書けます。</div>

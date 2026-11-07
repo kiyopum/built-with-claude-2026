@@ -66,9 +66,9 @@ type Data = AdminData | PartnerData;
 
 const PARTS = [
   // 色はロゴの意味に合わせる（2026-11-07）：企業＝ブルー、パートナー＝グリーン、YMM（AI の基盤）＝ダークブルー
-  { key: "owner", label: "事業者さん", color: "bg-leaf", text: "text-leaf" },
-  { key: "partner", label: "パートナー", color: "bg-sprout", text: "text-[#4f9a22]" },
-  { key: "ymm", label: "YMM", color: "bg-leaf-dark", text: "text-leaf-dark" },
+  { key: "owner", label: "事業者さん", color: "bg-biz", text: "text-biz" },
+  { key: "partner", label: "パートナー", color: "bg-partner", text: "text-partner" },
+  { key: "ymm", label: "YMM", color: "bg-ai", text: "text-ai" },
   { key: "fee", label: "決済手数料", color: "bg-black/30", text: "text-black/50" },
 ] as const;
 
@@ -147,7 +147,7 @@ export default function StatementPage() {
               <div className="flex justify-between gap-2 text-xs text-black/50">
                 <span>{o.created_at}</span>
                 <span>
-                  {o.ref && <span className="mr-2 rounded-full bg-leaf/10 text-leaf px-2 py-0.5 font-bold">シェア経由：{o.ref}</span>}
+                  {o.ref && <span className="mr-2 rounded-full bg-ai/10 text-ai px-2 py-0.5 font-bold">シェア経由：{o.ref}</span>}
                   {o.shop_name}
                 </span>
               </div>
@@ -235,8 +235,8 @@ function PartnerStatement({ data }: { data: PartnerData }) {
         </p>
       </div>
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
-        <div className="text-sm font-bold text-leaf">これまでの報酬の合計</div>
-        <div className="text-4xl font-bold text-leaf">{yen(t.mine)}</div>
+        <div className="text-sm font-bold text-ai">これまでの報酬の合計</div>
+        <div className="text-4xl font-bold text-ai">{yen(t.mine)}</div>
         <div className="text-xs text-black/50">
           {t.count}件・関わった商品の売上 {yen(t.sales)}（送料を除く）
         </div>
@@ -250,7 +250,7 @@ function PartnerStatement({ data }: { data: PartnerData }) {
             <div key={o.id} className="rounded-2xl bg-white p-3 shadow-sm border border-black/5">
               <div className="flex justify-between gap-2 text-xs text-black/50">
                 <span>{o.created_at}</span>
-                <span className="rounded-full bg-leaf/10 text-leaf px-2 py-0.5 font-bold">{o.role}</span>
+                <span className="rounded-full bg-ai/10 text-ai px-2 py-0.5 font-bold">{o.role}</span>
               </div>
               <div className="flex justify-between gap-2 mt-1">
                 <div className="min-w-0">
@@ -261,7 +261,7 @@ function PartnerStatement({ data }: { data: PartnerData }) {
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="text-xs text-black/50">報酬</div>
-                  <div className="text-lg font-bold text-leaf">{yen(o.my_yen)}</div>
+                  <div className="text-lg font-bold text-ai">{yen(o.my_yen)}</div>
                 </div>
               </div>
             </div>
@@ -359,7 +359,7 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
   );
 
   return (
-    <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-leaf/30 space-y-4">
+    <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-ai/30 space-y-4">
       <div>
         <div className="font-bold">分け方のシミュレーション</div>
         <p className="text-xs text-black/50">数字を変えると、その場で計算し直します。三方良しになる設定を探すためのものです。</p>
@@ -389,12 +389,12 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
             <table className="w-full text-sm">
               <tbody>
                 <tr className="border-t border-black/5">
-                  <th className="text-left font-bold text-leaf py-1.5">事業者さん</th>
+                  <th className="text-left font-bold text-biz py-1.5">事業者さん</th>
                   <td className="text-right font-bold">{yen(monthly.owner)}</td>
                   <td className="text-right text-xs text-black/50 w-28">1,000円で {yen(per1000.owner)}</td>
                 </tr>
                 <tr className="border-t border-black/5">
-                  <th className="text-left font-bold text-[#4f9a22] py-1.5">
+                  <th className="text-left font-bold text-partner py-1.5">
                     パートナー
                     {h > 0 && <div className="text-[11px] font-normal text-black/50">時給にすると {yen(monthly.partner / h)}</div>}
                   </th>
@@ -402,7 +402,7 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
                   <td className="text-right text-xs text-black/50">1,000円で {yen(per1000.partner)}</td>
                 </tr>
                 <tr className="border-t border-black/5">
-                  <th className="text-left font-bold text-leaf-dark py-1.5">
+                  <th className="text-left font-bold text-ai py-1.5">
                     YMM
                     {serverCost > 0 && <div className="text-[11px] font-normal text-black/50">サーバー代などを引くと {yen(monthly.ymm - serverCost)}</div>}
                   </th>
@@ -421,13 +421,13 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
 
           <div className="space-y-2">
             <button
-              className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40"
+              className="w-full rounded-xl bg-ai text-white py-3 font-bold disabled:opacity-40"
               onClick={save}
               disabled={busy || !changed}
             >
               {changed ? "この分け方を保存する（これからの注文に使う）" : "いま保存されている分け方です"}
             </button>
-            {msg && <p className="rounded-xl bg-leaf/10 text-leaf p-3 text-sm">{msg}</p>}
+            {msg && <p className="rounded-xl bg-ai/10 text-ai p-3 text-sm">{msg}</p>}
           </div>
         </>
       )}

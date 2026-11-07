@@ -15,10 +15,10 @@ export function MadeBy({ made, svc }: { made: Made; svc: boolean }) {
   ].filter(Boolean) as string[];
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-      <div className="text-sm font-bold text-leaf">この{svc ? "サービス" : "商品"}のページができるまで（記録）</div>
+      <div className="text-sm font-bold text-biz">この{svc ? "サービス" : "商品"}のページができるまで（記録）</div>
       <div className="grid gap-3 sm:grid-cols-2 text-sm">
-        <div className="rounded-xl bg-leaf/5 p-3">
-          <div className="font-bold text-leaf mb-1">🙋 人がしたこと</div>
+        <div className="rounded-xl bg-biz/5 p-3">
+          <div className="font-bold text-biz mb-1">🙋 人がしたこと</div>
           <ul className="list-disc pl-5 space-y-1">{human.map((t) => <li key={t}>{t}</li>)}</ul>
         </div>
         {ai.length > 0 && (

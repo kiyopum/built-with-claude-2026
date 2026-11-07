@@ -27,7 +27,7 @@ export function VoiceInput({
           disabled={disabled}
           aria-label={voice.recording ? "録音を止める" : "録音を始める"}
           className={`w-32 h-32 rounded-full grid place-items-center text-white shadow-lg transition disabled:opacity-50 ${
-            voice.recording ? "bg-red-600 animate-pulse" : "bg-carrot"
+            voice.recording ? "bg-red-600 animate-pulse" : "bg-biz"
           }`}
         >
           {voice.recording ? (

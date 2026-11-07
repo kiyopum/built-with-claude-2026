@@ -164,7 +164,7 @@ function EditInner() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← 事業者のページ</Link>
+        <Link href={`/hearing/${shopId}`} className="text-sm text-biz">← 事業者のページ</Link>
         <h1 className="text-xl font-bold mt-1">{draft.status === "published" ? "商品を修正" : "法律チェックと修正・リリース"}</h1>
         <p className="text-xs text-black/50">いまの状態：{STATUS[draft.status]}</p>
       </div>
@@ -172,7 +172,7 @@ function EditInner() {
       {/* 3つのステップのどこにいるか */}
       <ol className="grid grid-cols-3 gap-1 text-center text-xs font-bold">
         {["1) ヒアリング", "2) 法律チェックと修正", "3) リリース"].map((t, i) => (
-          <li key={t} className={`rounded-lg py-2 ${i + 1 < step ? "bg-leaf/15 text-leaf" : i + 1 === step ? "bg-carrot text-white" : "bg-black/5 text-black/40"}`}>
+          <li key={t} className={`rounded-lg py-2 ${i + 1 < step ? "bg-biz/15 text-biz" : i + 1 === step ? "bg-biz text-white" : "bg-black/5 text-black/40"}`}>
             {i + 1 < step ? "✓ " : ""}
             {t}
           </li>
@@ -180,8 +180,8 @@ function EditInner() {
       </ol>
 
       {draft.status === "draft" && (
-        <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-leaf/40 space-y-2">
-          <div className="text-sm font-bold text-leaf">3) リリース（事業者さんだけ）</div>
+        <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-biz/40 space-y-2">
+          <div className="text-sm font-bold text-biz">3) リリース（事業者さんだけ）</div>
           {blocked ? (
             <p className="text-sm text-red-600">「このままでは販売できない」ので、まだリリースできません。下の赤いところを直して保存してください。</p>
           ) : unsaved ? (
@@ -202,7 +202,7 @@ function EditInner() {
       {draft.status === "published" && made && <MadeBy made={made} svc={draft.kind === "service"} />}
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        <div className="text-sm font-bold text-leaf">写真（撮り直し・追加・メインの入れ替え）</div>
+        <div className="text-sm font-bold text-biz">写真（撮り直し・追加・メインの入れ替え）</div>
         <PhotoPicker
           photos={photos}
           onChange={(p) => {
@@ -214,13 +214,13 @@ function EditInner() {
       </section>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
-        <div className="text-sm font-bold text-leaf">商品ページの文</div>
+        <div className="text-sm font-bold text-biz">商品ページの文</div>
         <DraftFieldsForm f={fields} setF={setFields} legal={legal} perBox={draft.kind === "service" ? 1 : draft.per_box} />
       </section>
 
       {draft.kind === "service" ? (
         <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-1 text-sm">
-          <div className="font-bold text-leaf">お届け</div>
+          <div className="font-bold text-biz">お届け</div>
           <p>サービスなので送りません（送料なし）。申し込んだ人には、事業者さんからメールで案内（配信の URL など）を送ってください。申し込んだ人のメールアドレスは、事業者のページの「注文」に出ます。</p>
         </section>
       ) : (
@@ -241,7 +241,7 @@ function EditInner() {
 
       <div className="space-y-2">
         <button
-          className="w-full rounded-2xl bg-carrot text-white py-4 text-lg font-bold disabled:opacity-50"
+          className="w-full rounded-2xl bg-biz text-white py-4 text-lg font-bold disabled:opacity-50"
           onClick={save}
           disabled={busy !== "" || (draft.kind !== "service" && photos.length === 0)}
         >
@@ -253,7 +253,7 @@ function EditInner() {
       </div>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
-        <div className="text-sm font-bold text-carrot">AI に直してもらう</div>
+        <div className="text-sm font-bold text-biz">AI に直してもらう</div>
         <TodoNoteButton legal={legal} setNote={setNote} />
         <textarea
           className={`${input} min-h-20`}
@@ -304,11 +304,11 @@ function RateCard({ draftId, kind, rates, custom, onSaved }: { draftId: number; 
     onSaved({ ...rates, effective: rate ?? def });
     setMsg("保存しました。これからの注文に使います（これまでの注文はそのままです）。");
   }
-  const btn = (on: boolean) => `rounded-xl py-2 px-3 text-sm font-bold border ${on ? "bg-sky-700 text-white border-sky-700" : "border-black/15"}`;
+  const btn = (on: boolean) => `rounded-xl py-2 px-3 text-sm font-bold border ${on ? "bg-biz-700 text-white border-biz-700" : "border-black/15"}`;
   const ex = per(effective);
   return (
-    <section className="rounded-2xl bg-sky-50 p-4 border border-sky-200 space-y-2 text-sm">
-      <div className="font-bold text-sky-800">分け方（YMM 管理だけに見えています）</div>
+    <section className="rounded-2xl bg-biz-50 p-4 border border-biz-200 space-y-2 text-sm">
+      <div className="font-bold text-biz-800">分け方（YMM 管理だけに見えています）</div>
       <p className="text-xs text-black/60">YMM の取り分の割合。そこから決済手数料を引いた残りを、YMM とパートナーで半分ずつ。</p>
       <div className="flex flex-wrap gap-2">
         <button className={btn(cur === null)} onClick={() => set(null)}>
@@ -323,7 +323,7 @@ function RateCard({ draftId, kind, rates, custom, onSaved }: { draftId: number; 
         </span>
       </div>
       <p className="text-xs">いま：{pct(effective)}。1万円売れると、事業者 {ex.owner.toLocaleString()}円・YMM {ex.ymm.toLocaleString()}円・パートナー {ex.partner.toLocaleString()}円（手数料 3.6%・パートナーへ半分の場合）</p>
-      {msg && <p className="text-xs text-sky-800">{msg}</p>}
+      {msg && <p className="text-xs text-biz-800">{msg}</p>}
     </section>
   );
 }

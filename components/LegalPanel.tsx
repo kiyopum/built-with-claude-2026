@@ -8,16 +8,16 @@ export type Legal = {
 };
 
 const VERDICT_STYLE = {
-  販売できる: "bg-leaf text-white",
+  販売できる: "bg-ai text-white",
   直せば販売できる: "bg-amber-500 text-white",
   このままでは販売できない: "bg-red-600 text-white",
 };
 const ITEM_STYLE = {
-  ok: { mark: "○", label: "OK", cls: "text-leaf" },
+  ok: { mark: "○", label: "OK", cls: "text-ai" },
   fix: { mark: "△", label: "要修正", cls: "text-amber-600" },
   ng: { mark: "×", label: "NG", cls: "text-red-600" },
   missing: { mark: "？", label: "要確認", cls: "text-black/60" },
-  info: { mark: "i", label: "参考", cls: "text-sky-700" },
+  info: { mark: "i", label: "参考", cls: "text-ai-700" },
 };
 const ITEM_ORDER = { ng: 0, fix: 1, missing: 2, ok: 3, info: 4 };
 

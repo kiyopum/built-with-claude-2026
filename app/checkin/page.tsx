@@ -116,7 +116,7 @@ function CheckinInner() {
 
   const me = (
     <div className="space-y-4">
-      <p className="rounded-xl bg-sky-50 border border-sky-100 p-3 text-sm">🔒 答えは、<b>あなたと山﨑さんだけ</b>が読みます。ほかのパートナーには見えません。月に1回の面談で、ここに書いたことを手がかりにお話しします。</p>
+      <p className="rounded-xl bg-partner-50 border border-partner-100 p-3 text-sm">🔒 答えは、<b>あなたと山﨑さんだけ</b>が読みます。ほかのパートナーには見えません。月に1回の面談で、ここに書いたことを手がかりにお話しします。</p>
       {data.mine && !edit ? (
         <section className={card}>
           <div className="text-sm font-bold text-partner">今月はもう答えてくれました。ありがとうございます</div>

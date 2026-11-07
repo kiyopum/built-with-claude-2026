@@ -34,8 +34,8 @@ function ThanksPageInner() {
           {amount !== null && <p className="text-lg">お支払い {amount.toLocaleString()}円</p>}
           <p className="text-sm text-black/60">デモのため、テスト用の決済です。商品は届きません。</p>
           {letter && (
-            <Link href={`/t/${letter}`} className="block rounded-2xl bg-white border-2 border-leaf p-4 text-left">
-              <div className="font-bold text-leaf">📮 事業者さんに一言とどける</div>
+            <Link href={`/t/${letter}`} className="block rounded-2xl bg-white border-2 border-biz p-4 text-left">
+              <div className="font-bold text-biz">📮 事業者さんに一言とどける</div>
               <div className="text-sm text-black/70">届いたあとでも大丈夫です。事業者の人が読んで、お返事します。お返事は、このページ（とカードの QR）で読めます。</div>
             </Link>
           )}
@@ -43,7 +43,7 @@ function ThanksPageInner() {
       )}
       {state === "unpaid" && <p>お支払いがまだ完了していません。</p>}
       {state === "error" && <p className="text-red-700">お支払いを確認できませんでした。</p>}
-      <Link href={`/p/${id}`} className="inline-block text-leaf underline">
+      <Link href={`/p/${id}`} className="inline-block text-biz underline">
         商品ページに戻る
       </Link>
     </div>

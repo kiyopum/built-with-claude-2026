@@ -46,11 +46,11 @@ function BookInner() {
           事業者のヒアリング・ホームページ・商品・みんなの声・お客さまへのお返事から、Claude が「この事業者さんが大事にしてきたこと」を1冊にまとめます。売るためではなく、後を継ぐ人や家族、新しく入る人に、事業者の考えを渡すための本です。
         </p>
         <div className="flex gap-2">
-          <button className="flex-1 rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" onClick={make} disabled={busy}>
+          <button className="flex-1 rounded-xl bg-biz text-white py-3 font-bold disabled:opacity-50" onClick={make} disabled={busy}>
             {busy ? <Working text="まとめています（1〜2分）" /> : b ? "今の記録で作り直す" : "本をまとめる"}
           </button>
           {b && (
-            <button className="flex-1 rounded-xl border-2 border-leaf text-leaf py-3 font-bold" onClick={() => window.print()}>
+            <button className="flex-1 rounded-xl border-2 border-biz text-biz py-3 font-bold" onClick={() => window.print()}>
               🖨 印刷・PDF
             </button>
           )}
@@ -66,11 +66,11 @@ function BookInner() {
             <h2 className="text-2xl font-bold">{b.title}</h2>
           </section>
           <section className="space-y-1">
-            <h3 className="font-bold text-leaf">はじめに</h3>
+            <h3 className="font-bold text-biz">はじめに</h3>
             <p className="whitespace-pre-wrap">{b.opening}</p>
           </section>
           <section className="space-y-3">
-            <h3 className="font-bold text-leaf">大事にしてきたこと</h3>
+            <h3 className="font-bold text-biz">大事にしてきたこと</h3>
             {b.values.map((v, i) => (
               <div key={i}>
                 <div className="font-bold">
@@ -82,9 +82,9 @@ function BookInner() {
           </section>
           {b.quotes.length > 0 && (
             <section className="space-y-3">
-              <h3 className="font-bold text-leaf">事業者さんの言葉</h3>
+              <h3 className="font-bold text-biz">事業者さんの言葉</h3>
               {b.quotes.map((q, i) => (
-                <blockquote key={i} className="border-l-4 border-carrot/60 pl-3">
+                <blockquote key={i} className="border-l-4 border-biz/60 pl-3">
                   <p className="text-lg">「{q.quote}」</p>
                   <p className="text-xs text-black/50">{q.note}</p>
                 </blockquote>
@@ -93,7 +93,7 @@ function BookInner() {
           )}
           {b.products.length > 0 && (
             <section className="space-y-2">
-              <h3 className="font-bold text-leaf">品物に込めてきたこと</h3>
+              <h3 className="font-bold text-biz">品物に込めてきたこと</h3>
               {b.products.map((p, i) => (
                 <div key={i}>
                   <div className="font-bold">{p.name}</div>
@@ -104,12 +104,12 @@ function BookInner() {
           )}
           {b.voices.length > 0 && (
             <section className="space-y-1">
-              <h3 className="font-bold text-leaf">届いた声</h3>
+              <h3 className="font-bold text-biz">届いた声</h3>
               <ul className="list-disc pl-5">{b.voices.map((v, i) => <li key={i}>{v}</li>)}</ul>
             </section>
           )}
           <section className="space-y-1">
-            <h3 className="font-bold text-leaf">次にこの事業を担う人へ</h3>
+            <h3 className="font-bold text-biz">次にこの事業を担う人へ</h3>
             <p className="whitespace-pre-wrap">{b.to_next}</p>
           </section>
           <p className="text-xs text-black/40 text-right pt-4 border-t border-black/10">

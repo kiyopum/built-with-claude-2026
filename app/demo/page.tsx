@@ -152,7 +152,7 @@ export default function DemoPage() {
       </section>
       {items.map((g) => (
         <section key={g.group} className="space-y-2">
-          <h2 className="font-bold text-leaf">{g.group}</h2>
+          <h2 className="font-bold text-ai">{g.group}</h2>
           {g.list.map((it) => (
             <div key={it.title} className="rounded-2xl bg-white p-4 border border-black/5 space-y-2">
               <div className="flex justify-between gap-2 items-start">
@@ -169,7 +169,7 @@ export default function DemoPage() {
               )}
               <div className="flex flex-wrap gap-2">
                 {it.links.map((l) => (
-                  <Link key={l.href} href={l.href} className="rounded-xl bg-leaf text-white text-sm font-bold px-3 py-2">
+                  <Link key={l.href} href={l.href} className="rounded-xl bg-ai text-white text-sm font-bold px-3 py-2">
                     {l.label} →
                   </Link>
                 ))}

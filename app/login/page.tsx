@@ -86,7 +86,7 @@ function LoginInner() {
           <p className="text-black/70">自分の名前を押してください</p>
           <div className="grid gap-3">
             {data.users.map((u) => (
-              <button key={u.id} className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 text-left text-lg font-bold active:bg-leaf/10" onClick={() => setWho(u)}>
+              <button key={u.id} className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 text-left text-lg font-bold active:bg-biz/10" onClick={() => setWho(u)}>
                 {u.name}
                 {u.role === "admin" && <span className="ml-2 text-xs font-normal text-black/50">YMM 管理</span>}
               </button>
@@ -96,7 +96,7 @@ function LoginInner() {
         </>
       ) : (
         <>
-          <button className="text-sm text-leaf" onClick={() => (setWho(null), setError(""))}>
+          <button className="text-sm text-biz" onClick={() => (setWho(null), setError(""))}>
             ← 名前を選び直す
           </button>
           <PinPad label={`${who.name} さんの暗証番号`} onDone={login} busy={busy} />

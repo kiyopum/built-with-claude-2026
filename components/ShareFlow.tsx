@@ -182,14 +182,14 @@ export function ShareFlow({ draftId, backHref, shopPin, initialScene, gyoji }: {
   return (
     <div className="space-y-5">
       <div>
-        <Link href={backHref} className="text-sm text-leaf">← もどる</Link>
+        <Link href={backHref} className="text-sm text-partner">← もどる</Link>
         <h1 className="text-xl font-bold mt-1">Instagram で紹介する</h1>
         {product && <p className="text-sm text-black/60">{product.name}</p>}
       </div>
 
       {/* 準備中は、何をしているかだけ大きく見せる */}
       {(step === "load" || step === "write" || step === "draw" || step === "check") && (
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-black/5 text-leaf font-bold">
+        <div className="rounded-2xl bg-white p-6 shadow-sm border border-black/5 text-partner font-bold">
           <Working
             text={
               step === "load" ? "準備しています" : step === "write" ? "Claude が紹介文を書いて、法律チェックしています" : step === "check" ? "法律チェックをしています" : "画像を作っています"
@@ -206,7 +206,7 @@ export function ShareFlow({ draftId, backHref, shopPin, initialScene, gyoji }: {
           <p className="text-sm text-black/60">選んだ場面に合わせて、Claude が紹介文と画像の言葉を書きます。</p>
           {g && pre && (
             <button
-              className="w-full rounded-2xl bg-carrot text-white p-4 text-left shadow-sm active:scale-[0.98]"
+              className="w-full rounded-2xl bg-partner text-white p-4 text-left shadow-sm active:scale-[0.98]"
               onClick={() => write(product, "generate", undefined, pre.key, g.key)}
             >
               <div className="text-xs opacity-90">🌱 次の小さな一歩から</div>
@@ -220,7 +220,7 @@ export function ShareFlow({ draftId, backHref, shopPin, initialScene, gyoji }: {
             {SCENES.map((s) => (
               <button
                 key={s.key}
-                className={`rounded-2xl bg-white border-2 p-4 text-left shadow-sm active:scale-[0.98] ${saved?.scene === s.key ? "border-carrot" : "border-black/5"}`}
+                className={`rounded-2xl bg-white border-2 p-4 text-left shadow-sm active:scale-[0.98] ${saved?.scene === s.key ? "border-partner" : "border-black/5"}`}
                 onClick={() => write(product, "generate", undefined, s.key)}
               >
                 <div className="text-3xl">{s.emoji}</div>
@@ -242,7 +242,7 @@ export function ShareFlow({ draftId, backHref, shopPin, initialScene, gyoji }: {
             場面：<b>{scene ? `${scene.emoji} ${scene.label}` : "とくになし"}</b>
             {gyojiOf(saved?.gyoji) && <span className="text-xs text-black/60">（{gyojiOf(saved?.gyoji)?.name}に向けて）</span>}
           </span>
-          <button className="shrink-0 rounded-lg border border-carrot text-carrot px-3 py-1.5 font-bold" onClick={() => setStep("pick")}>
+          <button className="shrink-0 rounded-lg border border-partner text-partner px-3 py-1.5 font-bold" onClick={() => setStep("pick")}>
             場面を変える
           </button>
         </div>
@@ -268,41 +268,41 @@ export function ShareFlow({ draftId, backHref, shopPin, initialScene, gyoji }: {
               <img key={f.url} src={f.url} alt={`紹介の画像 ${i + 1}枚目`} className="h-72 rounded-xl shadow snap-start" />
             ))}
           </div>
-          <p className="text-center text-sm font-bold text-leaf">✓ 法律チェック済み。このまま投稿できます</p>
+          <p className="text-center text-sm font-bold text-partner">✓ 法律チェック済み。このまま投稿できます</p>
           <p className="text-center text-xs text-black/50">
             ハッシュタグは、文章の先頭の「#PR」と Claude が作った4個で、合わせて5個です（Instagram の上限）。#PR は広告であることを示すため、必ず入ります。
             {ref && ` 画像の QR には、あなたの番号（${ref}）が入っています。`}
           </p>
 
-          <button className="w-full rounded-2xl bg-carrot text-white py-5 text-xl font-bold shadow active:scale-[0.99]" onClick={post2instagram}>
+          <button className="w-full rounded-2xl bg-partner text-white py-5 text-xl font-bold shadow active:scale-[0.99]" onClick={post2instagram}>
             📷 Instagram に投稿する
           </button>
 
           <ol className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3 text-base">
             <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-carrot text-white grid place-items-center font-bold">1</span>
+              <span className="shrink-0 w-7 h-7 rounded-full bg-partner text-white grid place-items-center font-bold">1</span>
               <span>上のオレンジのボタンを押す</span>
             </li>
             <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-carrot text-white grid place-items-center font-bold">2</span>
+              <span className="shrink-0 w-7 h-7 rounded-full bg-partner text-white grid place-items-center font-bold">2</span>
               <span>
                 出てきた一覧から <b>Instagram</b> を選ぶ（なければ「その他」の中）
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-carrot text-white grid place-items-center font-bold">3</span>
+              <span className="shrink-0 w-7 h-7 rounded-full bg-partner text-white grid place-items-center font-bold">3</span>
               <span>
                 文章を書く欄を<b>長押し</b>して「<b>ペースト</b>」（紹介文はもうコピーしてあります）
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-carrot text-white grid place-items-center font-bold">4</span>
+              <span className="shrink-0 w-7 h-7 rounded-full bg-partner text-white grid place-items-center font-bold">4</span>
               <span>
                 「<b>シェア</b>」を押せば完了
               </span>
             </li>
           </ol>
-          {done && <p className="rounded-xl bg-leaf/10 text-leaf p-3 text-center font-bold">おつかれさまでした！</p>}
+          {done && <p className="rounded-xl bg-partner/10 text-partner p-3 text-center font-bold">おつかれさまでした！</p>}
         </>
       )}
 
@@ -331,7 +331,7 @@ export function ShareFlow({ draftId, backHref, shopPin, initialScene, gyoji }: {
                 </p>
               ))}
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <button className="rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={!edited} onClick={() => write(product, "check", post)}>
+              <button className="rounded-xl bg-partner text-white py-3 font-bold disabled:opacity-40" disabled={!edited} onClick={() => write(product, "check", post)}>
                 直したので確かめる
               </button>
               <button className="rounded-xl border-2 border-ai text-ai py-3 font-bold" onClick={() => write(product, "generate", undefined, saved?.scene ?? undefined)}>

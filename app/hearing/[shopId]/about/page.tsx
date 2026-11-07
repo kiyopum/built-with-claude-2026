@@ -104,25 +104,25 @@ function AboutInner() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← 事業者のページ</Link>
+        <Link href={`/hearing/${shopId}`} className="text-sm text-biz">← 事業者のページ</Link>
         <h1 className="text-xl font-bold mt-1">事業者のヒアリング</h1>
         <p className="text-sm text-black/60">事業を始めたきっかけや、大事にしていることを聞きます。商品のことは、あとで写真を撮りながら1つずつ聞きます。</p>
       </div>
       {prepared && (
-        <p className="rounded-2xl bg-leaf/10 p-3 text-sm">
+        <p className="rounded-2xl bg-biz/10 p-3 text-sm">
           ✅ <b>事務局が先に調べてあります</b>（ホームページ・法律・聞くことリスト）。下の「聞くことリスト」を開いて、そのままお話を聞いてください。
         </p>
       )}
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        <div className="text-sm font-bold text-leaf">1) 事業者のホームページ（あれば）</div>
+        <div className="text-sm font-bold text-biz">1) 事業者のホームページ（あれば）</div>
         <p className="text-xs text-black/60">
           事業者の名前と地域で Claude がホームページを探して、読みます。お話は、ホームページに載っていないことを聞くだけで済みます。Instagram だけの事業者は、ここを飛ばしてお話を聞いてください。
         </p>
         {notes ? (
           <div className="space-y-2">
-            <div className="rounded-xl bg-leaf/10 p-3 text-sm">
-              <div className="font-bold text-leaf">✅ ホームページを読みました</div>
+            <div className="rounded-xl bg-biz/10 p-3 text-sm">
+              <div className="font-bold text-biz">✅ ホームページを読みました</div>
               <div className="text-xs text-black/60 break-all">{url}</div>
             </div>
             <button className="text-sm text-ai underline" onClick={() => setShowNotes(!showNotes)}>
@@ -187,7 +187,7 @@ function AboutInner() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                 />
-                <button className="w-full rounded-xl border border-leaf text-leaf py-2 font-bold disabled:opacity-50" onClick={() => readWebsite()} disabled={!url.trim() || busy !== ""}>
+                <button className="w-full rounded-xl border border-biz text-biz py-2 font-bold disabled:opacity-50" onClick={() => readWebsite()} disabled={!url.trim() || busy !== ""}>
                   このアドレスを読んでもらう
                 </button>
               </div>
@@ -198,7 +198,7 @@ function AboutInner() {
       </section>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        <div className="text-sm font-bold text-leaf">2) 聞くことリスト{notes && <span className="font-normal text-black/50">（ホームページに載っていないことだけ）</span>}</div>
+        <div className="text-sm font-bold text-biz">2) 聞くことリスト{notes && <span className="font-normal text-black/50">（ホームページに載っていないことだけ）</span>}</div>
         {questions.length === 0 ? (
           <button className="w-full rounded-xl border-2 border-ai text-ai py-3 font-bold disabled:opacity-50" onClick={makeQuestions} disabled={busy !== ""}>
             {busy === "q" ? <Working text="Claude が質問を考えています" est={15} /> : prepared ? "事務局が用意した質問を開く" : "この事業者向けの質問を Claude に作ってもらう"}
@@ -209,7 +209,7 @@ function AboutInner() {
       </section>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        <div className="text-sm font-bold text-leaf">3) お話を聞く{notes && <span className="font-normal text-black/50">（補足。短くても大丈夫）</span>}</div>
+        <div className="text-sm font-bold text-biz">3) お話を聞く{notes && <span className="font-normal text-black/50">（補足。短くても大丈夫）</span>}</div>
         <VoiceInput voice={voice} value={transcript} onChange={setTranscript} disabled={busy !== ""} />
       </section>
 

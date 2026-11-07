@@ -68,7 +68,7 @@ export function PhotoPicker({ photos, onChange, disabled }: { photos: PickedPhot
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.url} alt={`商品の写真 ${i + 1}`} className="w-full h-full object-cover" />
             {i === 0 ? (
-              <span className="absolute left-1 top-1 rounded-full bg-leaf text-white text-[10px] font-bold px-2 py-0.5">メイン</span>
+              <span className="absolute left-1 top-1 rounded-full bg-biz text-white text-[10px] font-bold px-2 py-0.5">メイン</span>
             ) : (
               <button onClick={() => makeMain(i)} className="absolute left-1 top-1 rounded-full bg-white/90 text-[10px] px-2 py-0.5">
                 メインにする
@@ -87,7 +87,7 @@ export function PhotoPicker({ photos, onChange, disabled }: { photos: PickedPhot
           <button
             onClick={() => inputRef.current?.click()}
             disabled={disabled || busy}
-            className="aspect-square rounded-xl border-2 border-dashed border-leaf/50 text-leaf grid place-items-center text-sm font-bold disabled:opacity-50"
+            className="aspect-square rounded-xl border-2 border-dashed border-biz/50 text-biz grid place-items-center text-sm font-bold disabled:opacity-50"
           >
             {busy ? "読み込み中…" : photos.length ? "＋ 写真を追加" : "📷 写真を撮る"}
           </button>

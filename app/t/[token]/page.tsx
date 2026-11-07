@@ -60,8 +60,8 @@ function LetterInner() {
                 <p className="whitespace-pre-wrap">{l.original}</p>
               </div>
               {l.owner_reply ? (
-                <div className="rounded-2xl bg-leaf/10 p-3 ml-6">
-                  <div className="text-xs text-leaf font-bold">{data.shop_name}より・{l.replied_at?.slice(0, 10)}</div>
+                <div className="rounded-2xl bg-biz/10 p-3 ml-6">
+                  <div className="text-xs text-biz font-bold">{data.shop_name}より・{l.replied_at?.slice(0, 10)}</div>
                   <p className="whitespace-pre-wrap">{l.owner_reply}</p>
                 </div>
               ) : (
@@ -81,7 +81,7 @@ function LetterInner() {
             maxLength={1000}
             onChange={(e) => setText(e.target.value)}
           />
-          <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={send} disabled={busy || !text.trim()}>
+          <button className="w-full rounded-2xl bg-biz text-white py-4 text-lg font-bold disabled:opacity-50" onClick={send} disabled={busy || !text.trim()}>
             {busy ? <Working text="事業者さんに届けています" /> : sent ? "もう一言とどける" : "事業者さんにとどける"}
           </button>
           <p className="text-xs text-black/50">

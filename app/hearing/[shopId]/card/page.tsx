@@ -25,12 +25,12 @@ function CardInner() {
     <div className="space-y-4">
       <style>{`@media print { header, footer, .no-print { display: none !important; } main { padding: 0 !important; max-width: none !important; } @page { size: 148mm 100mm; margin: 6mm; } }`}</style>
       <div className="no-print flex gap-2">
-        <button className="flex-1 rounded-xl bg-leaf text-white py-3 font-bold" onClick={() => window.print()}>
+        <button className="flex-1 rounded-xl bg-biz text-white py-3 font-bold" onClick={() => window.print()}>
           🖨 印刷する
         </button>
       </div>
       <p className="no-print text-xs text-black/50">はがきの横向きくらいの大きさで印刷されます。商品と一緒に箱に入れてください。</p>
-      <div className="mx-auto max-w-[560px] rounded-2xl border-2 border-leaf bg-white p-5 flex gap-4 items-center">
+      <div className="mx-auto max-w-[560px] rounded-2xl border-2 border-biz bg-white p-5 flex gap-4 items-center">
         <div className="flex-1 space-y-2">
           <div className="text-xs text-black/50">{data.product_name}</div>
           <div className="text-lg font-bold leading-snug">{data.shop_name}より</div>

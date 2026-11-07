@@ -11,21 +11,18 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   /* 名前は今までのまま（leaf＝主役の色、carrot＝押してほしい色）。値だけロゴの色に */
-  /* 役割の色（ロゴの Y の3方向と中央。画面のどこが誰のことかを色で分ける。2026-11-07 きよさん）
-     biz＝企業（事業者さんのこと・事業者のページ）／partner＝パートナー（個人のこと：歩み・月1・みんなの声・みんなの商品・取り分）
-     ai＝システム（Claude が動くボタン・法律チェック・上のメニュー・管理）／value＝価値が生まれる所（買う・注文・売上） */
-  --color-biz: #1685d3; /* 企業ブルー */
-  --color-partner: #5aa52b; /* パートナーグリーン（文字用に少し濃く。塗りは partner-light） */
-  --color-partner-light: #76c442;
-  --color-ai: #103a76; /* AI ダークブルー */
-  --color-value: #e8900f; /* 価値創造オレンジ（白い文字を載せるので、ロゴの #F6A21A より少し濃く） */
-  --color-sky: #29b9e8; /* 循環シアン：線・アクセント */
+  /* 役割の色（ロゴ仕様書の値そのまま。画面は「企業向け・パートナー向け・システム」の3色だけで分ける。2026-11-07 きよさん）
+     オレンジ（価値創造）とシアン（循環）はロゴの中だけ。画面の色には使わない（勝手に色を足さない） */
+  --color-biz: #1685d3; /* 企業ブルー：事業者向けの画面・お客さまが見る店先 */
+  --color-partner: #76c442; /* パートナーグリーン：パートナー向けの画面 */
+  --color-ai: #103a76; /* AI ダークブルー：システム（Claude が動く所・明細・管理・上のメニュー） */
   --color-navy: #082d5c; /* ロゴ文字ネイビー */
-  /* 今までの名前（たくさんの画面で使っている）。leaf＝企業の青、carrot＝価値のオレンジ */
+  /* 古い名前（残っている所のため）。新しく書くときは役割の名前を使う */
   --color-leaf: var(--color-biz);
   --color-leaf-dark: var(--color-ai);
-  --color-carrot: var(--color-value);
-  --color-sprout: var(--color-partner-light);
+  --color-carrot: var(--color-biz);
+  --color-sprout: var(--color-partner);
+  --color-partner-light: var(--color-partner);
 }
 
 body {

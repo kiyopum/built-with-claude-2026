@@ -42,7 +42,7 @@ export function OwnerApprove({
   if (!open) {
     return (
       <div className="space-y-1">
-        <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-30" disabled={disabled} onClick={() => setOpen(true)}>
+        <button className="w-full rounded-2xl bg-biz text-white py-4 text-lg font-bold disabled:opacity-30" disabled={disabled} onClick={() => setOpen(true)}>
           {button}
         </button>
         {note && <p className="text-xs text-black/50">{note}</p>}
@@ -50,10 +50,10 @@ export function OwnerApprove({
     );
   }
   return (
-    <div className="rounded-2xl border-2 border-leaf bg-leaf/5 p-4 space-y-3">
+    <div className="rounded-2xl border-2 border-biz bg-biz/5 p-4 space-y-3">
       <p className="text-center text-sm">📱 スマホを事業者さんに渡してください</p>
       {busy ? (
-        <div className="py-8 text-center text-leaf font-bold">
+        <div className="py-8 text-center text-biz font-bold">
           <Working text={workingText ?? "確かめています"} est={est} />
         </div>
       ) : (

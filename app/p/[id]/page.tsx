@@ -112,7 +112,7 @@ function ProductPageInner() {
       <h1 className="text-2xl font-bold leading-snug">{p.name}</h1>
       {inc ? (
         <div>
-          <div className="text-3xl font-bold text-carrot">
+          <div className="text-3xl font-bold text-biz">
             {pieces > 1 && <span className="text-base font-bold">{pieces}個入り </span>}
             <span className="text-base font-bold">送料込み </span>
             {(unitPrice + info.min).toLocaleString()}
@@ -128,7 +128,7 @@ function ProductPageInner() {
       ) : info.mode === "flat" && info.yen != null ? (
         // 全国一律の送料：送料込みのひとつの値段で出す（送料を別立てにしない。2026-11-07 きよさん）
         <div>
-          <div className="text-3xl font-bold text-carrot">
+          <div className="text-3xl font-bold text-biz">
             {pieces > 1 && <span className="text-base font-bold">{pieces}個入り </span>}
             <span className="text-base font-bold">送料込み </span>
             {(unitPrice + info.yen).toLocaleString()}
@@ -140,7 +140,7 @@ function ProductPageInner() {
         </div>
       ) : (
         <div>
-          <div className="text-3xl font-bold text-carrot">
+          <div className="text-3xl font-bold text-biz">
             {pieces > 1 && <span className="text-base font-bold">{pieces}個入り </span>}
             {unitPrice.toLocaleString()}
             <span className="text-base text-black/60 font-normal"> 円（税込）</span>
@@ -150,8 +150,8 @@ function ProductPageInner() {
         </div>
       )}
       <p className="leading-relaxed whitespace-pre-wrap">{p.description}</p>
-      <div className="rounded-xl bg-carrot/5 p-4 text-sm">
-        <div className="font-bold text-carrot">こんな方に</div>
+      <div className="rounded-xl bg-biz/5 p-4 text-sm">
+        <div className="font-bold text-biz">こんな方に</div>
         <div>{p.target_customer}</div>
       </div>
 
@@ -220,8 +220,8 @@ function ProductPageInner() {
         {!svc && parseShipDays(p.ship_days).length > 0 && (
           <p className="text-xs text-black/60 text-right">📅 この事業者の発送は、毎週{shipDaysLabel(parseShipDays(p.ship_days))}曜日です。</p>
         )}
-        {!svc && pieces > 1 && <p className="text-xs text-leaf text-right">{pieces}個をひと箱にして、箱ごとにお届けします。</p>}
-        <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy || !ok}>
+        {!svc && pieces > 1 && <p className="text-xs text-biz text-right">{pieces}個をひと箱にして、箱ごとにお届けします。</p>}
+        <button className="w-full rounded-2xl bg-biz text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy || !ok}>
           {busy ? <Working text="決済画面を開いています" /> : svc ? "申し込む" : "購入する"}
         </button>
         <p className="text-xs text-black/50">デモのため、テスト用の決済画面です。実際のお金は動きません。</p>
@@ -229,7 +229,7 @@ function ProductPageInner() {
       </div>
 
       {/* だれでも押せるシェア。LINE・メールなど、スマホの共有画面から選ぶだけ（紹介したパートナーの番号はそのまま引き継ぐ） */}
-      <button className="w-full rounded-2xl border-2 border-leaf text-leaf py-3 font-bold" onClick={shareLink}>
+      <button className="w-full rounded-2xl border-2 border-biz text-biz py-3 font-bold" onClick={shareLink}>
         {shared ? "リンクをコピーしました ✓" : "📤 この商品を友だちに教える"}
       </button>
 
@@ -240,8 +240,8 @@ function ProductPageInner() {
 
 
       {p.shop_intro && (
-        <section className="rounded-2xl bg-leaf/5 p-4 space-y-2">
-          <h2 className="font-bold text-leaf">この事業者さんについて（{p.shop_name}）</h2>
+        <section className="rounded-2xl bg-biz/5 p-4 space-y-2">
+          <h2 className="font-bold text-biz">この事業者さんについて（{p.shop_name}）</h2>
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{p.shop_intro}</p>
         </section>
       )}

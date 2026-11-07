@@ -76,8 +76,8 @@ export function SellerSection({ shopId, initial }: { shopId: number; initial: Se
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-bold text-leaf">販売者の情報（ネット販売の表示用）</div>
-        <span className={`text-xs ${filled === FIELDS.length ? "text-leaf" : "text-red-600"}`}>
+        <div className="text-sm font-bold text-biz">販売者の情報（ネット販売の表示用）</div>
+        <span className={`text-xs ${filled === FIELDS.length ? "text-biz" : "text-red-600"}`}>
           {filled}/{FIELDS.length} 入力済み
         </span>
       </div>
@@ -96,7 +96,7 @@ export function SellerSection({ shopId, initial }: { shopId: number; initial: Se
           ) : (
             <p className="text-sm text-black/60">住所や電話番号は、聞き取りでは間違いやすいので、名刺を撮るか手で入れてください。</p>
           )}
-          <button className="w-full rounded-xl border border-leaf/40 text-leaf py-3 font-bold" onClick={() => setOpen(true)}>
+          <button className="w-full rounded-xl border border-biz/40 text-biz py-3 font-bold" onClick={() => setOpen(true)}>
             {filled > 0 ? "修正する" : "入力する"}
           </button>
         </>
@@ -125,7 +125,7 @@ export function SellerSection({ shopId, initial }: { shopId: number; initial: Se
           ))}
           <p className="text-xs text-black/50">名刺の写真はサーバーに残しません（読み取った文字だけを保存します）。</p>
           <div className="flex gap-2">
-            <button className="flex-1 rounded-xl bg-carrot text-white py-3 font-bold disabled:opacity-50" onClick={save} disabled={busy !== ""}>
+            <button className="flex-1 rounded-xl bg-biz text-white py-3 font-bold disabled:opacity-50" onClick={save} disabled={busy !== ""}>
               保存する
             </button>
             <button

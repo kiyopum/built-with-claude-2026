@@ -13,16 +13,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ja" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        {/* 上のメニュー：ロゴの AI ダークブルー〜企業ブルー。下の細い線は、ロゴの3色（青・緑・オレンジ） */}
-        <header className="bg-gradient-to-r from-leaf-dark to-leaf text-white border-b-4 border-transparent [border-image:linear-gradient(90deg,#1685d3,#29b9e8,#76c442,#f6a21a)_1]">
+        {/* 上のメニュー：システム＝AI ダークブルー。ロゴ文字は白抜き（仕様書 7.2 の暗色背景用） */}
+        <header className="bg-ai text-white">
           <div className="mx-auto max-w-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-2">
             <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-wide">
               {/* ロゴのシンボル（2026-11-07）。元の画像の黒い背景を透明にした小さな版（public/brand/yaobiz-mark.png） */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/brand/yaobiz-mark.png" alt="" className="h-9 w-auto" />
-              <span>
-                Yao<span className="text-[#f6a21a]">Biz</span>
-              </span>
+              <span>YaoBiz</span>
             </Link>
             <Suspense fallback={null}>
               <Nav />
@@ -33,10 +31,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="text-center text-xs text-black/50 py-4 space-y-1">
           {/* 色の意味（ロゴの Y の3方向と中央） */}
           <div className="flex justify-center gap-3">
-            <span><span className="inline-block w-2 h-2 rounded-full bg-biz mr-1" aria-hidden />事業者</span>
-            <span><span className="inline-block w-2 h-2 rounded-full bg-partner-light mr-1" aria-hidden />パートナー</span>
-            <span><span className="inline-block w-2 h-2 rounded-full bg-ai mr-1" aria-hidden />システム</span>
-            <span><span className="inline-block w-2 h-2 rounded-full bg-value mr-1" aria-hidden />商い</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-biz mr-1" aria-hidden />企業向け</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-partner mr-1" aria-hidden />パートナー向け</span>
+            <span><span className="inline-block w-2 h-2 rounded-full border border-white bg-ai mr-1" aria-hidden />システム</span>
           </div>
           <div>株式会社山崎メディアミックス</div>
         </footer>

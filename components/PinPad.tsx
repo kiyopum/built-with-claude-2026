@@ -23,19 +23,19 @@ export function PinPad({ onDone, busy, label }: { onDone: (pin: string) => Promi
       {label && <p className="text-center font-bold">{label}</p>}
       <div className="flex justify-center gap-4" aria-label={`${pin.length}けた入力済み`}>
         {[0, 1, 2, 3].map((i) => (
-          <span key={i} className={`w-5 h-5 rounded-full border-2 border-leaf ${i < pin.length ? "bg-leaf" : ""}`} />
+          <span key={i} className={`w-5 h-5 rounded-full border-2 border-biz ${i < pin.length ? "bg-biz" : ""}`} />
         ))}
       </div>
       <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto">
         {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
-          <button key={d} type="button" className="rounded-2xl bg-white border border-black/10 shadow-sm py-4 text-2xl font-bold active:bg-leaf/10" onClick={() => press(d)}>
+          <button key={d} type="button" className="rounded-2xl bg-white border border-black/10 shadow-sm py-4 text-2xl font-bold active:bg-biz/10" onClick={() => press(d)}>
             {d}
           </button>
         ))}
         <button type="button" className="rounded-2xl py-4 text-sm text-black/60" onClick={() => setPin("")}>
           けす
         </button>
-        <button type="button" className="rounded-2xl bg-white border border-black/10 shadow-sm py-4 text-2xl font-bold active:bg-leaf/10" onClick={() => press("0")}>
+        <button type="button" className="rounded-2xl bg-white border border-black/10 shadow-sm py-4 text-2xl font-bold active:bg-biz/10" onClick={() => press("0")}>
           0
         </button>
         <button type="button" className="rounded-2xl py-4 text-sm text-black/60" onClick={() => setPin(pin.slice(0, -1))}>
