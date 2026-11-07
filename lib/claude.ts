@@ -237,9 +237,10 @@ export async function findShopWebsite(shop: { name: string; category: string; ar
   const res = await client.beta.messages.parse({
     model: MODEL,
     max_tokens: 8000,
-    output_config: { effort: "low", format: betaZodOutputFormat(SiteCandidatesSchema) },
+    output_config: { effort: "medium", format: betaZodOutputFormat(SiteCandidatesSchema) },
     system: SITE_SEARCH_SYSTEM,
-    tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 3 }],
+    // 素朴な検索（20250305）を使う。新しい方（20260209）は裏でプログラムを書いて検索し、結果を見ずに「候補なし」で終わることがあった（2026-11-07）
+    tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
     messages: [{ role: "user", content: `お店の名前: ${shop.name}\n地域: ${shop.area || "（不明）"}\n業種: ${shop.category}\n\nこのお店のホームページの候補を探してください。` }],
     ...FALLBACK,
   });
