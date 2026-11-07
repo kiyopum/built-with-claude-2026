@@ -17,9 +17,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <header className="bg-[#f6a21a] text-navy">
           <div className="mx-auto max-w-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-2">
             <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-wide">
-              {/* ロゴのシンボル（2026-11-07）。元の画像の黒い背景を透明にした小さな版（public/brand/yaobiz-mark.png） */}
+              {/* ロゴのシンボル（2026-11-07）。きよさんが作った 180×144 の透明 PNG をそのまま（public/brand/yaobiz-mark-2.png。名前を変えたのは Safari のキャッシュ対策） */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/yaobiz-mark.png" alt="" className="h-9 w-auto" />
+              <img src="/brand/yaobiz-mark-2.png" alt="" className="h-9 w-auto" />
               <span>YaoBiz</span>
             </Link>
             <Suspense fallback={null}>

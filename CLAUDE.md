@@ -58,7 +58,7 @@
   - 明細の3者の棒は「だれの分か」なので役割の色（事業者＝biz、パートナー＝partner、YMM＝ai、手数料＝グレー）。
   - エラー＝赤、注意＝黄色はそのまま。Tailwind の sky などほかの色は使わない。
 - `app/globals.css` のトークン：biz／partner／ai／navy。古い名前（leaf＝biz、leaf-dark＝ai、carrot＝biz、sprout＝partner）は別名で残す。新しく書くときは役割の名前。
-- ロゴ：元画像（`撮影キット/素材/ロゴ_YaoBiz（透明PNG・元画像）.png`）は**透明 PNG**（RGBA。見た目が黒く光って見えても、透明の下に残った色。背景を消す処理はしない＝2026-11-07 にそれでぼやけさせた）。シンボルだけ切り出した `public/brand/yaobiz-mark.png`、全体 `public/brand/yaobiz-logo.png`、アイコン `app/icon.png`（白地）。
+- ロゴ：元画像（`撮影キット/素材/ロゴ_YaoBiz（透明PNG・元画像）.png`）は**透明 PNG**（RGBA。見た目が黒く光って見えても、透明の下に残った色。背景を消す処理はしない＝2026-11-07 にそれでぼやけさせた）。シンボルは `public/brand/yaobiz-mark-2.png`（きよさん作 180×144。差し替えるときはファイル名を変える＝Safari が古い画像を覚えるため）、全体 `public/brand/yaobiz-logo.png`、アイコン `app/icon.png`（白地）。
 - 上のメニューの背景は価値創造オレンジ #F6A21A、文字はロゴ文字ネイビー #082D5C（2026-11-07 きよさん「ロゴの背景は価値」）。メニューの点は3色（企業・パートナー・システム）のまま。
 
 ## 書き方のルール
