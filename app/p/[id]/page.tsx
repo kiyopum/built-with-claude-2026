@@ -125,14 +125,28 @@ function ProductPageInner() {
               : `お届け先によって変わります（近いほどお安く：${(unitPrice + info.min).toLocaleString()}〜${(unitPrice + info.max).toLocaleString()}円）。下で選ぶと決まります。`}
           </p>
         </div>
+      ) : info.mode === "flat" && info.yen != null ? (
+        // 全国一律の送料：送料込みのひとつの値段で出す（送料を別立てにしない。2026-11-07 きよさん）
+        <div>
+          <div className="text-3xl font-bold text-carrot">
+            {pieces > 1 && <span className="text-base font-bold">{pieces}個入り </span>}
+            <span className="text-base font-bold">送料込み </span>
+            {(unitPrice + info.yen).toLocaleString()}
+            <span className="text-base text-black/60 font-normal"> 円（税込）</span>
+          </div>
+          <p className="text-xs text-black/60">
+            {pieces > 1 && `1個 ${p.price_yen.toLocaleString()}円 × ${pieces}個を、ひと箱でお届けします。`}全国どこへでも、この値段です。
+          </p>
+        </div>
       ) : (
         <div>
           <div className="text-3xl font-bold text-carrot">
             {pieces > 1 && <span className="text-base font-bold">{pieces}個入り </span>}
             {unitPrice.toLocaleString()}
-            <span className="text-base text-black/60 font-normal"> 円（税込{!svc && "・送料別"}）</span>
+            <span className="text-base text-black/60 font-normal"> 円（税込）</span>
           </div>
           {pieces > 1 && <p className="text-xs text-black/60">1個 {p.price_yen.toLocaleString()}円 × {pieces}個を、ひと箱でお届けします。</p>}
+          {!svc && <p className="text-xs text-black/60">送料込みの値段は、準備ができしだい出ます。</p>}
         </div>
       )}
       <p className="leading-relaxed whitespace-pre-wrap">{p.description}</p>

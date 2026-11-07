@@ -3,6 +3,7 @@ import { guardShop } from "@/lib/auth";
 import { getDb, getSetting, ownerTokenOf, SELLER_KEYS, type Shop, REVISE_LIMIT } from "@/lib/db";
 import { thisMonth } from "@/lib/checkin";
 import { proposalsOf } from "@/lib/proposals";
+import { shippingInfo } from "@/lib/shipquote";
 import type { Notice } from "@/lib/notify";
 
 // 事業者のページ用：事業者の情報（理念）と商品の一覧
@@ -15,7 +16,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (!shop) return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
   const rows = db
     .prepare(
-      `SELECT d.id, d.name, d.price_yen, d.per_box, d.kind, d.status, d.legal_json, d.nudge_json, d.nudge_at,
+      `SELECT d.id, d.name, d.price_yen, d.per_box, d.kind, d.size_class, d.weight_g, d.status, d.legal_json, d.nudge_json, d.nudge_at,
               -- 公開から nudge_days 日たって、その間に注文のない商品（責めずに次の一歩を出す）
               (d.status = 'published'
                 AND julianday('now','localtime') - julianday(COALESCE(d.published_at, d.updated_at)) >= ?
@@ -23,9 +24,16 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
               (SELECT file FROM product_photos p WHERE p.draft_id = d.id ORDER BY sort LIMIT 1) AS main_photo
        FROM drafts d WHERE d.shop_id = ? ORDER BY d.id DESC`,
     )
-    .all(getSetting("nudge_days"), getSetting("nudge_days"), shop.id) as { id: number; name: string; price_yen: number; per_box: number; kind: string; status: string; legal_json: string | null; main_photo: string | null; nudge_json: string | null; quiet: number }[];
+    .all(getSetting("nudge_days"), getSetting("nudge_days"), shop.id) as { id: number; name: string; price_yen: number; per_box: number; kind: string; size_class: string | null; weight_g: number | null; status: string; legal_json: string | null; main_photo: string | null; nudge_json: string | null; quiet: number }[];
   const products = rows.map(({ legal_json, main_photo, nudge_json, ...r }) => ({
     ...r,
+    // お客さまに出る値段（箱に入れる数をまとめた送料込み。送料が決まっていなければ null）
+    incl_min: (() => {
+      if (r.kind === "service") return null;
+      const info = shippingInfo({ size_class: r.size_class, weight_g: r.weight_g, per_box: r.per_box, kind: "goods" }, shop);
+      const pieces = Math.max(1, r.per_box ?? 1);
+      return info.mode === "included" ? r.price_yen * pieces + info.min : info.mode === "flat" && info.yen != null ? r.price_yen * pieces + info.yen : null;
+    })(),
     quiet: !!r.quiet,
     nudge: nudge_json ? JSON.parse(nudge_json) : null,
     verdict: legal_json ? (JSON.parse(legal_json) as { verdict: string }).verdict : null,

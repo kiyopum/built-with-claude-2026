@@ -121,8 +121,8 @@ export function DraftFieldsForm({ f, setF, legal, perBox = 1 }: { f: FieldValues
       {/* 2026-11-07 きよさん：ここは単価。お客さまに出る値段は、下の「送り方」で決める「1箱に入れる数」をまとめた送料込みの金額 */}
       <p className="text-xs text-black/50">
         {perBox > 1 && Number(f.price_yen) > 0
-          ? `お客さまには「${perBox}個入り ${(Number(f.price_yen) * perBox).toLocaleString()}円＋送料」で出ます（1箱に入れる数は、下の「送り方」で決めます）。`
-          : "お客さまには、下の「送り方」で決める「1箱に入れる数」をまとめた、送料込みの値段で出ます。"}
+          ? `お客さまには「${perBox}個入り 送料込み ○円」のひとつの値段で出ます（商品代は ${(Number(f.price_yen) * perBox).toLocaleString()}円。送料込みの金額は下の「送り方」に出ます）。`
+          : "お客さまには、下の「送り方」で決める「1箱に入れる数」をまとめた、送料込みのひとつの値段で出ます。"}
       </p>
       <label className="block text-xs font-bold text-black/60">紹介文</label>
       <textarea className={box("description", "min-h-48 leading-relaxed")} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />

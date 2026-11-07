@@ -111,7 +111,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
             <span className="text-black/60">個</span>
           </label>
         </div>
-        <p className="text-xs text-black/50">お客さまには、この数をひとまとめにした「送料込み」の値段で出ます。1個の値段が安い商品は、数を多くすると送料が目立ちません（150円 × 20個＋送料 600円 → 「20個入り 送料込み 3,600円」）。</p>
+        <p className="text-xs text-black/50">お客さまには、この数をひとまとめにした「送料込み」の値段で出ます。1個の値段が安い商品は、数を多くすると送料が目立ちません（例：1個 150円を20個入りにすると「20個入り 送料込み 3,600円」）。</p>
       </div>
 
       {!from ? (
@@ -128,7 +128,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
             {near.note && <span className="block text-xs text-black/60">{near.note}</span>}
           </div>
           <div>
-            お客さまには：{perBox > 1 && <b>{perBox}個入り </b>}{fullPref(from)}内なら <b className="text-carrot text-lg">送料込み {(price * perBox + near.yen).toLocaleString()}円</b>（商品 {price.toLocaleString()}円{perBox > 1 && ` × ${perBox}個 = ${(price * perBox).toLocaleString()}円`}＋送料 {near.yen.toLocaleString()}円）
+            お客さまには：{perBox > 1 && <b>{perBox}個入り </b>}{fullPref(from)}内なら <b className="text-carrot text-lg">送料込み {(price * perBox + near.yen).toLocaleString()}円</b>（うち商品 {(price * perBox).toLocaleString()}円{perBox > 1 && `＝1個 ${price.toLocaleString()}円 × ${perBox}個`}、送料 {near.yen.toLocaleString()}円）
           </div>
 
           {Math.min(...yens) !== Math.max(...yens) && (

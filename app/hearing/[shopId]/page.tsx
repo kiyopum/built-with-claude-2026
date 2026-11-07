@@ -54,6 +54,7 @@ type Data = {
     price_yen: number;
     per_box?: number;
     kind?: string;
+    incl_min?: number | null;
     status: string;
     verdict: string | null;
     photo: string | null;
@@ -280,9 +281,11 @@ function ShopPageInner() {
               <div className="min-w-0 flex-1">
                 <div className="font-bold leading-snug line-clamp-2">{p.name}</div>
                 <div className="text-sm">
-                  {p.kind !== "service" && (p.per_box ?? 1) > 1
-                    ? `${(p.per_box ?? 1)}個入り ${(p.price_yen * (p.per_box ?? 1)).toLocaleString()}円＋送料（1個 ${p.price_yen.toLocaleString()}円）`
-                    : `${p.price_yen.toLocaleString()}円`}
+                  {p.kind === "service"
+                    ? `${p.price_yen.toLocaleString()}円`
+                    : p.incl_min != null
+                      ? `${(p.per_box ?? 1) > 1 ? `${p.per_box}個入り ` : ""}送料込み ${p.incl_min.toLocaleString()}円${(p.per_box ?? 1) > 1 ? `（1個 ${p.price_yen.toLocaleString()}円）` : ""}`
+                      : `${(p.per_box ?? 1) > 1 ? `${p.per_box}個入り ` : ""}${(p.price_yen * (p.per_box ?? 1)).toLocaleString()}円（送料込みの値段は、送り方を決めると出ます）`}
                 </div>
                 <div className="text-xs flex flex-wrap gap-x-2 mt-1">
                   <span className="text-black/50">{STATUS[p.status] ?? p.status}</span>
