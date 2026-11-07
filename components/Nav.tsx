@@ -26,9 +26,9 @@ export function Nav() {
   }
 
   // 行き先の役割を色の点で示す（biz＝事業者のこと／partner＝パートナー自身のこと／ai＝システム・管理）
-  const DOT: Record<string, string> = { "/hearing": "bg-biz", "/everyone": "bg-partner", "/voices": "bg-partner", "/checkin": "bg-partner", "/me": "bg-partner", "/statement": "bg-ai border border-white/70", "/admin": "bg-ai border border-white/70", "/demo": "bg-ai border border-white/70", "/shop": "bg-biz", "/login": "bg-ai border border-white/70" };
+  const DOT: Record<string, string> = { "/hearing": "bg-biz", "/everyone": "bg-partner", "/voices": "bg-partner", "/checkin": "bg-partner", "/me": "bg-partner", "/statement": "bg-ai", "/admin": "bg-ai", "/demo": "bg-ai", "/shop": "bg-biz", "/login": "bg-ai" };
   const pill = (href: string, text: string) => (
-    <Link href={href} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 ${path.startsWith(href) ? "bg-white text-ai font-bold" : "bg-white/15"}`}>
+    <Link href={href} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 ${path.startsWith(href) ? "bg-white text-navy font-bold" : "bg-navy/10"}`}>
       <span className={`inline-block w-2 h-2 rounded-full ${DOT[href] ?? "bg-white/60"}`} aria-hidden />
       {text}
     </Link>
@@ -58,9 +58,9 @@ export function Nav() {
         )}
       </nav>
       {me && (
-        <div className="basis-full flex justify-end items-center gap-3 text-xs text-white/80">
+        <div className="basis-full flex justify-end items-center gap-3 text-xs text-navy/80">
           <span className="inline-flex items-center gap-1">
-            <span className={`inline-block w-2 h-2 rounded-full ${me.role === "admin" ? "bg-ai border border-white/70" : "bg-partner"}`} aria-hidden />
+            <span className={`inline-block w-2 h-2 rounded-full ${me.role === "admin" ? "bg-ai" : "bg-partner"}`} aria-hidden />
             {me.name} さん（{me.role === "admin" ? "YMM 管理" : `パートナー番号 ${me.code}`}）
           </span>
           <button className="underline" onClick={logout}>

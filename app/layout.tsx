@@ -13,8 +13,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ja" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        {/* 上のメニュー：システム＝AI ダークブルー。ロゴ文字は白抜き（仕様書 7.2 の暗色背景用） */}
-        <header className="bg-ai text-white">
+        {/* 上のメニュー：価値創造オレンジ #F6A21A（2026-11-07 きよさん「ロゴの背景は価値」）。文字はロゴ文字ネイビー #082D5C */}
+        <header className="bg-[#f6a21a] text-navy">
           <div className="mx-auto max-w-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-2">
             <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-wide">
               {/* ロゴのシンボル（2026-11-07）。元の画像の黒い背景を透明にした小さな版（public/brand/yaobiz-mark.png） */}
