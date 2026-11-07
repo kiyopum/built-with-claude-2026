@@ -79,7 +79,7 @@ function ProductPageInner() {
   const inc = info.mode === "included";
   // 箱入りの売り方（2026-11-07 きよさん）：事業者さんが「1箱に入れる数」を決めたら、お客さまにはその数をひとまとめにした送料込みの値段で出す
   //   （150円の商品を1個で送ると送料で750円に見える。20個入り 送料込み 3,600円なら送料が目立たない）。数量は箱の数
-  const pieces = inc ? info.perBox : 1;
+  const pieces = info.mode === "none" ? 1 : info.perBox; // 1箱に入れる数（送料込みでも全国一律でも）
   const unitPrice = p.price_yen * pieces; // 1箱（＝ひとまとめ）の商品代
   const maxQty = 10;
   // サービス（ライブ配信・講座・体験など）：送らない。買ったあと事業者さんからメールで案内が届く
@@ -126,9 +126,13 @@ function ProductPageInner() {
           </p>
         </div>
       ) : (
-        <div className="text-3xl font-bold text-carrot">
-          {p.price_yen.toLocaleString()}
-          <span className="text-base text-black/60 font-normal"> 円（税込）</span>
+        <div>
+          <div className="text-3xl font-bold text-carrot">
+            {pieces > 1 && <span className="text-base font-bold">{pieces}個入り </span>}
+            {unitPrice.toLocaleString()}
+            <span className="text-base text-black/60 font-normal"> 円（税込{!svc && "・送料別"}）</span>
+          </div>
+          {pieces > 1 && <p className="text-xs text-black/60">1個 {p.price_yen.toLocaleString()}円 × {pieces}個を、ひと箱でお届けします。</p>}
         </div>
       )}
       <p className="leading-relaxed whitespace-pre-wrap">{p.description}</p>
@@ -202,7 +206,7 @@ function ProductPageInner() {
         {!svc && parseShipDays(p.ship_days).length > 0 && (
           <p className="text-xs text-black/60 text-right">📅 この事業者の発送は、毎週{shipDaysLabel(parseShipDays(p.ship_days))}曜日です。</p>
         )}
-        {inc && pieces > 1 && <p className="text-xs text-leaf text-right">{pieces}個をひと箱にして、箱ごとにお届けします。</p>}
+        {!svc && pieces > 1 && <p className="text-xs text-leaf text-right">{pieces}個をひと箱にして、箱ごとにお届けします。</p>}
         <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy || !ok}>
           {busy ? <Working text="決済画面を開いています" /> : svc ? "申し込む" : "購入する"}
         </button>

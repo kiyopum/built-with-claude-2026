@@ -15,7 +15,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (!shop) return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
   const rows = db
     .prepare(
-      `SELECT d.id, d.name, d.price_yen, d.status, d.legal_json, d.nudge_json, d.nudge_at,
+      `SELECT d.id, d.name, d.price_yen, d.per_box, d.kind, d.status, d.legal_json, d.nudge_json, d.nudge_at,
               -- 公開から nudge_days 日たって、その間に注文のない商品（責めずに次の一歩を出す）
               (d.status = 'published'
                 AND julianday('now','localtime') - julianday(COALESCE(d.published_at, d.updated_at)) >= ?
@@ -23,7 +23,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
               (SELECT file FROM product_photos p WHERE p.draft_id = d.id ORDER BY sort LIMIT 1) AS main_photo
        FROM drafts d WHERE d.shop_id = ? ORDER BY d.id DESC`,
     )
-    .all(getSetting("nudge_days"), getSetting("nudge_days"), shop.id) as { id: number; name: string; price_yen: number; status: string; legal_json: string | null; main_photo: string | null; nudge_json: string | null; quiet: number }[];
+    .all(getSetting("nudge_days"), getSetting("nudge_days"), shop.id) as { id: number; name: string; price_yen: number; per_box: number; kind: string; status: string; legal_json: string | null; main_photo: string | null; nudge_json: string | null; quiet: number }[];
   const products = rows.map(({ legal_json, main_photo, nudge_json, ...r }) => ({
     ...r,
     quiet: !!r.quiet,

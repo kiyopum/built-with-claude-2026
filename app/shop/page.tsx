@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-type Product = { id: number; name: string; description: string; price_yen: number; shop_name: string; photo: string | null; pieces: number; incl_min: number | null };
+type Product = { id: number; name: string; description: string; price_yen: number; shop_name: string; photo: string | null; pieces: number; incl_min: number | null; unit_total: number };
 
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[] | null>(null);
@@ -36,7 +36,10 @@ export default function ShopPage() {
                   {p.incl_min.toLocaleString()}円{p.pieces > 1 ? "" : "〜"}
                 </>
               ) : (
-                `${p.price_yen.toLocaleString()}円`
+                <>
+                  {p.pieces > 1 && <span className="text-xs text-black/60 font-normal">{p.pieces}個入り </span>}
+                  {p.unit_total.toLocaleString()}円
+                </>
               )}
             </div>
             <p className="text-sm text-black/60 line-clamp-2">{p.description}</p>

@@ -11,7 +11,10 @@ export async function POST(req: Request) {
   const d = getDb().prepare("SELECT * FROM drafts WHERE id = ? AND status = 'published'").get(draftId) as Draft | undefined;
   if (!d) return Response.json({ error: "この商品は公開されていません" }, { status: 404 });
   // 数量は個数。箱入りの商品は「1箱に入れる数 × 箱の数（10箱まで）」
-  const qty = Math.min(Math.max(Math.floor(quantity ?? 1), 1), 10 * Math.max(1, d.per_box ?? 1));
+  const qtyRaw = Math.min(Math.max(Math.floor(quantity ?? 1), 1), 10 * Math.max(1, d.per_box ?? 1));
+  // 箱入りの商品は、個数を箱の倍数にそろえる（20個入りなら 20・40・…）
+  const unit = d.kind === "service" ? 1 : Math.max(1, d.per_box ?? 1);
+  const qty = Math.ceil(qtyRaw / unit) * unit;
 
   // 戻り先は、いま開いているページのアドレスから作る（Mac でも iPhone でも同じように戻れる）
   const origin = req.headers.get("origin") ?? new URL(req.url).origin;
@@ -24,10 +27,16 @@ export async function POST(req: Request) {
   const service = info.mode === "none";
   if ("error" in ship) return Response.json({ error: ship.error }, { status: 400 });
   try {
-    const price = await ensureStripePrice(d);
+    // 箱入りの商品（1箱に入れる数が2以上）は、決済画面にも「商品名（20個入り）× 箱の数」で出す（単価×個数だと、お客さまが単価で買うように見えるため）
+    const perBox = service ? 1 : Math.max(1, d.per_box ?? 1);
+    const boxes = Math.ceil(qty / perBox);
+    const lineItems =
+      perBox > 1
+        ? [{ price_data: { currency: "jpy", unit_amount: d.price_yen * perBox, product_data: { name: `${d.name}（${perBox}個入り）` } }, quantity: boxes }]
+        : [{ price: await ensureStripePrice(d), quantity: qty }];
     const session = await stripe().checkout.sessions.create({
       mode: "payment",
-      line_items: [{ price, quantity: qty }],
+      line_items: lineItems,
       // 事業者のところで受け取るときは住所を聞かない
       ...(ship.pickup || service ? {} : { shipping_address_collection: { allowed_countries: ["JP" as const] } }),
       ...(service ? {} : { shipping_options: [{ shipping_rate_data: { type: "fixed_amount" as const, display_name: ship.label, fixed_amount: { amount: ship.yen, currency: "jpy" } } }] }),

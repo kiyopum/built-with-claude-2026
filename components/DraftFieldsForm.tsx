@@ -103,7 +103,7 @@ export function LegalTodo({ legal, f }: { legal: Legal | null; f: FieldValues })
   );
 }
 
-export function DraftFieldsForm({ f, setF, legal }: { f: FieldValues; setF: (f: FieldValues) => void; legal: Legal | null }) {
+export function DraftFieldsForm({ f, setF, legal, perBox = 1 }: { f: FieldValues; setF: (f: FieldValues) => void; legal: Legal | null; perBox?: number }) {
   const items = todoItems(legal);
   const input = "w-full rounded-xl border border-black/15 p-3 text-base";
   const box = (k: TextKey, rows: string) => {
@@ -116,8 +116,14 @@ export function DraftFieldsForm({ f, setF, legal }: { f: FieldValues; setF: (f: 
       <label className="block text-xs font-bold text-black/60 pt-2">商品名</label>
       <input className={box("name", "")} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
       <FieldWarnings items={items} field="name" f={f} />
-      <label className="block text-xs font-bold text-black/60">価格（税込・円）</label>
+      <label className="block text-xs font-bold text-black/60">1個の値段（税込・円）</label>
       <input className={input} inputMode="numeric" value={f.price_yen} onChange={(e) => setF({ ...f, price_yen: e.target.value.replace(/[^\d]/g, "") })} />
+      {/* 2026-11-07 きよさん：ここは単価。お客さまに出る値段は、下の「送り方」で決める「1箱に入れる数」をまとめた送料込みの金額 */}
+      <p className="text-xs text-black/50">
+        {perBox > 1 && Number(f.price_yen) > 0
+          ? `お客さまには「${perBox}個入り ${(Number(f.price_yen) * perBox).toLocaleString()}円＋送料」で出ます（1箱に入れる数は、下の「送り方」で決めます）。`
+          : "お客さまには、下の「送り方」で決める「1箱に入れる数」をまとめた、送料込みの値段で出ます。"}
+      </p>
       <label className="block text-xs font-bold text-black/60">紹介文</label>
       <textarea className={box("description", "min-h-48 leading-relaxed")} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
       <FieldWarnings items={items} field="description" f={f} />

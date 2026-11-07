@@ -215,7 +215,7 @@ function EditInner() {
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
         <div className="text-sm font-bold text-leaf">商品ページの文</div>
-        <DraftFieldsForm f={fields} setF={setFields} legal={legal} />
+        <DraftFieldsForm f={fields} setF={setFields} legal={legal} perBox={draft.kind === "service" ? 1 : draft.per_box} />
       </section>
 
       {draft.kind === "service" ? (

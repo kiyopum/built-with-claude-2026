@@ -4,7 +4,7 @@ import { boxesFor, fullPref, isIncluded, prefOf, quotesByPref, type Quote } from
 
 export type ShippingInfo =
   | { mode: "included"; from: string; quotes: Record<string, Quote>; min: number; max: number; perBox: number; pickup: boolean }
-  | { mode: "flat"; yen: number | null; pickup: boolean }
+  | { mode: "flat"; yen: number | null; pickup: boolean; perBox: number }
   // サービス（ライブ配信・講座・体験など）：送らない。事業者さんからメールで案内する
   | { mode: "none"; pickup: false };
 
@@ -19,7 +19,7 @@ export function shippingInfo(d: Pick<Draft, "size_class" | "weight_g" | "per_box
       return { mode: "included", from, quotes, min: Math.min(...v), max: Math.max(...v), perBox: d.per_box ?? 1, pickup };
     }
   }
-  return { mode: "flat", yen: shop.shipping_yen, pickup };
+  return { mode: "flat", yen: shop.shipping_yen, pickup, perBox: d.per_box ?? 1 };
 }
 
 // 決済のときの送料。dest は届け先の都道府県か "pickup"（事業者のところで受け取り）
@@ -43,5 +43,7 @@ export function shippingForOrder(info: ShippingInfo, dest: string, quantity: num
     };
   }
   if (info.yen == null) return { error: "送料がまだ決まっていないため、いまは購入できません" };
-  return { yen: info.yen, label: info.yen ? "送料（全国一律）" : "送料（事業者の負担）", pickup: false, pref: prefOf(dest), method: "全国一律" };
+  // 全国一律でも、箱の数だけ送料がかかる（1箱に入れる数をひとまとめにして売る）
+  const flatBoxes = boxesFor(quantity, info.perBox);
+  return { yen: info.yen * flatBoxes, label: info.yen ? `送料（全国一律${flatBoxes > 1 ? `×${flatBoxes}` : ""}）` : "送料（事業者の負担）", pickup: false, pref: prefOf(dest), method: "全国一律" };
 }
