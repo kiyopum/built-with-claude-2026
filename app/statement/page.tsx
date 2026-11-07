@@ -65,9 +65,10 @@ type PartnerData = {
 type Data = AdminData | PartnerData;
 
 const PARTS = [
-  { key: "owner", label: "事業者さん", color: "bg-carrot", text: "text-carrot" },
-  { key: "partner", label: "パートナー", color: "bg-leaf", text: "text-leaf" },
-  { key: "ymm", label: "YMM", color: "bg-sky-600", text: "text-sky-700" },
+  // 色はロゴの意味に合わせる（2026-11-07）：企業＝ブルー、パートナー＝グリーン、YMM（AI の基盤）＝ダークブルー
+  { key: "owner", label: "事業者さん", color: "bg-leaf", text: "text-leaf" },
+  { key: "partner", label: "パートナー", color: "bg-sprout", text: "text-[#4f9a22]" },
+  { key: "ymm", label: "YMM", color: "bg-leaf-dark", text: "text-leaf-dark" },
   { key: "fee", label: "決済手数料", color: "bg-black/30", text: "text-black/50" },
 ] as const;
 
@@ -388,12 +389,12 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
             <table className="w-full text-sm">
               <tbody>
                 <tr className="border-t border-black/5">
-                  <th className="text-left font-bold text-carrot py-1.5">事業者さん</th>
+                  <th className="text-left font-bold text-leaf py-1.5">事業者さん</th>
                   <td className="text-right font-bold">{yen(monthly.owner)}</td>
                   <td className="text-right text-xs text-black/50 w-28">1,000円で {yen(per1000.owner)}</td>
                 </tr>
                 <tr className="border-t border-black/5">
-                  <th className="text-left font-bold text-leaf py-1.5">
+                  <th className="text-left font-bold text-[#4f9a22] py-1.5">
                     パートナー
                     {h > 0 && <div className="text-[11px] font-normal text-black/50">時給にすると {yen(monthly.partner / h)}</div>}
                   </th>
@@ -401,7 +402,7 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
                   <td className="text-right text-xs text-black/50">1,000円で {yen(per1000.partner)}</td>
                 </tr>
                 <tr className="border-t border-black/5">
-                  <th className="text-left font-bold text-sky-700 py-1.5">
+                  <th className="text-left font-bold text-leaf-dark py-1.5">
                     YMM
                     {serverCost > 0 && <div className="text-[11px] font-normal text-black/50">サーバー代などを引くと {yen(monthly.ymm - serverCost)}</div>}
                   </th>
