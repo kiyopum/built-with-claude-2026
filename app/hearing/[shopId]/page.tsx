@@ -102,27 +102,34 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
 
       <div className="rounded-xl bg-leaf/10 p-3 text-sm space-y-2">
         <div className="text-xs font-bold text-leaf">あなたの取り分（今の決まり）</div>
-        <div className="flex justify-between gap-2">
-          <span>入り口：もの（1,000円売れると）</span>
-          <b className="shrink-0">{yen(goods(1000))}</b>
-        </div>
-        <div className="flex justify-between gap-2">
-          <span>次の商品：送らないもの（1,000円の申し込みで）</span>
-          <b className="shrink-0 text-carrot">{yen(service(1000).partner)}</b>
-        </div>
-        <div className="border-t border-leaf/20 pt-2 text-xs text-black/70 space-y-1">
-          <div>たとえば（値段は事業者さんが決めます）</div>
-          {[
-            { a: 5000, label: `${yen(5000)} の申し込み1つで` },
-            { a: 20000, label: `4人ひと組 ${yen(20000)} の申し込み1つで` },
-          ].map(({ a, label }) => (
-            <div key={a}>
-              <div>{label}</div>
-              <div className="text-right">
-                あなたに <b className="text-sm">{yen(service(a).partner)}</b>・事業者さんに {yen(service(a).owner)}
-              </div>
-            </div>
-          ))}
+        {/* 同じ金額で「もの」と「送らないもの」を横に並べる（片方だけ見せると、金額が急に大きくなったように見える） */}
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-xs text-black/60">
+              <th className="text-left font-normal pb-1">売れた金額</th>
+              <th className="text-right font-normal pb-1">もの<br />（入り口）</th>
+              <th className="text-right font-normal pb-1">送らないもの<br />（次の商品）</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { a: 1000, label: yen(1000), sub: "" },
+              { a: 5000, label: yen(5000), sub: "" },
+              { a: 20000, label: yen(20000), sub: "4人ひと組" },
+            ].map(({ a, label, sub }) => (
+              <tr key={a} className="border-t border-leaf/20">
+                <td className="py-1">
+                  {label}
+                  {sub && <div className="text-xs text-black/50">{sub}</div>}
+                </td>
+                <td className="py-1 text-right">{yen(goods(a))}</td>
+                <td className="py-1 text-right font-bold text-carrot">{yen(service(a).partner)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="text-xs text-black/70 space-y-1">
+          <div>事業者さんには、ものは {Math.round((1 - s.goods) * 10)}割、送らないものは {Math.round((1 - s.service) * 10)}割（{yen(5000)} なら {yen(service(5000).owner)}）。値段は事業者さんが決めます。</div>
           <div className="text-black/50">サービスごとに、YMM が割合を決めることがあります。</div>
         </div>
       </div>
