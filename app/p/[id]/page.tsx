@@ -64,7 +64,7 @@ function ProductPageInner() {
   async function buy() {
     setError("");
     setBusy(true);
-    const r = await apiFetch("/api/checkout", { method: "POST", body: JSON.stringify({ draftId: Number(id), quantity: qty, dest, ref: new URLSearchParams(window.location.search).get("ref") ?? "" }) });
+    const r = await apiFetch("/api/checkout", { method: "POST", body: JSON.stringify({ draftId: Number(id), quantity: qty * pieces, dest, ref: new URLSearchParams(window.location.search).get("ref") ?? "" }) });
     const j = await r.json();
     if (!r.ok || !j.url) {
       setBusy(false);
@@ -77,10 +77,14 @@ function ProductPageInner() {
   if (!p) return <p className="text-black/50">読み込み中…</p>;
   const info = p.shipping;
   const inc = info.mode === "included";
-  const maxQty = Math.max(10, inc ? info.perBox : 1); // 1箱に入る数が多い商品（クッキー20枚など）は、その数まで一度に買える
+  // 箱入りの売り方（2026-11-07 きよさん）：事業者さんが「1箱に入れる数」を決めたら、お客さまにはその数をひとまとめにした送料込みの値段で出す
+  //   （150円の商品を1個で送ると送料で750円に見える。20個入り 送料込み 3,600円なら送料が目立たない）。数量は箱の数
+  const pieces = inc ? info.perBox : 1;
+  const unitPrice = p.price_yen * pieces; // 1箱（＝ひとまとめ）の商品代
+  const maxQty = 10;
   // サービス（ライブ配信・講座・体験など）：送らない。買ったあと事業者さんからメールで案内が届く
   const svc = info.mode === "none";
-  const ship = shippingForOrder(info, dest, qty);
+  const ship = shippingForOrder(info, dest, qty * pieces); // 個数で渡す（箱の数はそこから出る）
   const ok = !("error" in ship);
   // 届け先を選ぶ欄を出すか（送料込みの商品か、事業者のところで受け取りができるとき）
   const askDest = inc || info.pickup;
@@ -109,14 +113,16 @@ function ProductPageInner() {
       {inc ? (
         <div>
           <div className="text-3xl font-bold text-carrot">
+            {pieces > 1 && <span className="text-base font-bold">{pieces}個入り </span>}
             <span className="text-base font-bold">送料込み </span>
-            {(p.price_yen + info.min).toLocaleString()}
+            {(unitPrice + info.min).toLocaleString()}
             <span className="text-base text-black/60 font-normal"> 円{info.min !== info.max && "〜"}（税込）</span>
           </div>
           <p className="text-xs text-black/60">
+            {pieces > 1 && `1個 ${p.price_yen.toLocaleString()}円 × ${pieces}個を、ひと箱でお届けします。`}
             {info.min === info.max
               ? "全国どこへでも、この値段です。"
-              : `お届け先によって変わります（近いほどお安く：${(p.price_yen + info.min).toLocaleString()}〜${(p.price_yen + info.max).toLocaleString()}円）。下で選ぶと決まります。`}
+              : `お届け先によって変わります（近いほどお安く：${(unitPrice + info.min).toLocaleString()}〜${(unitPrice + info.max).toLocaleString()}円）。下で選ぶと決まります。`}
           </p>
         </div>
       ) : (
@@ -147,7 +153,7 @@ function ProductPageInner() {
 
       <div className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-bold">{svc ? "人数" : "数量"}</span>
+          <span className="font-bold">{svc ? "人数" : pieces > 1 ? `数量（${pieces}個入り）` : "数量"}</span>
           <div className="flex items-center gap-3">
             <button className="w-10 h-10 rounded-full border border-black/20 text-xl" onClick={() => setQty((q) => Math.max(1, q - 1))}>
               −
@@ -175,15 +181,15 @@ function ProductPageInner() {
         )}
         <div className="flex items-center justify-between text-lg">
           <span>合計{inc && ok && !ship.pickup && "（送料込み）"}</span>
-          <span className="font-bold">{ok ? `${(p.price_yen * qty + ship.yen).toLocaleString()}円` : inc ? "お届け先を選ぶと決まります" : "送料未定"}</span>
+          <span className="font-bold">{ok ? `${(unitPrice * qty + ship.yen).toLocaleString()}円` : inc ? "お届け先を選ぶと決まります" : "送料未定"}</span>
         </div>
         <p className="text-xs text-black/60 text-right">
           {ok
             ? svc
               ? "お申し込みのあと、事業者さんからメールでご案内が届きます（配信の URL や日時など）。"
               : ship.pickup
-              ? `商品 ${(p.price_yen * qty).toLocaleString()}円（事業者のところで受け取るので送料はかかりません）`
-              : `うち商品 ${(p.price_yen * qty).toLocaleString()}円・送料 ${ship.yen.toLocaleString()}円（${ship.method}）`
+              ? `商品 ${(unitPrice * qty).toLocaleString()}円（事業者のところで受け取るので送料はかかりません）`
+              : `うち商品 ${(unitPrice * qty).toLocaleString()}円${pieces > 1 ? `（${p.price_yen.toLocaleString()}円 × ${pieces * qty}個）` : ""}・送料 ${ship.yen.toLocaleString()}円（${ship.method}${qty > 1 ? ` × ${qty}箱` : ""}）`
             : inc
               ? ""
               : "送料（事業者さんが準備中のため、まだ購入できません）"}
@@ -196,9 +202,7 @@ function ProductPageInner() {
         {!svc && parseShipDays(p.ship_days).length > 0 && (
           <p className="text-xs text-black/60 text-right">📅 この事業者の発送は、毎週{shipDaysLabel(parseShipDays(p.ship_days))}曜日です。</p>
         )}
-        {inc && info.perBox > 1 && (
-          <p className="text-xs text-leaf text-right">{info.perBox}個までは1つの箱で送るので、送料は1回分です。</p>
-        )}
+        {inc && pieces > 1 && <p className="text-xs text-leaf text-right">{pieces}個をひと箱にして、箱ごとにお届けします。</p>}
         <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={buy} disabled={busy || !ok}>
           {busy ? <Working text="決済画面を開いています" /> : svc ? "申し込む" : "購入する"}
         </button>

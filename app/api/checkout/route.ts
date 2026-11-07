@@ -8,9 +8,10 @@ export async function POST(req: Request) {
   const { draftId, quantity, ref, dest } = (await req.json()) as { draftId: number; quantity?: number; ref?: string; dest?: string };
   // どのパートナーのシェアから来たか（英数字だけ・20字まで）
   const refCode = typeof ref === "string" && /^[A-Za-z0-9_-]{1,20}$/.test(ref) ? ref : "";
-  const qty = Math.min(Math.max(Math.floor(quantity ?? 1), 1), 10);
   const d = getDb().prepare("SELECT * FROM drafts WHERE id = ? AND status = 'published'").get(draftId) as Draft | undefined;
   if (!d) return Response.json({ error: "この商品は公開されていません" }, { status: 404 });
+  // 数量は個数。箱入りの商品は「1箱に入れる数 × 箱の数（10箱まで）」
+  const qty = Math.min(Math.max(Math.floor(quantity ?? 1), 1), 10 * Math.max(1, d.per_box ?? 1));
 
   // 戻り先は、いま開いているページのアドレスから作る（Mac でも iPhone でも同じように戻れる）
   const origin = req.headers.get("origin") ?? new URL(req.url).origin;

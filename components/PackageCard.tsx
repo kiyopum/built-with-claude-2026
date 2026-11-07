@@ -72,7 +72,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
         <span className="text-sm">g（袋や箱ごと量る）</span>
       </label>
       <div className="space-y-1">
-        <div className="text-sm font-bold">1つの箱（袋）に、いくつまで入りますか？</div>
+        <div className="text-sm font-bold">1つの箱（袋）に、いくつ入れて送りますか？</div>
         <div className="flex gap-2 items-center flex-wrap">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
@@ -111,7 +111,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
             <span className="text-black/60">個</span>
           </label>
         </div>
-        <p className="text-xs text-black/50">2つ以上入るなら、まとめて買った人は、その数までは送料1回分で届きます。</p>
+        <p className="text-xs text-black/50">お客さまには、この数をひとまとめにした「送料込み」の値段で出ます。1個の値段が安い商品は、数を多くすると送料が目立ちません（150円 × 20個＋送料 600円 → 「20個入り 送料込み 3,600円」）。</p>
       </div>
 
       {!from ? (
@@ -128,16 +128,12 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
             {near.note && <span className="block text-xs text-black/60">{near.note}</span>}
           </div>
           <div>
-            {fullPref(from)}内なら <b className="text-carrot text-lg">送料込み {(price + near.yen).toLocaleString()}円</b>（商品 {price.toLocaleString()}円＋送料 {near.yen.toLocaleString()}円）
+            お客さまには：{perBox > 1 && <b>{perBox}個入り </b>}{fullPref(from)}内なら <b className="text-carrot text-lg">送料込み {(price * perBox + near.yen).toLocaleString()}円</b>（商品 {price.toLocaleString()}円{perBox > 1 && ` × ${perBox}個 = ${(price * perBox).toLocaleString()}円`}＋送料 {near.yen.toLocaleString()}円）
           </div>
-          {perBox > 1 && (
-            <div className="text-xs">
-              {perBox}個まとめて買うと、{fullPref(from)}内なら <b>送料込み {(price * perBox + near.yen).toLocaleString()}円</b>（商品 {(price * perBox).toLocaleString()}円＋送料は1回分 {near.yen.toLocaleString()}円）。{perBox + 1}個からは箱が2つになり、送料も2回分です。
-            </div>
-          )}
+
           {Math.min(...yens) !== Math.max(...yens) && (
             <div className="text-xs text-black/60">
-              全国では {(price + Math.min(...yens)).toLocaleString()}〜{(price + Math.max(...yens)).toLocaleString()}円（遠いほど送料が高くなります）
+              全国では {(price * perBox + Math.min(...yens)).toLocaleString()}〜{(price * perBox + Math.max(...yens)).toLocaleString()}円（遠いほど送料が高くなります）
             </div>
           )}
           <div className="text-xs text-black/50">送料の分は事業者さんに入ります（決済手数料だけ引かれます）。料金は割引なしの基本の運賃です（{RATES_AS_OF}）。</div>
