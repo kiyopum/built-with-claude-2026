@@ -7,7 +7,6 @@ import { useParams } from "next/navigation";
 import { Working } from "@/components/Working";
 import { apiFetch } from "@/lib/api";
 import { shippingForOrder, type ShippingInfo } from "@/lib/shipquote";
-import type { Bundle } from "@/lib/bundles";
 import { PREFS, fullPref, parseShipDays, shipDaysLabel } from "@/lib/shipping";
 
 type Product = {
@@ -24,7 +23,6 @@ type Product = {
   shop_intro: string | null;
   shipping: ShippingInfo;
   ship_days: string | null;
-  bundles: Bundle[];
 };
 
 // 「この商品のページができるまで（人がしたこと／AI がしたこと）」は、お客さまには見せない（2026-11-07 きよさん）。商品の管理ページ（components/MadeBy.tsx）に移した
@@ -34,7 +32,6 @@ function ProductPageInner() {
   const [p, setP] = useState<Product | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [qty, setQty] = useState(1);
-  const [bundle, setBundle] = useState<number | null>(null); // 選んだ「○個セット」の個数（null＝1個ずつ）
   // お届け先：都道府県の名前か "pickup"（事業者のところで受け取り）。送料込みの商品は、選ぶと送料込みの値段が決まる
   const [dest, setDest] = useState("");
   const [busy, setBusy] = useState(false);
@@ -67,7 +64,7 @@ function ProductPageInner() {
   async function buy() {
     setError("");
     setBusy(true);
-    const r = await apiFetch("/api/checkout", { method: "POST", body: JSON.stringify({ draftId: Number(id), quantity: qty, bundle, dest, ref: new URLSearchParams(window.location.search).get("ref") ?? "" }) });
+    const r = await apiFetch("/api/checkout", { method: "POST", body: JSON.stringify({ draftId: Number(id), quantity: qty, dest, ref: new URLSearchParams(window.location.search).get("ref") ?? "" }) });
     const j = await r.json();
     if (!r.ok || !j.url) {
       setBusy(false);
@@ -83,8 +80,6 @@ function ProductPageInner() {
   const maxQty = Math.max(10, inc ? info.perBox : 1); // 1箱に入る数が多い商品（クッキー20枚など）は、その数まで一度に買える
   // サービス（ライブ配信・講座・体験など）：送らない。買ったあと事業者さんからメールで案内が届く
   const svc = info.mode === "none";
-  const set = bundle ? p.bundles.find((b) => b.qty === bundle) : undefined;
-  const goods = set ? set.price_yen : p.price_yen * qty; // 商品代（セットなら事業者さんが決めたセットの値段）
   const ship = shippingForOrder(info, dest, qty);
   const ok = !("error" in ship);
   // 届け先を選ぶ欄を出すか（送料込みの商品か、事業者のところで受け取りができるとき）
@@ -151,44 +146,14 @@ function ProductPageInner() {
       )}
 
       <div className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        {/* まとめ買い（2026-11-07 きよさん）：事業者さんが決めた「○個セット」。送料は1回分なのでお得 */}
-        {p.bundles.length > 0 && (
-          <div className="space-y-2">
-            <div className="font-bold">買い方</div>
-            <div className="grid gap-2">
-              <button
-                className={`rounded-xl border-2 p-3 text-left ${bundle === null ? "border-carrot bg-carrot/5" : "border-black/10"}`}
-                onClick={() => setBundle(null)}
-              >
-                <b>1個ずつ</b> <span className="text-sm text-black/60">{p.price_yen.toLocaleString()}円</span>
-              </button>
-              {p.bundles.map((b) => (
-                <button
-                  key={b.qty}
-                  className={`rounded-xl border-2 p-3 text-left ${bundle === b.qty ? "border-carrot bg-carrot/5" : "border-black/10"}`}
-                  onClick={() => {
-                    setBundle(b.qty);
-                    setQty(b.qty);
-                  }}
-                >
-                  <b>{b.qty}個セット</b> <span className="text-sm">{b.price_yen.toLocaleString()}円</span>
-                  <span className="block text-xs text-black/60">
-                    1個あたり {Math.round(b.price_yen / b.qty).toLocaleString()}円（1個ずつなら {(p.price_yen * b.qty).toLocaleString()}円）
-                    {inc && b.qty <= info.perBox && "・送料は1回分"}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        <div className={`flex items-center justify-between ${bundle ? "opacity-50" : ""}`}>
-          <span className="font-bold">{svc ? "人数" : bundle ? `数量（${bundle}個セット）` : "数量"}</span>
+        <div className="flex items-center justify-between">
+          <span className="font-bold">{svc ? "人数" : "数量"}</span>
           <div className="flex items-center gap-3">
-            <button className="w-10 h-10 rounded-full border border-black/20 text-xl disabled:opacity-40" disabled={bundle !== null} onClick={() => setQty((q) => Math.max(1, q - 1))}>
+            <button className="w-10 h-10 rounded-full border border-black/20 text-xl" onClick={() => setQty((q) => Math.max(1, q - 1))}>
               −
             </button>
             <span className="w-6 text-center text-lg font-bold">{qty}</span>
-            <button className="w-10 h-10 rounded-full border border-black/20 text-xl disabled:opacity-40" disabled={bundle !== null} onClick={() => setQty((q) => Math.min(maxQty, q + 1))}>
+            <button className="w-10 h-10 rounded-full border border-black/20 text-xl" onClick={() => setQty((q) => Math.min(maxQty, q + 1))}>
               ＋
             </button>
           </div>
@@ -210,15 +175,15 @@ function ProductPageInner() {
         )}
         <div className="flex items-center justify-between text-lg">
           <span>合計{inc && ok && !ship.pickup && "（送料込み）"}</span>
-          <span className="font-bold">{ok ? `${(goods + ship.yen).toLocaleString()}円` : inc ? "お届け先を選ぶと決まります" : "送料未定"}</span>
+          <span className="font-bold">{ok ? `${(p.price_yen * qty + ship.yen).toLocaleString()}円` : inc ? "お届け先を選ぶと決まります" : "送料未定"}</span>
         </div>
         <p className="text-xs text-black/60 text-right">
           {ok
             ? svc
               ? "お申し込みのあと、事業者さんからメールでご案内が届きます（配信の URL や日時など）。"
               : ship.pickup
-              ? `商品 ${goods.toLocaleString()}円（事業者のところで受け取るので送料はかかりません）`
-              : `うち商品 ${goods.toLocaleString()}円・送料 ${ship.yen.toLocaleString()}円（${ship.method}）`
+              ? `商品 ${(p.price_yen * qty).toLocaleString()}円（事業者のところで受け取るので送料はかかりません）`
+              : `うち商品 ${(p.price_yen * qty).toLocaleString()}円・送料 ${ship.yen.toLocaleString()}円（${ship.method}）`
             : inc
               ? ""
               : "送料（事業者さんが準備中のため、まだ購入できません）"}

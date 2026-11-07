@@ -4,13 +4,12 @@
 //   （2026-11-04 物流の社長さんの助言：大きさと重さが大事・安い配達会社を自動で選ぶ・距離で料金を変える）
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BUNDLE_MAX, parseBundles } from "@/lib/bundles";
 import { PER_BOX_MAX, RATES_AS_OF, SIZE_CLASSES, cheapest, prefOf, quotesByPref, fullPref } from "@/lib/shipping";
 
 type Props = {
   draftId: number;
   price: number;
-  initial: { size_class: string | null; weight_g: number | null; per_box: number; bundles_json?: string | null };
+  initial: { size_class: string | null; weight_g: number | null; per_box: number };
   shopPrefecture: string | null;
   shopFlatYen: number | null;
   onlineLabel: boolean;
@@ -22,13 +21,6 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
   const [weight, setWeight] = useState(initial.weight_g ? String(initial.weight_g) : "");
   const [perBox, setPerBox] = useState(initial.per_box || 1);
   const [custom, setCustom] = useState((initial.per_box || 1) > 5 ? String(initial.per_box) : ""); // 6個以上の欄の文字
-  // まとめ買いの値段「○個で○円」（2026-11-07 きよさん）。文字のまま持ち、保存のときに数にする
-  const initialRows = (() => {
-    const b = parseBundles(initial.bundles_json).map((x) => ({ qty: String(x.qty), price: String(x.price_yen) }));
-    while (b.length < BUNDLE_MAX) b.push({ qty: "", price: "" });
-    return b;
-  })();
-  const [rows, setRows] = useState(initialRows);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -38,13 +30,12 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
   const quotes = from && size && w > 0 ? quotesByPref(size, w, from, { onlineLabel }) : null;
   const near = from && size && w > 0 ? cheapest(size, w, from, from, { onlineLabel }) : null;
   const yens = quotes ? Object.values(quotes).map((q) => q.yen) : [];
-  const rowsChanged = JSON.stringify(rows) !== JSON.stringify(initialRows);
-  const changed = size !== (initial.size_class ?? "") || weight !== (initial.weight_g ? String(initial.weight_g) : "") || perBox !== (initial.per_box || 1) || rowsChanged;
+  const changed = size !== (initial.size_class ?? "") || weight !== (initial.weight_g ? String(initial.weight_g) : "") || perBox !== (initial.per_box || 1);
 
   async function save() {
     setError("");
     setBusy(true);
-    const r = await apiFetch(`/api/drafts/${draftId}/package`, { method: "POST", body: JSON.stringify({ size_class: size, weight_g: w, per_box: perBox, bundles: rows.map((r) => ({ qty: Number(r.qty), price_yen: Number(r.price) })) }) });
+    const r = await apiFetch(`/api/drafts/${draftId}/package`, { method: "POST", body: JSON.stringify({ size_class: size, weight_g: w, per_box: perBox }) });
     const j = await r.json();
     setBusy(false);
     if (!r.ok) return setError(j.error);
@@ -121,52 +112,6 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
           </label>
         </div>
         <p className="text-xs text-black/50">2つ以上入るなら、まとめて買った人は、その数までは送料1回分で届きます。</p>
-      </div>
-
-      {/* まとめ買いの値段（2026-11-07 きよさん：150円のような商品は「何個でいくら」の需要がある。送料1回分と合わせてお得に） */}
-      <div className="space-y-1">
-        <div className="text-sm font-bold">まとめ買いの値段（決めるなら）</div>
-        <p className="text-xs text-black/50">「○個で○円」を事業者さんが決めます。お客さまは「1個ずつ」か「○個セット」を選べます。送料は1回分なので、セットはお得に見えます。</p>
-        {rows.map((r, i) => {
-          const q = Number(r.qty);
-          const pr = Number(r.price);
-          const okRow = q >= 2 && pr >= 1;
-          const boxes = Math.ceil(q / Math.max(1, perBox));
-          return (
-            <div key={i} className="space-y-0.5">
-              <div className="flex items-center gap-1 text-sm">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={3}
-                  placeholder="個数"
-                  value={r.qty}
-                  onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, qty: e.target.value.replace(/\D/g, "") } : x)))}
-                  className="w-16 h-11 rounded-xl border border-black/15 text-center text-base"
-                />
-                <span>個で</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={8}
-                  placeholder="値段"
-                  value={r.price}
-                  onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, price: e.target.value.replace(/\D/g, "") } : x)))}
-                  className="w-24 h-11 rounded-xl border border-black/15 text-center text-base"
-                />
-                <span>円</span>
-                {okRow && <span className="text-xs text-black/50">（1個 {Math.round(pr / q).toLocaleString()}円）</span>}
-              </div>
-              {okRow && pr > price * q && <div className="text-xs text-red-600">1個ずつ買う（{(price * q).toLocaleString()}円）より高くなっています</div>}
-              {okRow && near && (
-                <div className="text-xs text-black/60">
-                  {fullPref(from!)}内なら 送料込み <b>{(pr + near.yen * boxes).toLocaleString()}円</b>（1個あたり {Math.round((pr + near.yen * boxes) / q).toLocaleString()}円。1個ずつだと {(price + near.yen).toLocaleString()}円）
-                  {boxes > 1 && <span className="text-amber-700">　箱が{boxes}つになり、送料も{boxes}回分です</span>}
-                </div>
-              )}
-            </div>
-          );
-        })}
       </div>
 
       {!from ? (

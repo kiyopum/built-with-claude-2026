@@ -1,7 +1,6 @@
 import { getDb, type Draft, type Shop } from "@/lib/db";
 import { photoUrls } from "@/lib/files";
 import { shippingInfo } from "@/lib/shipquote";
-import { parseBundles } from "@/lib/bundles";
 
 // 公開中の商品1件（お客さま向け）。公開していないものは見せない
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -9,7 +8,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const p = getDb()
     .prepare(
       `SELECT d.id, d.name, d.description, d.price_yen, d.recommend_reason, d.target_customer, d.legal_json,
-              d.size_class, d.weight_g, d.per_box, d.bundles_json, d.kind, d.sns_json,
+              d.size_class, d.weight_g, d.per_box, d.kind, d.sns_json,
               s.name AS shop_name, s.area AS shop_area, s.shipping_yen, s.prefecture, s.pickup_ok, s.online_label, s.ship_days,
               CASE WHEN s.philosophy_status = 'approved' THEN s.philosophy_text END AS shop_intro
        FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ? AND d.status = 'published'`,
@@ -22,7 +21,5 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   delete p.legal_json;
   delete p.sns_json;
   const shipping = shippingInfo(p as Draft, p as unknown as Shop);
-  const bundles = parseBundles(p.bundles_json);
-  delete p.bundles_json;
-  return Response.json({ product: { ...p, labels, photos: photoUrls(Number(id)), shipping, bundles } });
+  return Response.json({ product: { ...p, labels, photos: photoUrls(Number(id)), shipping } });
 }
