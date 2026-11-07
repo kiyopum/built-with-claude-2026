@@ -38,6 +38,7 @@ type Data = {
     neighbor_days: Record<string, number>;
     prefecture_hint: string | null;
     has_pin: boolean;
+    visit_on: string | null;
     partner_resting?: boolean;
     seller: Seller;
     proposals: Proposal[];
@@ -244,7 +245,8 @@ function ShopPageInner() {
 
       {shop.new_orders.length > 0 && <NewOrders shopId={shop.id} orders={shop.new_orders} onSeen={load} />}
 
-      {!shop.has_pin && <SetShopPin shopId={shop.id} onDone={load} />}
+      {/* 事業者さんの暗証番号：訪問の日より前（事前登録）は出さない。訪問の日に事業者さんと決める（2026-11-07 きよさん） */}
+      {!shop.has_pin && (shop.visit_on && shop.visit_on > today() ? <PinLater visitOn={shop.visit_on} shopId={shop.id} onDone={load} /> : <SetShopPin shopId={shop.id} onDone={load} />)}
 
       <PhilosophyCard shop={shop} onChanged={load} />
 
@@ -919,6 +921,28 @@ function NewOrders({ shopId, orders, onSeen }: { shopId: number; orders: NewOrde
       <p className="text-xs text-black/60">事業者さんに知らせて、手配をお願いしてください。</p>
       <button className="w-full rounded-xl bg-carrot text-white py-3 font-bold disabled:opacity-50" disabled={busy} onClick={seen}>
         確認した（この知らせを消す）
+      </button>
+    </section>
+  );
+}
+
+// 今日の日付（YYYY-MM-DD、手元の時刻）
+function today(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// 事前登録のとき：暗証番号は訪問の日に決める。急ぐときだけ「今決める」で出す
+function PinLater({ visitOn, shopId, onDone }: { visitOn: string; shopId: number; onDone: () => void }) {
+  const [now, setNow] = useState(false);
+  if (now) return <SetShopPin shopId={shopId} onDone={onDone} />;
+  return (
+    <section className="rounded-2xl bg-black/[0.03] p-3 text-sm flex justify-between items-center gap-2">
+      <span>
+        📅 訪問 {Number(visitOn.slice(5, 7))}月{Number(visitOn.slice(8, 10))}日。事業者さんの暗証番号は、その日に事業者さんと一緒に決めます。
+      </span>
+      <button className="shrink-0 text-xs text-leaf underline" onClick={() => setNow(true)}>
+        今決める
       </button>
     </section>
   );
