@@ -47,7 +47,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
   try {
     const r = await readShopWebsite(shop, url.toString());
-    const notes = `${r.notes}\n\n（読んだページ：${r.pages.join(" ／ ")}）`;
+    // 読んだページの一覧。日本語のページ名は %e9… のままだと長くて読めないので、元の文字に戻す
+    const shown = r.pages.map((u) => {
+      try {
+        return decodeURI(u);
+      } catch {
+        return u;
+      }
+    });
+    const notes = `${r.notes}\n\n（読んだページ：${shown.join(" ／ ")}）`;
     db.prepare("UPDATE shops SET website_url = ?, website_notes = ?, prep_questions = NULL WHERE id = ?").run(url.toString(), notes, shop.id);
     return Response.json({ ok: true, website_url: url.toString(), website_notes: notes });
   } catch (e) {

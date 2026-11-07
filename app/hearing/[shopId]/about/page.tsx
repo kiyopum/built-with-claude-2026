@@ -128,7 +128,7 @@ function AboutInner() {
             <button className="text-sm text-leaf underline" onClick={() => setShowNotes(!showNotes)}>
               {showNotes ? "まとめを閉じる" : "Claude のまとめを見る"}
             </button>
-            {showNotes && <pre className="whitespace-pre-wrap text-xs leading-relaxed bg-black/[0.03] rounded-xl p-3 font-sans">{notes}</pre>}
+            {showNotes && <pre className="whitespace-pre-wrap break-all text-xs leading-relaxed bg-black/[0.03] rounded-xl p-3 font-sans">{notes}</pre>}
             <button className="block text-xs text-black/50 underline" onClick={clearWebsite} disabled={busy !== ""}>
               ホームページを使わない（読んだ内容を消す）
             </button>
