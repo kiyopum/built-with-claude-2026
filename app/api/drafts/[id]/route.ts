@@ -91,7 +91,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       if (!next.name || !next.description || !next.price_yen) {
         return Response.json({ error: "商品名・紹介文・価格は空にできません" }, { status: 400 });
       }
-      const legal = await recheckLegal(c, next, loadPhotos(d.id));
+      const previous = d.legal_json ? (JSON.parse(d.legal_json) as Legal) : null;
+      const legal = await recheckLegal(c, next, loadPhotos(d.id), previous);
       db.prepare(
         `UPDATE drafts SET name = ?, description = ?, price_yen = ?, recommend_reason = ?, target_customer = ?, legal_json = ?,
          status = 'draft', revision_note = ?, stripe_product_id = NULL, stripe_price_id = NULL,

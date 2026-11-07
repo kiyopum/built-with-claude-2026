@@ -548,17 +548,42 @@ const RECHECK_SYSTEM = `あなたは、地域の小さな事業者の商品ペ�
 商品ページの文は書き換えません。判定（legal）だけを返します。事業者さんが書いた表現に問題があれば、どの言葉が、なぜ、どう直せばよいかを具体的に書きます。
 手で書き足された事実（産地・内容量・日持ちなど）は、事業者さんに聞いて書いたものとして信じてください。ヒアリングに無いことは問題にしません。
 
+やり直しの判定で、とくに守ること（2026-11-07 きよさん：「インタビューで言っているのに、再度チェックすると要確認が出て、文に入れ込まないと通らない」）:
+- ヒアリング（hearing）やラベルの読み取り（label_read）で分かっていることは、もう分かっている。商品ページの文に書いていなくても「確かめてください」（missing）にしない。表示が必要な項目は label_items に入れればよく、紹介文に書き込ませない
+- 前回の判定（previous_legal）があるときは、それを土台にする。前回 ok だった項目は、文が変わっていなければ ok のまま。前回なかった ng・fix・missing を新しく足すのは、文に新しく問題の言葉が入ったとき（quote で示せるとき）だけ
+- 判定を厳しくする方向にぶれない。迷ったら前回と同じ
+
 ${LEGAL_RULES}`;
 
-export async function recheckLegal(c: ProductContext, current: DraftFields, photos: Photo[]): Promise<Legal> {
+export async function recheckLegal(c: ProductContext, current: DraftFields, photos: Photo[], previous?: Legal | null): Promise<Legal> {
+  const prev = previous ? `\n\n<previous_legal>\n${JSON.stringify({ verdict: previous.verdict, items: previous.items.map(({ status, topic, detail }) => ({ status, topic, detail })) }, null, 2)}\n</previous_legal>` : "";
   const legal = await ask(LegalSchema, RECHECK_SYSTEM, [
     ...imageBlocks(photos),
     {
       type: "text",
-      text: `${contextBlock(c)}\n\n<current_draft>\n${JSON.stringify(current, null, 2)}\n</current_draft>\n\nこの商品ページを法律の面から判定してください。`,
+      text: `${contextBlock(c)}${prev}\n\n<current_draft>\n${JSON.stringify(current, null, 2)}\n</current_draft>\n\nこの商品ページを法律の面から判定してください。`,
     },
   ]);
-  return keepRealQuotes(keepKnownSources(legal, c.research), current);
+  return stabilizeLegal(keepRealQuotes(keepKnownSources(legal, c.research), current), previous);
+}
+
+// やり直しの判定を、前回より厳しくしない（コードでの保険。2026-11-07 きよさん）
+//   前回なかった ng・fix・missing で、文の中の言葉（quote）を示せないものは、新しい問題ではなく「ぶれ」とみなして info に下げる。
+//   前回あった同じ話題（topic）の ng・fix・missing と、文に問題の言葉がある（quote がある）ものは残す
+function stabilizeLegal(legal: Legal, previous?: Legal | null): Legal {
+  if (!previous) return legal;
+  const prevBlockers = previous.items.filter((i) => i.status === "ng" || i.status === "fix" || i.status === "missing");
+  const sameTopic = (a: string, b: string) => a === b || a.includes(b) || b.includes(a);
+  const items = legal.items.map((it) => {
+    if (it.status !== "ng" && it.status !== "fix" && it.status !== "missing") return it;
+    if (it.quote) return it; // 文の中に問題の言葉がある＝本当の問題
+    if (prevBlockers.some((p) => sameTopic(p.topic, it.topic))) return it; // 前回からある
+    return { ...it, status: "info" as const, detail: `${it.detail}（前回の判定にはなかった項目です。参考として残します）` };
+  });
+  const ng = items.some((i) => i.status === "ng");
+  const fixOrMissing = items.some((i) => i.status === "fix" || i.status === "missing");
+  const verdict: Legal["verdict"] = ng ? "このままでは販売できない" : fixOrMissing ? legal.verdict === "このままでは販売できない" ? "直せば販売できる" : legal.verdict : "販売できる";
+  return { ...legal, items, verdict };
 }
 
 // ---------- 5) 名刺を読む（販売者の情報。読めないところは空のまま。事業者さん・パートナーが手で直す前提） ----------
