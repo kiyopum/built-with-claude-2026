@@ -284,7 +284,10 @@ function open(): DatabaseSync {
   //   users.email：担当パートナーに送る先（管理画面で入れる）。orders.partner_seen_at：パートナーが画面で「確認した」を押した時刻。orders.notice_json：だれにメールしたかの記録
   if (!ucols.includes("email")) db.exec("ALTER TABLE users ADD COLUMN email TEXT");
   const ocols2 = (db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name);
-  for (const c of ["partner_seen_at", "notice_json"]) if (!ocols2.includes(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} TEXT`);
+  for (const c of ["partner_seen_at", "notice_json", "owner_seen_at"]) if (!ocols2.includes(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} TEXT`);
+  // 事業者さん専用ページ（2026-11-07 きよさん）：メールのリンク（長い合言葉）＋事業者さんの暗証番号で、注文と届け先を自分で見る。ログインなし
+  const scols2 = (db.prepare("PRAGMA table_info(shops)").all() as { name: string }[]).map((c) => c.name);
+  if (!scols2.includes("owner_token")) db.exec("ALTER TABLE shops ADD COLUMN owner_token TEXT");
   db.exec("INSERT OR IGNORE INTO settings (key, value) VALUES ('notify_email', '')"); // YMM が売れた知らせを受けるアドレス（管理画面で入れる。推測で埋めない）
   if (!scols.includes("cover_partner_id")) db.exec("ALTER TABLE shops ADD COLUMN cover_partner_id INTEGER REFERENCES users(id)");
 
@@ -405,3 +408,15 @@ export function letterTokenOf(orderId: number): string {
   db.prepare("UPDATE orders SET letter_token = ? WHERE id = ?").run(t, orderId);
   return t;
 }
+
+// 事業者さん専用ページの合言葉（事業者ごと）。なければ作る。URL に入るので、推測できない長さにする
+export function ownerTokenOf(shopId: number): string {
+  const db = getDb();
+  const row = db.prepare("SELECT owner_token FROM shops WHERE id = ?").get(shopId) as { owner_token: string | null } | undefined;
+  if (!row) throw new Error("事業者が見つかりません");
+  if (row.owner_token) return row.owner_token;
+  const t = randomBytes(18).toString("base64url");
+  db.prepare("UPDATE shops SET owner_token = ? WHERE id = ?").run(t, shopId);
+  return t;
+}
+

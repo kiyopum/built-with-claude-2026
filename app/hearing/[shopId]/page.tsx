@@ -45,6 +45,7 @@ type Data = {
     can_propose: boolean;
     split: { goods: number; service: number; share: number; fee: number };
     new_orders: NewOrder[];
+    owner_path: string;
   };
   products: {
     id: number;
@@ -294,7 +295,7 @@ function ShopPageInner() {
         ))}
       </section>
 
-      <OrdersCard shopId={shop.id} hasPin={shop.has_pin} shipDays={shop.ship_days} />
+      <OrdersCard shopId={shop.id} hasPin={shop.has_pin} shipDays={shop.ship_days} ownerPath={shop.owner_path} />
 
       <Link href={`/hearing/${shop.id}/book`} className="block rounded-2xl bg-white p-4 shadow-sm border border-black/5">
         <div className="font-bold">📖 事業者の言葉の本</div>
@@ -752,14 +753,36 @@ function LetterThread({ o, onReply }: { o: Order; onReply: (letterId: number, te
   );
 }
 
-function OrdersCard({ shopId, hasPin, shipDays }: { shopId: number; hasPin: boolean; shipDays: number[] }) {
+function OrdersCard({ shopId, hasPin, shipDays, ownerPath }: { shopId: number; hasPin: boolean; shipDays: number[]; ownerPath: string }) {
   const [orders, setOrders] = useState<Order[] | null>(null);
+  const [copied, setCopied] = useState(false);
   // 開いている間だけ、お返事に使う暗証番号を覚えておく（閉じたら消える）
   const [pin, setPin] = useState("");
   if (!hasPin) return null;
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
       <div className="text-sm font-bold text-leaf">注文と届け先（事業者さん用）</div>
+      {/* 事業者さん専用ページ（2026-11-07 きよさん）：事業者さんが自分のスマホで、暗証番号を入れて注文を見る。売れたときのメールにも同じリンクが入る */}
+      <div className="rounded-xl bg-leaf/10 p-3 text-xs space-y-2">
+        <div>
+          <b>事業者さん専用ページ</b>：事業者さんが自分のスマホで、暗証番号を入れて注文と届け先を見られます。売れたときのメールにも、このリンクが入ります。
+        </div>
+        <button
+          className="w-full rounded-lg bg-white border border-leaf text-leaf py-2 font-bold"
+          onClick={async () => {
+            const url = `${window.location.origin}${ownerPath}`;
+            try {
+              await navigator.clipboard.writeText(url);
+              setCopied(true);
+            } catch {
+              window.prompt("このリンクを事業者さんに渡してください", url);
+            }
+          }}
+        >
+          {copied ? "✅ コピーしました（LINE などで事業者さんに送ってください）" : "事業者さん専用ページのリンクをコピーする"}
+        </button>
+        <div className="text-black/50">お客さまの住所が見えるリンクなので、事業者さん以外には送らないでください。</div>
+      </div>
       {orders === null ? (
         <OwnerApprove
           button="事業者さん：注文を見る"

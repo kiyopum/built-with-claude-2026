@@ -1,7 +1,7 @@
 // 売れたときの知らせ（2026-11-07 きよさん：手配があるので、アプリとメールで必ず知らせる。セミナーなどのサービスも同じ）
 //   送る先：事業者さん（販売者情報のメール）・担当パートナー（users.email）・YMM（settings.notify_email）。
 //   メールが送れなくても注文の記録は壊さない。だれに送れたかは orders.notice_json に残し、画面に出す。
-import { getDb, getText, type Draft, type Shop } from "@/lib/db";
+import { getDb, getText, ownerTokenOf, type Draft, type Shop } from "@/lib/db";
 import { sendMail, mailReady } from "@/lib/mail";
 import { nextShipDate, parseShipDays, WEEKDAYS } from "@/lib/shipping";
 
@@ -44,7 +44,7 @@ export async function notifyOrder(orderId: number, origin: string): Promise<Noti
     }
     if (o.ship_warning) lines.push(`⚠ ${o.ship_warning}`);
   }
-  lines.push("", `注文の一覧（事業者さんの暗証番号で開きます）：${origin}/hearing/${s.id}`, "", "YaoBiz（株式会社山崎メディアミックス）");
+  lines.push("", `事業者さん専用ページ（注文と届け先。事業者さんの暗証番号で開きます）：${origin}/o/${ownerTokenOf(s.id)}`, "このリンクは、ほかの人に知らせないでください。", "", "YaoBiz（株式会社山崎メディアミックス）");
   const subject = `【YaoBiz】${service ? "申し込み" : "注文"}が入りました：${d.name}`;
   const text = lines.filter((l) => l !== undefined).join("\n");
 

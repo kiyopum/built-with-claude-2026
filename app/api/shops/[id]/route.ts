@@ -1,6 +1,6 @@
 import { parseShipDays, prefFromAddress } from "@/lib/shipping";
 import { guardShop } from "@/lib/auth";
-import { getDb, getSetting, SELLER_KEYS, type Shop, REVISE_LIMIT } from "@/lib/db";
+import { getDb, getSetting, ownerTokenOf, SELLER_KEYS, type Shop, REVISE_LIMIT } from "@/lib/db";
 import { thisMonth } from "@/lib/checkin";
 import { proposalsOf } from "@/lib/proposals";
 import type { Notice } from "@/lib/notify";
@@ -58,6 +58,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       // 都道府県の初期値の候補（住所の書き出しから。決めるのは人）
       prefecture_hint: prefFromAddress(shop.seller_address),
       has_pin: !!shop.release_pin_hash,
+      owner_path: `/o/${ownerTokenOf(shop.id)}`, // 事業者さん専用ページ（パートナーが事業者さんに渡す）
       // 次の商品の提案（Claude が出した案）。材料（事業者の話か商品）ができてから出せる
       proposals: proposalsOf(shop),
       proposals_left: Math.max(0, REVISE_LIMIT - (shop.proposals_count ?? 0)),
