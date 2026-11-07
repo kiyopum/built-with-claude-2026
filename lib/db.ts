@@ -280,6 +280,12 @@ function open(): DatabaseSync {
   //   career_json：わたしの歩み（できるようになったこと）を Claude がまとめたもの
   const ucols = (db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name);
   for (const c of ["rest_month", "career_json", "career_at"]) if (!ucols.includes(c)) db.exec(`ALTER TABLE users ADD COLUMN ${c} TEXT`);
+  // 売れたときの知らせ（2026-11-07 きよさん：手配があるので、アプリとメールで必ず知らせる。サービスも同じ）
+  //   users.email：担当パートナーに送る先（管理画面で入れる）。orders.partner_seen_at：パートナーが画面で「確認した」を押した時刻。orders.notice_json：だれにメールしたかの記録
+  if (!ucols.includes("email")) db.exec("ALTER TABLE users ADD COLUMN email TEXT");
+  const ocols2 = (db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name);
+  for (const c of ["partner_seen_at", "notice_json"]) if (!ocols2.includes(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} TEXT`);
+  db.exec("INSERT OR IGNORE INTO settings (key, value) VALUES ('notify_email', '')"); // YMM が売れた知らせを受けるアドレス（管理画面で入れる。推測で埋めない）
   if (!scols.includes("cover_partner_id")) db.exec("ALTER TABLE shops ADD COLUMN cover_partner_id INTEGER REFERENCES users(id)");
 
   // 次の商品の提案（2026-11-05 きよさん：物販の1割は入り口。パートナーが、送らない商品を事業者さんに提案できるように）
@@ -373,7 +379,7 @@ export type Draft = {
   revise_count: number;
 };
 
-export function getText(key: "payment_terms"): string {
+export function getText(key: "payment_terms" | "notify_email"): string {
   const row = getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;
   return row?.value ?? "";
 }

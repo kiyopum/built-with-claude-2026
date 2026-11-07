@@ -11,10 +11,11 @@ export async function GET() {
   const db = getDb();
   const shops = (
     u.role === "admin"
-      ? db.prepare("SELECT id, name, category, area, visit_on, prep_at IS NOT NULL AS prepared FROM shops ORDER BY id DESC").all()
+      ? db.prepare("SELECT id, name, category, area, visit_on, prep_at IS NOT NULL AS prepared, (SELECT COUNT(*) FROM orders o WHERE o.shop_id = shops.id AND o.partner_seen_at IS NULL) AS new_orders FROM shops ORDER BY id DESC").all()
       : db
           .prepare(
-            `SELECT s.id, s.name, s.category, s.area, s.visit_on, s.prep_at IS NOT NULL AS prepared, COALESCE(s.partner_id, 0) != ? AS covering FROM shops s LEFT JOIN users p ON p.id = s.partner_id
+            `SELECT s.id, s.name, s.category, s.area, s.visit_on, s.prep_at IS NOT NULL AS prepared, COALESCE(s.partner_id, 0) != ? AS covering,
+                    (SELECT COUNT(*) FROM orders o WHERE o.shop_id = s.id AND o.partner_seen_at IS NULL) AS new_orders FROM shops s LEFT JOIN users p ON p.id = s.partner_id
              WHERE s.partner_id = ? OR (s.cover_partner_id = ? AND p.rest_month = ?) ORDER BY s.id DESC`,
           )
           .all(u.id, u.id, u.id, thisMonth())

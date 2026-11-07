@@ -10,11 +10,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
-type User = { id: number; name: string; role: string; active: number; code: string; resting: boolean };
+type User = { id: number; name: string; role: string; active: number; code: string; resting: boolean; email: string | null };
 type Shop = { id: number; name: string; category: string; partner_id: number | null; cover_partner_id: number | null; shipping_yen: number | null; has_pin: boolean; published: number; waiting: number };
 type Blocked = { id: number; shop_id: number; name: string; shop_name: string; partner_name: string | null; updated_at: string; reasons: string[] };
 type Order = { id: number; created_at: string; amount_yen: number; shipping_yen: number; ship_name: string | null; ship_address: string | null; ship_method: string | null; ship_warning: string | null; customer_email: string | null; product_name: string; shop_name: string };
-type Data = { me: { id: number }; users: User[]; shops: Shop[]; blocked: Blocked[]; orders: Order[]; payment_terms: string; nudge_days: number };
+type Data = { me: { id: number }; users: User[]; shops: Shop[]; blocked: Blocked[]; orders: Order[]; payment_terms: string; nudge_days: number; notify_email: string; mail_ready: boolean };
 
 const card = "rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3";
 const input = "w-full rounded-xl border border-black/15 p-2.5 text-base";
@@ -162,6 +162,7 @@ export default function AdminPage() {
 
       <PaymentTerms initial={data.payment_terms} act={act} />
       <NudgeDays initial={data.nudge_days} act={act} />
+      <NotifyEmail initial={data.notify_email} ready={data.mail_ready} act={act} />
 
       {/* 注文と届け先 */}
       <section className={card}>
@@ -239,6 +240,7 @@ function UsersCard({ users, meId, act }: { users: User[]; meId: number; act: (b:
                 )}
               </span>
             </div>
+            {u.role !== "admin" && <UserEmail user={u} act={act} />}
             {resetFor === u.id && (
               <div className="flex gap-2">
                 <input className={input} inputMode="numeric" maxLength={4} placeholder="新しい数字4けた" value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))} />
@@ -439,6 +441,39 @@ function DeleteShop({ shop, act }: { shop: Shop; act: (body: Record<string, unkn
         </button>
       </div>
     </div>
+  );
+}
+
+// ---------- 売れたときの知らせ（2026-11-07 きよさん：手配があるので、アプリとメールで必ず知らせる） ----------
+
+function UserEmail({ user, act }: { user: User; act: (b: Record<string, unknown>, done?: string) => Promise<boolean> }) {
+  const [email, setEmail] = useState(user.email ?? "");
+  const same = email.trim() === (user.email ?? "");
+  return (
+    <div className="flex gap-2 items-center">
+      <span className="text-xs shrink-0">✉️ 売れた知らせ</span>
+      <input className="flex-1 rounded-lg border border-black/15 p-2 text-sm" type="email" placeholder="メールアドレス（空なら送らない）" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <button className="rounded-lg bg-leaf text-white px-3 py-2 text-sm font-bold disabled:opacity-40 shrink-0" disabled={same} onClick={() => act({ action: "setUserEmail", id: user.id, email }, `${user.name} さんの知らせ先を保存しました`)}>
+        保存
+      </button>
+    </div>
+  );
+}
+
+function NotifyEmail({ initial, ready, act }: { initial: string; ready: boolean; act: (b: Record<string, unknown>, done?: string) => Promise<boolean> }) {
+  const [email, setEmail] = useState(initial);
+  return (
+    <section className={card}>
+      <div className="font-bold">✉️ 売れたときの知らせ（YMM の受け取り先）</div>
+      <p className="text-xs text-black/50">
+        商品やサービスが売れると、事業者さん（販売者情報のメール）・担当パートナー（上の欄）・ここのアドレスにメールが届き、事業者のページにも「新しい注文」が出ます。
+      </p>
+      {!ready && <p className="rounded-xl bg-amber-50 text-amber-800 p-3 text-xs">メールを送る設定（SMTP_URL・MAIL_FROM）がまだサーバーにありません。設定が入るまで、知らせは画面だけです。</p>}
+      <input className={input} type="email" placeholder="メールアドレス" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-40" disabled={email.trim() === initial} onClick={() => act({ action: "setNotifyEmail", email }, "知らせ先を保存しました")}>
+        保存する
+      </button>
+    </section>
   );
 }
 

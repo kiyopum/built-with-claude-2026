@@ -18,6 +18,9 @@ import { gyojiOf, gyojiWhen, upcomingGyoji } from "@/lib/events";
 import { sceneOf } from "@/lib/scenes";
 import { PREFS, WEEKDAYS, fullPref, nextShipDate, shipDaysLabel } from "@/lib/shipping";
 import { splitAmount } from "@/lib/split";
+import type { Notice } from "@/lib/notify";
+
+type NewOrder = { id: number; quantity: number; amount_yen: number; created_at: string; product_name: string; kind: string; notice: Notice | null };
 
 type Data = {
   shop: {
@@ -41,6 +44,7 @@ type Data = {
     proposals_left: number;
     can_propose: boolean;
     split: { goods: number; service: number; share: number; fee: number };
+    new_orders: NewOrder[];
   };
   products: {
     id: number;
@@ -236,6 +240,8 @@ function ShopPageInner() {
         {shop.partner_resting && <p className="mt-1 rounded-lg bg-leaf/10 p-2 text-xs">🌿 担当の方は今月お休み中です。そのあいだ、みんなで見守っています。</p>}
         <p className="text-sm text-black/60">{shop.category}</p>
       </div>
+
+      {shop.new_orders.length > 0 && <NewOrders shopId={shop.id} orders={shop.new_orders} onSeen={load} />}
 
       {!shop.has_pin && <SetShopPin shopId={shop.id} onDone={load} />}
 
@@ -840,3 +846,58 @@ export default function ShopPage() {
     </Suspense>
   );
 }
+
+// ---------- 新しい注文の知らせ（2026-11-07 きよさん：手配があるので、アプリとメールで必ず知らせる） ----------
+//   届け先はここに出さない（暗証番号で開く「注文と届け先」で見る）。メールをだれに送れたかも出す
+function NewOrders({ shopId, orders, onSeen }: { shopId: number; orders: NewOrder[]; onSeen: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const yen = (n: number) => `${n.toLocaleString()}円`;
+  async function seen() {
+    setBusy(true);
+    await apiFetch(`/api/shops/${shopId}/orders/seen`, { method: "POST" });
+    setBusy(false);
+    onSeen();
+  }
+  return (
+    <section className="rounded-2xl bg-carrot/10 border-2 border-carrot p-4 space-y-3">
+      <div className="font-bold text-carrot">🛒 新しい注文が {orders.length} 件あります</div>
+      <ul className="space-y-2 text-sm">
+        {orders.map((o) => (
+          <li key={o.id} className="rounded-xl bg-white p-3 space-y-1">
+            <div>
+              <b>{o.product_name}</b> × {o.quantity}　{yen(o.amount_yen)}
+            </div>
+            <div className="text-xs text-black/50">{o.created_at}</div>
+            {o.kind === "service" ? (
+              <div className="text-xs text-black/70">サービスです。申し込んだ方に、事業者さんから案内のメールを送ってもらってください（送る先は下の「注文と届け先」）。</div>
+            ) : (
+              <div className="text-xs text-black/70">届け先は下の「注文と届け先」（事業者さんの暗証番号）で見られます。</div>
+            )}
+            {o.notice && (
+              <div className="text-xs">
+                {o.notice.skipped ? (
+                  <span className="text-amber-700">✉️ {o.notice.skipped}</span>
+                ) : (
+                  <span>
+                    ✉️ メール：
+                    {o.notice.sent.map((x) => (
+                      <span key={x.who} className={x.ok ? "text-leaf" : "text-red-600"}>
+                        {" "}
+                        {x.who} {x.ok ? "送りました" : `送れませんでした（${x.error ?? ""}）`}
+                      </span>
+                    ))}
+                  </span>
+                )}
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-black/60">事業者さんに知らせて、手配をお願いしてください。</p>
+      <button className="w-full rounded-xl bg-carrot text-white py-3 font-bold disabled:opacity-50" disabled={busy} onClick={seen}>
+        確認した（この知らせを消す）
+      </button>
+    </section>
+  );
+}
+

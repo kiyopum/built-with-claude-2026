@@ -3,6 +3,7 @@ import { guardShop } from "@/lib/auth";
 import { getDb, getSetting, SELLER_KEYS, type Shop, REVISE_LIMIT } from "@/lib/db";
 import { thisMonth } from "@/lib/checkin";
 import { proposalsOf } from "@/lib/proposals";
+import type { Notice } from "@/lib/notify";
 
 // 事業者のページ用：事業者の情報（理念）と商品の一覧
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -66,6 +67,17 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       // 担当がお休み中か（理由は持たない・出さない）
       partner_resting: shop.partner_id != null && (db.prepare("SELECT rest_month FROM users WHERE id = ?").get(shop.partner_id) as { rest_month: string | null } | undefined)?.rest_month === thisMonth(),
       seller: Object.fromEntries(SELLER_KEYS.map((k) => [k, shop[k] ?? ""])),
+      // 新しい注文（パートナーがまだ「確認した」を押していないもの）。届け先は出さない（暗証番号で開く「注文と届け先」で見る）
+      new_orders: db
+        .prepare(
+          `SELECT o.id, o.quantity, o.amount_yen, o.created_at, o.notice_json, d.name AS product_name, d.kind
+           FROM orders o JOIN drafts d ON d.id = o.draft_id WHERE o.shop_id = ? AND o.partner_seen_at IS NULL ORDER BY o.id DESC`,
+        )
+        .all(shop.id)
+        .map((r) => {
+          const { notice_json, ...o } = r as { notice_json: string | null; id: number; quantity: number; amount_yen: number; created_at: string; product_name: string; kind: string };
+          return { ...o, notice: notice_json ? (JSON.parse(notice_json) as Notice) : null };
+        }),
     },
     products,
   });

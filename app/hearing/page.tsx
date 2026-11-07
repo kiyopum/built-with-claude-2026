@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
-type Shop = { id: number; name: string; category: string; area: string; covering?: number; visit_on?: string | null; prepared?: number };
+type Shop = { id: number; name: string; category: string; area: string; covering?: number; visit_on?: string | null; prepared?: number; new_orders?: number };
 
 export default function HearingTop() {
   const router = useRouter();
@@ -40,7 +40,10 @@ export default function HearingTop() {
       <div className="grid gap-3">
         {shops?.map((s) => (
           <Link key={s.id} href={`/hearing/${s.id}`} className="block rounded-2xl bg-white p-4 shadow-sm border border-black/5">
-            <div className="font-bold">{s.name}</div>
+            <div className="font-bold">
+              {s.name}
+              {!!s.new_orders && <span className="ml-2 rounded-full bg-carrot text-white text-xs px-2 py-0.5">🛒 新しい注文 {s.new_orders}</span>}
+            </div>
             {!!s.covering && <div className="text-xs text-leaf font-bold">🌿 見守り中（担当の方がお休みの間）</div>}
             <div className="text-sm text-black/60">{s.category}</div>
             {(s.visit_on || !!s.prepared) && (

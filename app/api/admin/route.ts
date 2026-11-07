@@ -4,6 +4,7 @@ import { thisMonth } from "@/lib/checkin";
 import { codeOf, hashPin, isPin, requireAdmin } from "@/lib/auth";
 import { ITEM_RATE_LIMIT } from "@/lib/split";
 import { removeShopFiles } from "@/lib/files";
+import { mailReady } from "@/lib/mail";
 
 // YMM の管理画面：人・事業者の割り当て・止まっている商品・注文
 export async function GET() {
@@ -11,7 +12,7 @@ export async function GET() {
   const a = await requireAdmin();
   if (a instanceof Response) return a;
   const db = getDb();
-  const users = (db.prepare("SELECT id, name, role, active, created_at, rest_month FROM users ORDER BY role = 'admin' DESC, id").all() as { id: number; rest_month: string | null }[]).map(({ rest_month, ...u }) => ({
+  const users = (db.prepare("SELECT id, name, role, active, created_at, rest_month, email FROM users ORDER BY role = 'admin' DESC, id").all() as { id: number; rest_month: string | null }[]).map(({ rest_month, ...u }) => ({
     ...u,
     code: codeOf(u.id),
     resting: rest_month === thisMonth(),
@@ -47,7 +48,7 @@ export async function GET() {
        FROM orders o JOIN drafts d ON d.id = o.draft_id JOIN shops s ON s.id = o.shop_id ORDER BY o.id DESC LIMIT 50`,
     )
     .all();
-  return Response.json({ me: a, users, shops, blocked, orders, payment_terms: getText("payment_terms"), nudge_days: getSetting("nudge_days") });
+  return Response.json({ me: a, users, shops, blocked, orders, payment_terms: getText("payment_terms"), nudge_days: getSetting("nudge_days"), notify_email: getText("notify_email"), mail_ready: mailReady() });
 }
 
 export async function POST(req: Request) {
@@ -139,6 +140,21 @@ export async function POST(req: Request) {
       db.prepare("UPDATE settings SET value = ? WHERE key = 'nudge_days'").run(String(n));
       return Response.json({ ok: true });
     }
+    case "setUserEmail": {
+      // 売れたときの知らせを送る先（パートナーごと）。空にすると送らない
+      const email = String(b.email ?? "").trim();
+      if (email && !isEmail(email)) return bad("メールアドレスの形で入れてください");
+      if (!db.prepare("SELECT 1 FROM users WHERE id = ?").get(Number(b.id))) return bad("その人はいません");
+      db.prepare("UPDATE users SET email = ? WHERE id = ?").run(email || null, Number(b.id));
+      return Response.json({ ok: true });
+    }
+    case "setNotifyEmail": {
+      // YMM が売れた知らせを受けるアドレス
+      const email = String(b.email ?? "").trim();
+      if (email && !isEmail(email)) return bad("メールアドレスの形で入れてください");
+      db.prepare("UPDATE settings SET value = ? WHERE key = 'notify_email'").run(email);
+      return Response.json({ ok: true });
+    }
     case "setPaymentTerms": {
       const text = String(b.text ?? "").trim();
       if (text.length > 200) return bad("200字までにしてください");
@@ -147,4 +163,8 @@ export async function POST(req: Request) {
     }
   }
   return bad("不明な操作です");
+}
+
+function isEmail(v: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && v.length <= 254;
 }

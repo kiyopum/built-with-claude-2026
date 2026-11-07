@@ -35,7 +35,7 @@ export async function ensureStripePrice(d: Draft): Promise<string> {
 }
 
 // 支払いが終わった決済を、注文として1回だけ記録する（Webhook と完了ページの両方から呼ばれても二重にならない）
-export function recordOrder(session: Stripe.Checkout.Session): { created: boolean } {
+export function recordOrder(session: Stripe.Checkout.Session): { created: boolean; orderId?: number } {
   if (session.payment_status !== "paid") return { created: false };
   const db = getDb();
   const exists = db.prepare("SELECT 1 FROM orders WHERE stripe_session_id = ?").get(session.id);
@@ -76,7 +76,7 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
   const actual = prefOf(a?.state);
   const warning = chosen && a?.state && actual !== chosen ? `届け先を「${fullPref(chosen)}」で選びましたが、住所は「${a.state}」です。送料が違う可能性があります` : null;
 
-  db.prepare(
+  const ins = db.prepare(
     `INSERT OR IGNORE INTO orders
      (stripe_session_id, draft_id, shop_id, quantity, amount_yen, owner_yen, ymm_yen, partner_yen, fee_yen, ymm_rate, partner_share, ref,
       shipping_yen, shipping_fee_yen, ship_name, ship_address, owner_partner_id, owner_partner_yen, referrer_id, referrer_yen,
@@ -88,7 +88,8 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
     shipping, shippingFee, ship?.name ?? session.customer_details?.name ?? session.customer_details?.email ?? null, address, p.ownerPartnerId, p.ownerPartnerYen, p.referrerId, p.referrerYen,
     chosen, service ? "メールでご案内" : session.metadata?.ship_method || null, pickup ? 1 : 0, warning, session.customer_details?.email ?? null,
   );
-  return { created: true };
+  if (!ins.changes) return { created: false }; // 同時に2回呼ばれたときの保険（UNIQUE で2回目は入らない）
+  return { created: true, orderId: Number(ins.lastInsertRowid) };
 }
 
 // 決済の番号から、ありがとうの往復便の合言葉を出す（決済完了ページで「事業者さんに一言」に使う）

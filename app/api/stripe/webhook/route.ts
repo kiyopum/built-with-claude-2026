@@ -1,4 +1,5 @@
 import { stripe, recordOrder } from "@/lib/stripe";
+import { notifyOrder } from "@/lib/notify";
 
 // Stripe からの「決済が終わった」知らせ（Webhook）。署名を確かめてから注文を記録する
 export async function POST(req: Request) {
@@ -14,7 +15,9 @@ export async function POST(req: Request) {
   }
   if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
     try {
-      recordOrder(event.data.object);
+      const r = recordOrder(event.data.object);
+      // 売れた知らせ（メールが送れなくても注文は記録済み。ここで失敗しても 200 を返す＝Stripe に再送させない）
+      if (r.created && r.orderId) await notifyOrder(r.orderId, new URL(req.url).origin).catch((e) => console.error(e));
     } catch (e) {
       console.error(e);
       return Response.json({ error: "注文を記録できませんでした" }, { status: 500 });
