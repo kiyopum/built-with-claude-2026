@@ -130,6 +130,11 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
           <div>
             {fullPref(from)}内なら <b className="text-carrot text-lg">送料込み {(price + near.yen).toLocaleString()}円</b>（商品 {price.toLocaleString()}円＋送料 {near.yen.toLocaleString()}円）
           </div>
+          {perBox > 1 && (
+            <div className="text-xs">
+              {perBox}個まとめて買うと、{fullPref(from)}内なら <b>送料込み {(price * perBox + near.yen).toLocaleString()}円</b>（商品 {(price * perBox).toLocaleString()}円＋送料は1回分 {near.yen.toLocaleString()}円）。{perBox + 1}個からは箱が2つになり、送料も2回分です。
+            </div>
+          )}
           {Math.min(...yens) !== Math.max(...yens) && (
             <div className="text-xs text-black/60">
               全国では {(price + Math.min(...yens)).toLocaleString()}〜{(price + Math.max(...yens)).toLocaleString()}円（遠いほど送料が高くなります）

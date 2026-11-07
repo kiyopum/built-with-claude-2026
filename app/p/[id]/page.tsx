@@ -77,6 +77,7 @@ function ProductPageInner() {
   if (!p) return <p className="text-black/50">読み込み中…</p>;
   const info = p.shipping;
   const inc = info.mode === "included";
+  const maxQty = Math.max(10, inc ? info.perBox : 1); // 1箱に入る数が多い商品（クッキー20枚など）は、その数まで一度に買える
   // サービス（ライブ配信・講座・体験など）：送らない。買ったあと事業者さんからメールで案内が届く
   const svc = info.mode === "none";
   const ship = shippingForOrder(info, dest, qty);
@@ -152,7 +153,7 @@ function ProductPageInner() {
               −
             </button>
             <span className="w-6 text-center text-lg font-bold">{qty}</span>
-            <button className="w-10 h-10 rounded-full border border-black/20 text-xl" onClick={() => setQty((q) => Math.min(10, q + 1))}>
+            <button className="w-10 h-10 rounded-full border border-black/20 text-xl" onClick={() => setQty((q) => Math.min(maxQty, q + 1))}>
               ＋
             </button>
           </div>
