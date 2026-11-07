@@ -179,10 +179,24 @@ const WEBSITE_SYSTEM = `あなたは、地域の小さな事業者のホーム�
 
 export type WebsiteNotes = { notes: string; pages: string[] };
 
+// 入れられた URL が別のアドレスに転送されるとき（例：古いドメイン → 新しいドメイン）、転送先を先に調べる。
+// web_fetch は allowed_domains の外を読まないので、転送先のドメインも許可に入れる（2026-11-07 camecame30.com → camecame30.grain-grain.net で読めなかった）
+async function resolveRedirect(url: string): Promise<string> {
+  try {
+    const res = await fetch(url, { method: "GET", redirect: "follow", signal: AbortSignal.timeout(10000), headers: { "user-agent": "Mozilla/5.0 (YaoBiz)" } });
+    await res.body?.cancel();
+    const u = new URL(res.url || url);
+    return ["http:", "https:"].includes(u.protocol) ? u.toString() : url;
+  } catch {
+    return url; // 調べられなければ、入れられた URL のまま Claude に渡す
+  }
+}
+
 export async function readShopWebsite(shop: { name: string; category: string }, url: string): Promise<WebsiteNotes> {
-  const host = new URL(url).hostname;
+  const finalUrl = await resolveRedirect(url);
+  const hosts = [...new Set([new URL(url).hostname, new URL(finalUrl).hostname])];
   const messages: Anthropic.Beta.BetaMessageParam[] = [
-    { role: "user", content: `事業者の名前: ${shop.name}\n業種: ${shop.category}\nホームページ: ${url}\n\nこの事業者のホームページを読んで、まとめてください。` },
+    { role: "user", content: `事業者の名前: ${shop.name}\n業種: ${shop.category}\nホームページ: ${finalUrl}\n\nこの事業者のホームページを読んで、まとめてください。` },
   ];
   const pages = new Set<string>();
   let notes = "";
@@ -192,7 +206,8 @@ export async function readShopWebsite(shop: { name: string; category: string }, 
       max_tokens: 8000,
       output_config: { effort: "medium" },
       system: WEBSITE_SYSTEM,
-      tools: [{ type: "web_fetch_20260209", name: "web_fetch", max_uses: 4, allowed_domains: [host], max_content_tokens: 30000 }],
+      // 素朴な読み込み（20250910）を使う。新しい方（20260209）は裏でプログラムを書いて読み、結果を見ずに終わることがあった
+      tools: [{ type: "web_fetch_20250910", name: "web_fetch", max_uses: 4, allowed_domains: hosts, max_content_tokens: 30000 }],
       messages,
       ...FALLBACK,
     });

@@ -38,23 +38,23 @@ function AboutInner() {
   }, [shopId]);
 
   async function findWebsite() {
-    setError("");
+    setWebError("");
     setBusy("find");
     const r = await apiFetch(`/api/shops/${shopId}/about/website`, { method: "POST", body: JSON.stringify({ search: true }) });
     const j = await r.json();
     setBusy("");
-    if (!r.ok) return setError(j.error);
+    if (!r.ok) return setWebError(j.error);
     setCands(j.candidates);
   }
 
   async function readWebsite(target = url) {
-    setError("");
+    setWebError("");
     setUrl(target);
     setBusy("web");
     const r = await apiFetch(`/api/shops/${shopId}/about/website`, { method: "POST", body: JSON.stringify({ url: target }) });
     const j = await r.json();
     setBusy("");
-    if (!r.ok) return setError(j.error);
+    if (!r.ok) return setWebError(j.error);
     setNotes(j.website_notes);
     setUrl(j.website_url);
     setShowNotes(true);
@@ -62,9 +62,9 @@ function AboutInner() {
     setQuestions([]); // 質問はホームページの中身に合わせて作り直す
   }
   async function clearWebsite() {
-    setError("");
+    setWebError("");
     const r = await apiFetch(`/api/shops/${shopId}/about/website`, { method: "POST", body: JSON.stringify({ clear: true }) });
-    if (!r.ok) return setError((await r.json()).error);
+    if (!r.ok) return setWebError((await r.json()).error);
     setNotes(null);
     setUrl("");
     setCands(null);
@@ -72,6 +72,7 @@ function AboutInner() {
     setQuestions([]);
   }
   const [error, setError] = useState("");
+  const [webError, setWebError] = useState(""); // 1) ホームページの枠の中に出す失敗（下の送信の失敗とは別）
   const voice = useVoiceInput((text) => setTranscript((t) => (t ? t.replace(/\s*$/, "\n") : "") + text));
 
   async function makeQuestions() {
@@ -193,6 +194,7 @@ function AboutInner() {
             )}
           </div>
         )}
+        {webError && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{webError}</p>}
       </section>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
