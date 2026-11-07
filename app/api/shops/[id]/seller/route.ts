@@ -9,7 +9,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const body = (await req.json()) as Record<string, unknown>;
   const db = getDb();
   if (!db.prepare("SELECT id FROM shops WHERE id = ?").get(Number(id))) {
-    return Response.json({ error: "お店が見つかりません" }, { status: 404 });
+    return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
   }
   const values = sellerValues(body);
   db.prepare(`UPDATE shops SET ${SELLER_KEYS.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`).run(...values, Number(id));

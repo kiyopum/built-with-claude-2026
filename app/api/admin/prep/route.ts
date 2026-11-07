@@ -1,7 +1,7 @@
 // 事前調査（2026-11-05 きよさん）
-//   パートナーが訪問の予定日を入れて登録したお店を、事務局（YMM 管理）がローカルの Claude Code で先に調べる。
-//   GET  … 調べてほしいお店の一覧（依頼のファイル）
-//   POST … 調べた結果（ファイル）を取り込む。取り込んだお店は、当日 Claude（API）を呼ばずに始められる
+//   パートナーが訪問の予定日を入れて登録した事業者を、事務局（YMM 管理）がローカルの Claude Code で先に調べる。
+//   GET  … 調べてほしい事業者の一覧（依頼のファイル）
+//   POST … 調べた結果（ファイル）を取り込む。取り込んだ事業者は、当日 Claude（API）を呼ばずに始められる
 //   手順書：docs/事務局_事前調査.md
 import { connection } from "next/server";
 import { z } from "zod";
@@ -38,7 +38,7 @@ const ResultSchema = z.object({
   ),
 });
 
-// 国の公式サイトだけを根拠に残す（店主さんに見せる出典なので、ほかのサイトが紛れ込まないように）
+// 国の公式サイトだけを根拠に残す（事業者さんに見せる出典なので、ほかのサイトが紛れ込まないように）
 function official(url: string): boolean {
   try {
     const h = new URL(url).hostname;
@@ -60,9 +60,9 @@ export async function POST(req: Request) {
   const skipped: string[] = [];
   for (const r of parsed.data.results) {
     const shop = db.prepare("SELECT id, name FROM shops WHERE id = ?").get(r.id) as { id: number; name: string } | undefined;
-    // 番号と店名の両方が合うときだけ取り込む（別のお店に入れてしまわないように）
+    // 番号と事業者名の両方が合うときだけ取り込む（別の事業者さんに入れてしまわないように）
     if (!shop || shop.name !== r.name) {
-      skipped.push(`${r.id} ${r.name}（番号と店名が合いません）`);
+      skipped.push(`${r.id} ${r.name}（番号と事業者名が合いません）`);
       continue;
     }
     const sources = r.legal_research.sources.filter((s) => official(s.url));

@@ -1,8 +1,8 @@
 "use client";
 
-// 公開した商品を Instagram で紹介する（パートナーの画面と店主さんの画面で共通）
+// 公開した商品を Instagram で紹介する（パートナーの画面と事業者さんの画面で共通）
 //   パートナー：紹介リンクに自分のパートナー番号が入る
-//   店主さん：ログインせず、お店の暗証番号で使う。リンクに番号は入らない（売れたら取り分は全部お店の担当へ）
+//   事業者さん：ログインせず、事業者さんの暗証番号で使う。リンクに番号は入らない（売れたら取り分は全部事業者の担当へ）
 //   どちらも投稿の先頭に「#PR」を入れる（2026-11-03 きよさん決定：全部に入れる）
 // パートナーは IT に詳しくない前提。押すのは大きなボタン1つだけにする。
 //   開いたら自動で：Claude が投稿文を書く → 法律チェック → カルーセル画像4枚を作る
@@ -26,7 +26,7 @@ type Post = {
 type Saved = { post: Post; legal: Legal; scene?: string | null; gyoji?: string | null };
 type Product = { name: string; price_yen: number; shop_name: string; photos: string[] };
 
-// 広告であることを示すため、いちばん最初に「#PR」を必ず入れる（ステマ規制。店主さんの投稿も同じ）
+// 広告であることを示すため、いちばん最初に「#PR」を必ず入れる（ステマ規制。事業者さんの投稿も同じ）
 function textOf(p: Post) {
   // Instagram のハッシュタグは5個まで：#PR ＋ Claude が作った4個（多くても4個で切る）
   const tags = p.hashtags
@@ -63,7 +63,7 @@ export function ShareFlow({ draftId, backHref, shopPin, initialScene, gyoji }: {
   const g = gyojiOf(gyoji);
   const pre = sceneOf(initialScene);
   const [ref, setRef] = useState("");
-  // 店主さんのときは、お店の暗証番号をつけて呼ぶ
+  // 事業者さんのときは、事業者さんの暗証番号をつけて呼ぶ
   const call = useCallback(
     (url: string, init: RequestInit = {}) => apiFetch(url, shopPin ? { ...init, headers: { ...init.headers, "x-shop-pin": shopPin } } : init),
     [shopPin],
@@ -319,7 +319,7 @@ export function ShareFlow({ draftId, backHref, shopPin, initialScene, gyoji }: {
             <input className={input} value={post.slides.point_title} onChange={(e) => setSlide("point_title", e.target.value)} />
             <label className="block text-xs font-bold text-black/60">2枚目の文</label>
             <textarea className={`${input} min-h-20`} value={post.slides.point_text} onChange={(e) => setSlide("point_text", e.target.value)} />
-            <label className="block text-xs font-bold text-black/60">3枚目（お店の思い）</label>
+            <label className="block text-xs font-bold text-black/60">3枚目（事業者の思い）</label>
             <textarea className={`${input} min-h-24`} value={post.slides.story_text} onChange={(e) => setSlide("story_text", e.target.value)} />
             <label className="block text-xs font-bold text-black/60">投稿の文章</label>
             <textarea className={`${input} min-h-48 leading-relaxed`} value={post.caption} onChange={(e) => setPost({ ...post, caption: e.target.value })} />

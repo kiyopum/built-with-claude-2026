@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db";
 import { guardShop } from "@/lib/auth";
 import { makeShopBook } from "@/lib/claude";
 
-// お店の言葉の本：作ったものを見る（GET）／今ある記録から作る・作り直す（POST）
+// 事業者の言葉の本：作ったものを見る（GET）／今ある記録から作る・作り直す（POST）
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   await connection();
   const g = await guardShop((await ctx.params).id);
@@ -27,7 +27,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
   );
   const replies = (db.prepare("SELECT owner_reply FROM letters WHERE shop_id = ? AND owner_reply IS NOT NULL ORDER BY id").all(shop.id) as { owner_reply: string }[]).map((r) => r.owner_reply);
   if (!ownerWords.length && !shop.website_notes && !shop.philosophy_text && !products.length) {
-    return Response.json({ error: "まだ材料がありません。先にお店のヒアリングか、ホームページの読みこみをしてください" }, { status: 400 });
+    return Response.json({ error: "まだ材料がありません。先に事業者のヒアリングか、ホームページの読みこみをしてください" }, { status: 400 });
   }
   try {
     const book = await makeShopBook({ shop, ownerWords, products, voices, replies });

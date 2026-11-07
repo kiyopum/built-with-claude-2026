@@ -3,14 +3,14 @@ import { getDb, type Shop } from "@/lib/db";
 import { summarizeShop } from "@/lib/claude";
 import { saveAudios } from "@/lib/files";
 
-// お店のヒアリングを送る → Claude が「このお店について」を書く → 店主の確認待ちにする
+// 事業者のヒアリングを送る → Claude が「この事業者さんについて」を書く → 事業者さんの確認待ちにする
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const g = await guardShop(id);
   if (g instanceof Response) return g;
   const db = getDb();
   const shop = db.prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
-  if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
+  if (!shop) return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
   const form = await req.formData();
   const transcript = String(form.get("transcript") ?? "").trim();
   // ホームページを読んであれば、ヒアリングは補足（空でもよい）
@@ -24,6 +24,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return Response.json({ ok: true });
   } catch (e) {
     console.error(e);
-    return Response.json({ error: e instanceof Error ? e.message : "お店の紹介を作れませんでした" }, { status: 500 });
+    return Response.json({ error: e instanceof Error ? e.message : "事業者の紹介を作れませんでした" }, { status: 500 });
   }
 }

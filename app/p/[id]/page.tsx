@@ -35,9 +35,9 @@ function MadeBy({ made, svc }: { made: Product["made"]; svc: boolean }) {
     made.sns && "紹介の投稿の下書きを書きました",
   ].filter(Boolean) as string[];
   const human = [
-    made.heard && `YaoBiz のパートナーが、お店の方から${svc ? "サービス" : "商品"}のお話を聞きました`,
+    made.heard && `YaoBiz のパートナーが、事業者の方から${svc ? "サービス" : "商品"}のお話を聞きました`,
     made.photos && "写真を撮りました",
-    made.pin ? "お店の方が中身を読んで確かめ、自分の暗証番号で公開しました" : "お店の方が中身を確かめて、公開しました",
+    made.pin ? "事業者の方が中身を読んで確かめ、自分の暗証番号で公開しました" : "事業者の方が中身を確かめて、公開しました",
   ].filter(Boolean) as string[];
   return (
     <section className="rounded-2xl bg-white p-4 border border-black/5 space-y-3">
@@ -54,7 +54,7 @@ function MadeBy({ made, svc }: { made: Product["made"]; svc: boolean }) {
           </div>
         )}
       </div>
-      <p className="text-xs text-black/60">AI は手伝いをしました。出すかどうかを決めたのは、お店の方です。</p>
+      <p className="text-xs text-black/60">AI は手伝いをしました。出すかどうかを決めたのは、事業者の方です。</p>
     </section>
   );
 }
@@ -64,7 +64,7 @@ function ProductPageInner() {
   const [p, setP] = useState<Product | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [qty, setQty] = useState(1);
-  // お届け先：都道府県の名前か "pickup"（お店で受け取り）。送料込みの商品は、選ぶと送料込みの値段が決まる
+  // お届け先：都道府県の名前か "pickup"（事業者のところで受け取り）。送料込みの商品は、選ぶと送料込みの値段が決まる
   const [dest, setDest] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -109,11 +109,11 @@ function ProductPageInner() {
   if (!p) return <p className="text-black/50">読み込み中…</p>;
   const info = p.shipping;
   const inc = info.mode === "included";
-  // サービス（ライブ配信・講座・体験など）：送らない。買ったあとお店からメールで案内が届く
+  // サービス（ライブ配信・講座・体験など）：送らない。買ったあと事業者さんからメールで案内が届く
   const svc = info.mode === "none";
   const ship = shippingForOrder(info, dest, qty);
   const ok = !("error" in ship);
-  // 届け先を選ぶ欄を出すか（送料込みの商品か、お店で受け取りができるとき）
+  // 届け先を選ぶ欄を出すか（送料込みの商品か、事業者のところで受け取りができるとき）
   const askDest = inc || info.pickup;
 
   return (
@@ -194,7 +194,7 @@ function ProductPageInner() {
             <span className="font-bold shrink-0">お届け先</span>
             <select className="flex-1 min-w-0 rounded-xl border border-black/20 bg-white p-3 text-base" value={dest} onChange={(e) => setDest(e.target.value)}>
               <option value="">{inc ? "都道府県を選んでください" : "配送する"}</option>
-              {info.pickup && <option value="pickup">お店で受け取る（送料なし）</option>}
+              {info.pickup && <option value="pickup">事業者のところで受け取る（送料なし）</option>}
               {inc &&
                 PREFS.map((pr) => (
                   <option key={pr} value={pr}>
@@ -211,13 +211,13 @@ function ProductPageInner() {
         <p className="text-xs text-black/60 text-right">
           {ok
             ? svc
-              ? "お申し込みのあと、お店からメールでご案内が届きます（配信の URL や日時など）。"
+              ? "お申し込みのあと、事業者さんからメールでご案内が届きます（配信の URL や日時など）。"
               : ship.pickup
-              ? `商品 ${(p.price_yen * qty).toLocaleString()}円（お店で受け取るので送料はかかりません）`
+              ? `商品 ${(p.price_yen * qty).toLocaleString()}円（事業者のところで受け取るので送料はかかりません）`
               : `うち商品 ${(p.price_yen * qty).toLocaleString()}円・送料 ${ship.yen.toLocaleString()}円（${ship.method}）`
             : inc
               ? ""
-              : "送料（お店が準備中のため、まだ購入できません）"}
+              : "送料（事業者さんが準備中のため、まだ購入できません）"}
         </p>
         {ok && !svc && !ship.pickup && ship.yen > 0 && (
           <p className="text-xs text-black/60 text-right">
@@ -225,7 +225,7 @@ function ProductPageInner() {
           </p>
         )}
         {!svc && parseShipDays(p.ship_days).length > 0 && (
-          <p className="text-xs text-black/60 text-right">📅 このお店の発送は、毎週{shipDaysLabel(parseShipDays(p.ship_days))}曜日です。</p>
+          <p className="text-xs text-black/60 text-right">📅 この事業者の発送は、毎週{shipDaysLabel(parseShipDays(p.ship_days))}曜日です。</p>
         )}
         {inc && info.perBox > 1 && (
           <p className="text-xs text-leaf text-right">{info.perBox}個までは1つの箱で送るので、送料は1回分です。</p>
@@ -242,16 +242,16 @@ function ProductPageInner() {
         {shared ? "リンクをコピーしました ✓" : "📤 この商品を友だちに教える"}
       </button>
 
-      {/* 店主さん用の入口（お店の暗証番号で開く） */}
+      {/* 事業者さん用の入口（事業者さんの暗証番号で開く） */}
       <Link href={`/owner/p/${id}`} className="block text-center text-sm text-black/50 underline">
-        お店の方へ：この商品をお店の Instagram で紹介する
+        事業者の方へ：この商品を事業者の Instagram で紹介する
       </Link>
 
       <MadeBy made={p.made} svc={svc} />
 
       {p.shop_intro && (
         <section className="rounded-2xl bg-leaf/5 p-4 space-y-2">
-          <h2 className="font-bold text-leaf">このお店について（{p.shop_name}）</h2>
+          <h2 className="font-bold text-leaf">この事業者さんについて（{p.shop_name}）</h2>
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{p.shop_intro}</p>
         </section>
       )}

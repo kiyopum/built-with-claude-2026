@@ -1,7 +1,7 @@
 "use client";
 
-// パートナー：お店のヒアリング（理念・思い。1回だけ）
-//   ホームページがあれば先に Claude に読んでもらい、ヒアリングはそれを補う（Instagram だけのお店は今までどおりヒアリング）
+// パートナー：事業者のヒアリング（理念・思い。1回だけ）
+//   ホームページがあれば先に Claude に読んでもらい、ヒアリングはそれを補う（Instagram だけの事業者は今までどおりヒアリング）
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -103,9 +103,9 @@ function AboutInner() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← お店のページ</Link>
-        <h1 className="text-xl font-bold mt-1">お店のヒアリング</h1>
-        <p className="text-sm text-black/60">お店を始めたきっかけや、大事にしていることを聞きます。商品のことは、あとで写真を撮りながら1つずつ聞きます。</p>
+        <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← 事業者のページ</Link>
+        <h1 className="text-xl font-bold mt-1">事業者のヒアリング</h1>
+        <p className="text-sm text-black/60">事業を始めたきっかけや、大事にしていることを聞きます。商品のことは、あとで写真を撮りながら1つずつ聞きます。</p>
       </div>
       {prepared && (
         <p className="rounded-2xl bg-leaf/10 p-3 text-sm">
@@ -114,9 +114,9 @@ function AboutInner() {
       )}
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-        <div className="text-sm font-bold text-leaf">1) お店のホームページ（あれば）</div>
+        <div className="text-sm font-bold text-leaf">1) 事業者のホームページ（あれば）</div>
         <p className="text-xs text-black/60">
-          お店の名前と地域で Claude がホームページを探して、読みます。お話は、ホームページに載っていないことを聞くだけで済みます。Instagram だけのお店は、ここを飛ばしてお話を聞いてください。
+          事業者の名前と地域で Claude がホームページを探して、読みます。お話は、ホームページに載っていないことを聞くだけで済みます。Instagram だけの事業者は、ここを飛ばしてお話を聞いてください。
         </p>
         {notes ? (
           <div className="space-y-2">
@@ -148,11 +148,11 @@ function AboutInner() {
               </button>
             )}
             {cands && cands.length === 0 && (
-              <p className="rounded-xl bg-black/[0.03] p-3 text-sm">見つかりませんでした。ホームページのないお店は、このまま下でお話を聞いてください。</p>
+              <p className="rounded-xl bg-black/[0.03] p-3 text-sm">見つかりませんでした。ホームページのない事業者は、このまま下でお話を聞いてください。</p>
             )}
             {cands && cands.length > 0 && (
               <ul className="space-y-2">
-                <li className="text-xs text-black/60">このお店のものを選んでください（店主さんに「これですか？」と見せると確実です）</li>
+                <li className="text-xs text-black/60">この事業者のものを選んでください（事業者さんに「これですか？」と見せると確実です）</li>
                 {cands.map((c) => (
                   <li key={c.url} className="rounded-xl border border-black/10 p-3 text-sm space-y-1">
                     <div className="flex justify-between gap-2">
@@ -199,7 +199,7 @@ function AboutInner() {
         <div className="text-sm font-bold text-leaf">2) 聞くことリスト{notes && <span className="font-normal text-black/50">（ホームページに載っていないことだけ）</span>}</div>
         {questions.length === 0 ? (
           <button className="w-full rounded-xl border-2 border-leaf text-leaf py-3 font-bold disabled:opacity-50" onClick={makeQuestions} disabled={busy !== ""}>
-            {busy === "q" ? <Working text="Claude が質問を考えています" est={15} /> : prepared ? "事務局が用意した質問を開く" : "このお店向けの質問を Claude に作ってもらう"}
+            {busy === "q" ? <Working text="Claude が質問を考えています" est={15} /> : prepared ? "事務局が用意した質問を開く" : "この事業者向けの質問を Claude に作ってもらう"}
           </button>
         ) : (
           <QuestionList questions={questions} />
@@ -217,7 +217,7 @@ function AboutInner() {
         onClick={send}
         disabled={(!transcript.trim() && !notes) || busy !== ""}
       >
-        {busy === "send" ? <Working text="Claude がお店の紹介を書いています" est={10} /> : !transcript.trim() && notes ? "ホームページだけで、お店の紹介を作る" : "送信して、お店の紹介を作る"}
+        {busy === "send" ? <Working text="Claude が事業者の紹介を書いています" est={10} /> : !transcript.trim() && notes ? "ホームページだけで、事業者の紹介を作る" : "送信して、事業者の紹介を作る"}
       </button>
     </div>
   );

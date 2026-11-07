@@ -11,9 +11,9 @@ type Facts = Record<"shops" | "heard_shops" | "hearings" | "drafts" | "published
 type Data = { name: string; self: boolean; resting: boolean; month: string; facts: Facts; career: CareerNote | null; career_at: string | null };
 
 const TILES: { key: keyof Facts; label: string; unit: string }[] = [
-  { key: "heard_shops", label: "考えを聞いたお店", unit: "店" },
+  { key: "heard_shops", label: "考えを聞いた事業者", unit: "店" },
   { key: "hearings", label: "お話を聞いた回数", unit: "回" },
-  { key: "published", label: "店主さんが公開した商品", unit: "件" },
+  { key: "published", label: "事業者さんが公開した商品", unit: "件" },
   { key: "legal", label: "表示を確かめた商品", unit: "件" },
   { key: "voices", label: "チームに伝えた声", unit: "件" },
   { key: "thanks", label: "届いた「ありがとう」", unit: "" },
@@ -112,7 +112,7 @@ function MeInner() {
           {data.resting ? (
             <>
               <p className="text-sm">
-                今月（{data.month}）はお休み中です。担当のお店は、YMM（または YMM が頼んだ人）が見守ります。来月になると、自然にもとに戻ります。
+                今月（{data.month}）はお休み中です。担当の事業者は、YMM（または YMM が頼んだ人）が見守ります。来月になると、自然にもとに戻ります。
               </p>
               <button className="w-full rounded-xl border border-black/20 py-3 font-bold disabled:opacity-50" onClick={() => act("rest", false)} disabled={!!busy}>
                 {busy === "rest" ? <Working text="もどしています" /> : "お休みをやめて、もどる"}
@@ -121,7 +121,7 @@ function MeInner() {
           ) : (
             <>
               <p className="text-sm text-black/70">
-                子どものこと、体のこと、家のこと。休みたいときは、理由を書かずにここを押すだけで大丈夫です。担当のお店・取り分・これまでの記録は、そのままです。ほかのパートナーには「お休み中」とだけ出ます。
+                子どものこと、体のこと、家のこと。休みたいときは、理由を書かずにここを押すだけで大丈夫です。担当の事業者・取り分・これまでの記録は、そのままです。ほかのパートナーには「お休み中」とだけ出ます。
               </p>
               <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" onClick={() => act("rest", true)} disabled={!!busy}>
                 {busy === "rest" ? <Working text="お休みにしています" /> : "今月はお休みする"}

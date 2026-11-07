@@ -1,4 +1,4 @@
-// 法律チェックの結果（判定・項目・表示が必要な項目）。店主の画面とパートナーの修正画面で使う
+// 法律チェックの結果（判定・項目・表示が必要な項目）。事業者さんの画面とパートナーの修正画面で使う
 
 export type Legal = {
   verdict: "販売できる" | "直せば販売できる" | "このままでは販売できない";
@@ -63,14 +63,14 @@ export function LegalPanel({ legal }: { legal: Legal }) {
                 {legal.label_items.map((l, i) => (
                   <tr key={i} className="border-t border-black/5">
                     <th className="text-left font-normal text-black/60 py-1 pr-2 w-24 align-top">{l.name}</th>
-                    <td className={`py-1 ${l.value ? "" : "text-red-600 font-bold"}`}>{l.value ?? "未確認 → 店主さんに確認"}</td>
+                    <td className={`py-1 ${l.value ? "" : "text-red-600 font-bold"}`}>{l.value ?? "未確認 → 事業者さんに確認"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-        <p className="text-xs text-black/40">国の公式サイトを調べた結果にもとづく目安です。最終的な判断は店主さん（必要なら専門家）が行ってください。</p>
+        <p className="text-xs text-black/40">国の公式サイトを調べた結果にもとづく目安です。最終的な判断は事業者さん（必要なら専門家）が行ってください。</p>
       </div>
     </section>
   );

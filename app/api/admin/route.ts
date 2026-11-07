@@ -5,7 +5,7 @@ import { codeOf, hashPin, isPin, requireAdmin } from "@/lib/auth";
 import { ITEM_RATE_LIMIT } from "@/lib/split";
 import { removeShopFiles } from "@/lib/files";
 
-// YMM の管理画面：人・お店の割り当て・止まっている商品・注文
+// YMM の管理画面：人・事業者の割り当て・止まっている商品・注文
 export async function GET() {
   await connection();
   const a = await requireAdmin();
@@ -105,11 +105,11 @@ export async function POST(req: Request) {
       return Response.json({ ok: true });
     }
     case "deleteShop": {
-      // テストややり直しのために、お店を丸ごと消す（商品・写真・ヒアリング・録音・提案も）。
-      // 注文のあるお店は消さない（明細と往復便が壊れるため）。Stripe のテストの商品はそのまま残る
+      // テストややり直しのために、事業者を丸ごと消す（商品・写真・ヒアリング・録音・提案も）。
+      // 注文のある事業者は消さない（明細と往復便が壊れるため）。Stripe のテストの商品はそのまま残る
       const id = Number(b.shopId);
       const shop = db.prepare("SELECT id, name FROM shops WHERE id = ?").get(id) as { id: number; name: string } | undefined;
-      if (!shop) return bad("お店が見つかりません");
+      if (!shop) return bad("事業者が見つかりません");
       const orders = (db.prepare("SELECT COUNT(*) AS n FROM orders WHERE shop_id = ?").get(id) as { n: number }).n;
       if (orders > 0) return bad(`${shop.name} には注文が ${orders} 件あるので消せません（明細が消えてしまうため）。やり直すときは「2_最初からやり直す」で`);
       removeShopFiles(id);
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
       return Response.json({ ok: true });
     }
     case "resetShopPin": {
-      // 店主さんが暗証番号を忘れたとき：消して、次にお店のページを開いたときに決め直してもらう
+      // 事業者さんが暗証番号を忘れたとき：消して、次に事業者のページを開いたときに決め直してもらう
       db.prepare("UPDATE shops SET release_pin_hash = NULL WHERE id = ?").run(Number(b.shopId));
       return Response.json({ ok: true });
     }

@@ -4,14 +4,14 @@ import { getDb, getSetting, SELLER_KEYS, type Shop, REVISE_LIMIT } from "@/lib/d
 import { thisMonth } from "@/lib/checkin";
 import { proposalsOf } from "@/lib/proposals";
 
-// お店のページ用：お店の情報（理念）と商品の一覧
+// 事業者のページ用：事業者の情報（理念）と商品の一覧
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const g = await guardShop(id);
   if (g instanceof Response) return g;
   const db = getDb();
   const shop = db.prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
-  if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
+  if (!shop) return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
   const rows = db
     .prepare(
       `SELECT d.id, d.name, d.price_yen, d.status, d.legal_json, d.nudge_json, d.nudge_at,
@@ -47,7 +47,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       prefecture: shop.prefecture,
       pickup_ok: !!shop.pickup_ok,
       ship_days: parseShipDays(shop.ship_days),
-      // 同じ都道府県で、発送する曜日を決めているほかのお店の数（曜日ごと）。名前は出さない
+      // 同じ都道府県で、発送する曜日を決めているほかの事業者の数（曜日ごと）。名前は出さない
       neighbor_days: shop.prefecture
         ? (db.prepare("SELECT ship_days FROM shops WHERE prefecture = ? AND id != ? AND ship_days IS NOT NULL").all(shop.prefecture, shop.id) as { ship_days: string }[])
             .flatMap((r) => parseShipDays(r.ship_days))
@@ -57,7 +57,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       // 都道府県の初期値の候補（住所の書き出しから。決めるのは人）
       prefecture_hint: prefFromAddress(shop.seller_address),
       has_pin: !!shop.release_pin_hash,
-      // 次の商品の提案（Claude が出した案）。材料（お店の話か商品）ができてから出せる
+      // 次の商品の提案（Claude が出した案）。材料（事業者の話か商品）ができてから出せる
       proposals: proposalsOf(shop),
       proposals_left: Math.max(0, REVISE_LIMIT - (shop.proposals_count ?? 0)),
       can_propose: !!(shop.philosophy_text || shop.philosophy_transcript || rows.some((r) => r.status !== "rejected")),

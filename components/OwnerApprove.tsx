@@ -1,7 +1,7 @@
 "use client";
 
-// 店主さんの OK（パートナーのスマホを店主さんに渡して、お店の暗証番号を押してもらう）
-// リリース・お店の紹介の公開OK・注文と届け先を見る、で使う
+// 事業者さんの OK（パートナーのスマホを事業者さんに渡して、事業者さんの暗証番号を押してもらう）
+// リリース・事業者の紹介の公開OK・注文と届け先を見る、で使う
 import { useState } from "react";
 import { PinPad } from "@/components/PinPad";
 import { Working } from "@/components/Working";
@@ -51,7 +51,7 @@ export function OwnerApprove({
   }
   return (
     <div className="rounded-2xl border-2 border-leaf bg-leaf/5 p-4 space-y-3">
-      <p className="text-center text-sm">📱 スマホを店主さんに渡してください</p>
+      <p className="text-center text-sm">📱 スマホを事業者さんに渡してください</p>
       {busy ? (
         <div className="py-8 text-center text-leaf font-bold">
           <Working text={workingText ?? "確かめています"} est={est} />

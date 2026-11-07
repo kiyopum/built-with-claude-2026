@@ -6,8 +6,8 @@ import { loadProductContext } from "@/lib/context";
 import { sceneOf } from "@/lib/scenes";
 import { gyojiOf } from "@/lib/events";
 
-// 使ってよい人：ログインしたパートナー（どのお店の商品でも紹介できる）か、
-// 店主さん（ログインしない。そのお店の暗証番号を x-shop-pin で送る。間違いは5回で5分待ち）
+// 使ってよい人：ログインしたパートナー（どの事業者の商品でも紹介できる）か、
+// 事業者さん（ログインしない。その事業者さんの暗証番号を x-shop-pin で送る。間違いは5回で5分待ち）
 async function allowed(req: Request, draftId: number): Promise<Response | null> {
   if (await currentUser()) return null;
   const pin = req.headers.get("x-shop-pin");

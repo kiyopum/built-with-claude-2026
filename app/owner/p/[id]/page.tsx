@@ -1,7 +1,7 @@
 "use client";
 
-// 店主さん：自分のお店の商品を、お店の Instagram で紹介する（ログインしない。お店の暗証番号で開く）
-// リンクにパートナー番号は入らないので、売れたらパートナーの取り分は全部お店の担当へ
+// 事業者さん：自分の事業者の商品を、事業者の Instagram で紹介する（ログインしない。事業者さんの暗証番号で開く）
+// リンクにパートナー番号は入らないので、売れたらパートナーの取り分は全部事業者の担当へ
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useParams } from "next/navigation";
@@ -39,15 +39,15 @@ function Inner() {
     <div className="space-y-5">
       <div>
         <Link href={`/p/${id}`} className="text-sm text-leaf">← 商品のページ</Link>
-        <h1 className="text-xl font-bold mt-1">お店の Instagram で紹介する</h1>
-        <p className="text-sm text-black/60">店主さん用です。お店の暗証番号を押すと、紹介の画像と文章を Claude が作ります。</p>
+        <h1 className="text-xl font-bold mt-1">事業者の Instagram で紹介する</h1>
+        <p className="text-sm text-black/60">事業者さん用です。事業者さんの暗証番号を押すと、紹介の画像と文章を Claude が作ります。</p>
       </div>
       {busy ? (
         <div className="py-8 text-center text-leaf font-bold">
           <Working text="確かめています" />
         </div>
       ) : (
-        <PinPad label="お店の暗証番号" onDone={check} />
+        <PinPad label="事業者さんの暗証番号" onDone={check} />
       )}
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm text-center">{error}</p>}
     </div>

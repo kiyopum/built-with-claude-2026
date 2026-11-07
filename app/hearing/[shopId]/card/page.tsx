@@ -37,12 +37,12 @@ function CardInner() {
           <p className="text-sm leading-relaxed">
             お選びいただき、ありがとうございます。
             <br />
-            よかったら、届いた感想をひとこと聞かせてください。うれしかったことも、「こうだったらもっといい」も。お店の人が読んで、お返事します。
+            よかったら、届いた感想をひとこと聞かせてください。うれしかったことも、「こうだったらもっといい」も。事業者の人が読んで、お返事します。
           </p>
           <p className="text-xs text-black/50">お返事は、同じ QR を読みこむと読めます。</p>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {qr && <img src={qr} alt="お店にひとことを送る QR" className="w-32 h-32 shrink-0" />}
+        {qr && <img src={qr} alt="事業者さんにひとことを送る QR" className="w-32 h-32 shrink-0" />}
       </div>
       <p className="no-print text-xs text-black/40 break-all text-center">{url}</p>
     </div>

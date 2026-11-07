@@ -3,8 +3,8 @@ import { getDb, getSetting, getText } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 
 // 画面3：成果明細
-//   パートナー：自分が担当したお店の注文と、自分が紹介して売れた注文。自分の取り分だけ
-//   YMM 管理：全部の注文と、店主・パートナー・YMM・手数料の取り分、分け方の設定
+//   パートナー：自分が担当した事業者の注文と、自分が紹介して売れた注文。自分の取り分だけ
+//   YMM 管理：全部の注文と、事業者さん・パートナー・YMM・手数料の取り分、分け方の設定
 export async function GET() {
   await connection();
   const u = await requireUser();

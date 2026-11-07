@@ -12,7 +12,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const g = await guardShop(id);
   if (g instanceof Response) return g;
   const shop = getDb().prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
-  if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
+  if (!shop) return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
   after(() => getResearch(shop).catch((e) => console.error("法律の調査に失敗", e)));
   try {
     const form = await req.formData();

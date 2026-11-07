@@ -75,7 +75,7 @@ function open(): DatabaseSync {
       shop_id INTEGER NOT NULL REFERENCES shops(id),
       quantity INTEGER NOT NULL,
       amount_yen INTEGER NOT NULL,      -- 売上（税込）
-      owner_yen INTEGER NOT NULL,       -- 店主の取り分
+      owner_yen INTEGER NOT NULL,       -- 事業者さんの取り分
       ymm_yen INTEGER NOT NULL,         -- YMM の取り分（パートナー分を引いた残り）
       partner_yen INTEGER NOT NULL,     -- パートナーの取り分
       fee_yen INTEGER NOT NULL DEFAULT 0, -- 決済手数料（YMM の1割の中から払う）
@@ -84,7 +84,7 @@ function open(): DatabaseSync {
       created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
 
-    -- ログインする人（パートナーと YMM 管理者）。店主はログインしない（リリースのときだけお店の暗証番号）
+    -- ログインする人（パートナーと YMM 管理者）。事業者さんはログインしない（リリースのときだけ事業者さんの暗証番号）
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -101,13 +101,13 @@ function open(): DatabaseSync {
       expires_at TEXT NOT NULL
     );
 
-    -- みんなの声（2026-11-05 きよさん）：店主さん・お客さまからのお褒めと要望を、スタッフみんなで分け合う。
+    -- みんなの声（2026-11-05 きよさん）：事業者さん・お客さまからのお褒めと要望を、スタッフみんなで分け合う。
     --   original は聞いたままの言葉（書いた人と YMM 管理だけが見る）。message は Claude が「もっと未来のために」の形に整えた、みんなに見せる文
     CREATE TABLE IF NOT EXISTS voices (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id),
       shop_id INTEGER REFERENCES shops(id),
-      source TEXT NOT NULL,          -- owner（店主さん）/ customer（お客さま）/ other
+      source TEXT NOT NULL,          -- owner（事業者さん）/ customer（お客さま）/ other
       kind TEXT NOT NULL,            -- praise（お褒め）/ request（要望）
       original TEXT NOT NULL,
       title TEXT NOT NULL,
@@ -141,7 +141,7 @@ function open(): DatabaseSync {
       UNIQUE (user_id, month)
     );
 
-    -- ありがとうの往復便（2026-11-05 きよさん）：箱に入れたカードの QR から、お客さまがお店に一言送る。店主さんが返事をする。
+    -- ありがとうの往復便（2026-11-05 きよさん）：箱に入れたカードの QR から、お客さまが事業者さんに一言送る。事業者さんが返事をする。
     --   返事はメールでは送らない。お客さまが同じ QR を開くと読める（お客さまの連絡先を増やさない）
     --   original はお客さまが書いたそのままの言葉。みんなの声には Claude が整えた文（voice_id）が載る
     CREATE TABLE IF NOT EXISTS letters (
@@ -167,7 +167,7 @@ function open(): DatabaseSync {
     INSERT OR IGNORE INTO settings (key, value) VALUES ('partner_share', '0.50');
     -- パートナーへの支払期日（フリーランス新法で明示が必要）。YMM が管理画面で入れる。推測で埋めない
     INSERT OR IGNORE INTO settings (key, value) VALUES ('payment_terms', '');
-    -- サービス（ライブ配信・講座・体験など）の YMM の取り分の既定（2026-11-05 きよさん：5割。講師（お店）5割、残りから手数料を引いて YMM とパートナーで半分ずつ）
+    -- サービス（ライブ配信・講座・体験など）の YMM の取り分の既定（2026-11-05 きよさん：5割。講師（事業者）5割、残りから手数料を引いて YMM とパートナーで半分ずつ）
     INSERT OR IGNORE INTO settings (key, value) VALUES ('ymm_rate_service', '0.50');
     -- 売れなくても責めない伴走（2026-11-05 きよさん）：公開からこの日数、注文がない商品に「次の小さな一歩」を出す
     INSERT OR IGNORE INTO settings (key, value) VALUES ('nudge_days', '30');
@@ -186,27 +186,27 @@ function open(): DatabaseSync {
   if (!hcols.includes("legal_research")) db.exec("ALTER TABLE hearings ADD COLUMN legal_research TEXT");
   const scols = (db.prepare("PRAGMA table_info(shops)").all() as { name: string }[]).map((c) => c.name);
   if (!scols.includes("legal_research")) db.exec("ALTER TABLE shops ADD COLUMN legal_research TEXT");
-  // 担当パートナー・リリース用のお店の暗証番号・送料（全国一律、商品代とは別）
+  // 担当パートナー・リリース用の事業者さんの暗証番号・送料（全国一律、商品代とは別）
   if (!scols.includes("partner_id")) db.exec("ALTER TABLE shops ADD COLUMN partner_id INTEGER REFERENCES users(id)");
   if (!scols.includes("release_pin_hash")) db.exec("ALTER TABLE shops ADD COLUMN release_pin_hash TEXT");
   if (!scols.includes("shipping_yen")) db.exec("ALTER TABLE shops ADD COLUMN shipping_yen INTEGER");
-  // 店主さんの暗証番号も、続けて間違えたら少し待ってもらう（パートナーが総当たりできないように）
+  // 事業者さんの暗証番号も、続けて間違えたら少し待ってもらう（パートナーが総当たりできないように）
   if (!scols.includes("pin_failed")) db.exec("ALTER TABLE shops ADD COLUMN pin_failed INTEGER NOT NULL DEFAULT 0");
   if (!scols.includes("pin_locked_until")) db.exec("ALTER TABLE shops ADD COLUMN pin_locked_until TEXT");
   if (!scols.includes("legal_researched_at")) db.exec("ALTER TABLE shops ADD COLUMN legal_researched_at TEXT");
-  // お店のヒアリング（理念・思い）。status: none（まだ）/ draft（店主の確認待ち）/ approved（公開OK）
+  // 事業者のヒアリング（理念・思い）。status: none（まだ）/ draft（事業者さんの確認待ち）/ approved（公開OK）
   if (!scols.includes("philosophy_transcript")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_transcript TEXT");
   if (!scols.includes("philosophy_text")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_text TEXT");
   if (!scols.includes("philosophy_points")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_points TEXT");
   if (!scols.includes("philosophy_status")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_status TEXT NOT NULL DEFAULT 'none'");
-  // お店のホームページ（あれば Claude が読んで、お店のヒアリングの土台にする。ヒアリングは補足になる）
+  // 事業者のホームページ（あれば Claude が読んで、事業者のヒアリングの土台にする。ヒアリングは補足になる）
   if (!scols.includes("website_url")) db.exec("ALTER TABLE shops ADD COLUMN website_url TEXT");
-  // お店の言葉の本（Claude がまとめたもの・作った日）
+  // 事業者の言葉の本（Claude がまとめたもの・作った日）
   // 事前調査（2026-11-05 きよさん）：パートナーが訪問の予定を先に登録 → 事務局がローカルの Claude Code で調べて取り込む（API を使わない）
   //   調べた中身は website_url / website_notes / legal_research に入れ、質問だけ prep_questions に入れる
-  // お店の紹介を「AI に直してもらう」を使った回数（REVISE_LIMIT まで）
+  // 事業者の紹介を「AI に直してもらう」を使った回数（REVISE_LIMIT まで）
   if (!scols.includes("intro_revise_count")) db.exec("ALTER TABLE shops ADD COLUMN intro_revise_count INTEGER NOT NULL DEFAULT 0");
-  // 法律の調査をいつ調べ直すか（調査に書かれた「施行予定」のいちばん早い日。なければ調べ直さない）と、どのお店の調査を使い回したか
+  // 法律の調査をいつ調べ直すか（調査に書かれた「施行予定」のいちばん早い日。なければ調べ直さない）と、どの事業者の調査を使い回したか
   if (!scols.includes("law_next_check")) db.exec("ALTER TABLE shops ADD COLUMN law_next_check TEXT");
   if (!scols.includes("law_from_shop")) db.exec("ALTER TABLE shops ADD COLUMN law_from_shop INTEGER");
   if (!scols.includes("visit_on")) db.exec("ALTER TABLE shops ADD COLUMN visit_on TEXT");
@@ -223,7 +223,7 @@ function open(): DatabaseSync {
   const ocols = (db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name);
   // どのパートナーのシェアから売れたか（シェア用リンクの ?ref=）
   if (!ocols.includes("ref")) db.exec("ALTER TABLE orders ADD COLUMN ref TEXT");
-  // 送料（商品代とは別。店主に渡り、その手数料も送料から引く）・届け先・パートナーの分け方（担当と紹介者）
+  // 送料（商品代とは別。事業者さんに渡り、その手数料も送料から引く）・届け先・パートナーの分け方（担当と紹介者）
   for (const [c, t] of [
     ["shipping_yen", "INTEGER NOT NULL DEFAULT 0"],
     ["shipping_fee_yen", "INTEGER NOT NULL DEFAULT 0"],
@@ -238,12 +238,12 @@ function open(): DatabaseSync {
   }
   if (!ocols.includes("fee_yen")) db.exec("ALTER TABLE orders ADD COLUMN fee_yen INTEGER NOT NULL DEFAULT 0");
   // 送料込みの値段（2026-11-04 物流の社長さんの助言：大きさと重さで一番安い送り方を選ぶ・距離で送料を変える）
-  //   商品：大きさ（絵で選ぶ区分）と重さ。両方あれば「送料込み」、なければ今までどおりお店の全国一律の送料
-  //   お店：送り出す都道府県（地域ごとの料金に要る）・お店での受け取り
+  //   商品：大きさ（絵で選ぶ区分）と重さ。両方あれば「送料込み」、なければ今までどおり事業者の全国一律の送料
+  //   事業者：送り出す都道府県（地域ごとの料金に要る）・事業者のところでの受け取り
   //   注文：買う人が選んだ届け先の都道府県・送り方・受け取り
   if (!cols.includes("size_class")) db.exec("ALTER TABLE drafts ADD COLUMN size_class TEXT");
   if (!cols.includes("weight_g")) db.exec("ALTER TABLE drafts ADD COLUMN weight_g INTEGER");
-  // 1箱にいくつ入るか（2個目からの送料を安くするため。お店が決める。初めは1）
+  // 1箱にいくつ入るか（2個目からの送料を安くするため。事業者さんが決める。初めは1）
   if (!cols.includes("per_box")) db.exec("ALTER TABLE drafts ADD COLUMN per_box INTEGER NOT NULL DEFAULT 1");
   // 種類：goods（もの）/ service（ライブ配信・講座・体験など。送らない）。ymm_rate：この商品だけの YMM の取り分（空なら種類ごとの既定。変えられるのは YMM 管理だけ）
   if (!cols.includes("kind")) db.exec("ALTER TABLE drafts ADD COLUMN kind TEXT NOT NULL DEFAULT 'goods'");
@@ -256,16 +256,16 @@ function open(): DatabaseSync {
   if (!cols.includes("nudge_json")) db.exec("ALTER TABLE drafts ADD COLUMN nudge_json TEXT");
   if (!cols.includes("nudge_at")) db.exec("ALTER TABLE drafts ADD COLUMN nudge_at TEXT");
   if (!scols.includes("prefecture")) db.exec("ALTER TABLE shops ADD COLUMN prefecture TEXT");
-  // ネットで宛名ラベルを作る送り方（クリックポスト）を使うか。初めは使わない（IT が苦手なお店でも出せる送り方だけにする）
+  // ネットで宛名ラベルを作る送り方（クリックポスト）を使うか。初めは使わない（IT が苦手な事業者でも出せる送り方だけにする）
   if (!scols.includes("online_label")) db.exec("ALTER TABLE shops ADD COLUMN online_label INTEGER NOT NULL DEFAULT 0");
-  // 発送する曜日（2026-11-05 きよさん：近所のお店で出す日をそろえると、集荷が1回で済む）。"2,5" のように 0=日〜6=土
+  // 発送する曜日（2026-11-05 きよさん：近所の事業者で出す日をそろえると、集荷が1回で済む）。"2,5" のように 0=日〜6=土
   if (!scols.includes("ship_days")) db.exec("ALTER TABLE shops ADD COLUMN ship_days TEXT");
   if (!scols.includes("pickup_ok")) db.exec("ALTER TABLE shops ADD COLUMN pickup_ok INTEGER NOT NULL DEFAULT 0");
   for (const [c, t] of [
     ["ship_pref", "TEXT"],
     ["ship_method", "TEXT"],
     ["pickup", "INTEGER NOT NULL DEFAULT 0"],
-    // 決済画面で入れた住所が、先に選んだ届け先の都道府県と違うとき（送料が違うので、店主さんと YMM が確かめる）
+    // 決済画面で入れた住所が、先に選んだ届け先の都道府県と違うとき（送料が違うので、事業者さんと YMM が確かめる）
     ["ship_warning", "TEXT"],
     // お客さまのメールアドレス（サービスの案内＝配信の URL などを講師がメールで送るため）
     ["customer_email", "TEXT"],
@@ -276,13 +276,13 @@ function open(): DatabaseSync {
   }
 
   // 休んでいい仕組み（2026-11-05 きよさん）：rest_month＝お休みする月（2026-11）。翌月には自然に戻る。
-  //   お休みの間、担当のお店は見守りの人（cover_partner_id。空なら YMM 管理）が見る。担当・取り分・記録は変えない
+  //   お休みの間、担当の事業者は見守りの人（cover_partner_id。空なら YMM 管理）が見る。担当・取り分・記録は変えない
   //   career_json：わたしの歩み（できるようになったこと）を Claude がまとめたもの
   const ucols = (db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name);
   for (const c of ["rest_month", "career_json", "career_at"]) if (!ucols.includes(c)) db.exec(`ALTER TABLE users ADD COLUMN ${c} TEXT`);
   if (!scols.includes("cover_partner_id")) db.exec("ALTER TABLE shops ADD COLUMN cover_partner_id INTEGER REFERENCES users(id)");
 
-  // 次の商品の提案（2026-11-05 きよさん：物販の1割は入り口。パートナーが、送らない商品を店主さんに提案できるように）
+  // 次の商品の提案（2026-11-05 きよさん：物販の1割は入り口。パートナーが、送らない商品を事業者さんに提案できるように）
   //   proposals_json：Claude が出した案／proposals_count：出してもらった回数（REVISE_LIMIT まで）／drafts.proposal_name：どの提案から生まれた商品か
   if (!scols.includes("proposals_json")) db.exec("ALTER TABLE shops ADD COLUMN proposals_json TEXT");
   if (!scols.includes("proposals_at")) db.exec("ALTER TABLE shops ADD COLUMN proposals_at TEXT");

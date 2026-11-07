@@ -1,6 +1,6 @@
 "use client";
 
-// みんなの声：店主さん・お客さまからのお褒めと要望を、スタッフみんなで分け合う（2026-11-05 きよさん）
+// みんなの声：事業者さん・お客さまからのお褒めと要望を、スタッフみんなで分け合う（2026-11-05 きよさん）
 //   きびしい言葉も、文句ではなく「もっと未来のために」の要望として Claude が整えてから載せる
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useVoiceInput } from "@/lib/useVoiceInput";
@@ -27,11 +27,11 @@ type Item = {
 type Data = { voices: Item[]; shops: { id: number; name: string }[]; me: { id: number; role: string } };
 
 const SOURCES = [
-  { key: "owner", label: "店主さん" },
+  { key: "owner", label: "事業者さん" },
   { key: "customer", label: "お客さま" },
   { key: "other", label: "そのほか" },
 ] as const;
-const WHO = { owner: "店主さん", customer: "お客さま", other: "そのほか" };
+const WHO = { owner: "事業者さん", customer: "お客さま", other: "そのほか" };
 
 function VoicesInner() {
   const [data, setData] = useState<Data | null>(null);
@@ -89,7 +89,7 @@ function VoicesInner() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold">みんなの声</h1>
-        <p className="text-sm text-black/60">店主さんやお客さまから聞いた、うれしい言葉と「こうだったらいいのに」を、みんなで分け合う場所です。きびしい言葉も、Claude が「もっと未来のために」の形に整えてから載せます。</p>
+        <p className="text-sm text-black/60">事業者さんやお客さまから聞いた、うれしい言葉と「こうだったらいいのに」を、みんなで分け合う場所です。きびしい言葉も、Claude が「もっと未来のために」の形に整えてから載せます。</p>
       </div>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
@@ -103,7 +103,7 @@ function VoicesInner() {
         </div>
         {data.shops.length > 0 && (
           <select className="w-full rounded-xl border border-black/15 bg-white p-3 text-base" value={shopId} onChange={(e) => setShopId(e.target.value)}>
-            <option value="">どのお店の話？（特になければこのまま）</option>
+            <option value="">どの事業者の話？（特になければこのまま）</option>
             {data.shops.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}

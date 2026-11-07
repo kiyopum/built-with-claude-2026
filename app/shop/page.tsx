@@ -17,7 +17,7 @@ export default function ShopPage() {
   if (products === null) return <p className="text-black/50">読み込み中…</p>;
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">地域のお店の商品</h1>
+      <h1 className="text-xl font-bold">地域の事業者の商品</h1>
       {products.length === 0 && <p className="text-black/60">公開中の商品はまだありません。</p>}
       {products.map((p) => (
         <Link key={p.id} href={`/p/${p.id}`} className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm border border-black/5">

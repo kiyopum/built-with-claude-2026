@@ -1,4 +1,4 @@
-// 商品1件について Claude に渡す材料（お店・ヒアリング・ラベル・法律の調査・いまの文）をそろえる
+// 商品1件について Claude に渡す材料（事業者・ヒアリング・ラベル・法律の調査・いまの文）をそろえる
 import { getDb, type Draft, type Shop } from "@/lib/db";
 import type { DraftFields, LegalResearch, ProductContext } from "@/lib/claude";
 

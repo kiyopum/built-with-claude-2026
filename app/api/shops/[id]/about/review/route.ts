@@ -2,7 +2,7 @@ import { shopPinError, guardShop } from "@/lib/auth";
 import { REVISE_LIMIT, getDb, type Shop } from "@/lib/db";
 import { summarizeShop } from "@/lib/claude";
 
-// 店主が「このお店について」を確認する：approve（公開OK）/ edit（手で直す）/ revise（AIに作り直してもらう）
+// 事業者さんが「この事業者さんについて」を確認する：approve（公開OK）/ edit（手で直す）/ revise（AIに作り直してもらう）
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const g = await guardShop(id);
@@ -10,10 +10,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const { action, text, note, shopPin } = (await req.json()) as { action: string; text?: string; note?: string; shopPin?: string };
   const db = getDb();
   const shop = db.prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
-  if (!shop?.philosophy_text) return Response.json({ error: "お店の紹介がまだありません" }, { status: 404 });
+  if (!shop?.philosophy_text) return Response.json({ error: "事業者の紹介がまだありません" }, { status: 404 });
 
   if (action === "approve") {
-    // 公開OKは店主さんだけ（お店の暗証番号）
+    // 公開OKは事業者さんだけ（事業者さんの暗証番号）
     const pinErr = shopPinError(g.shop, shopPin);
     if (pinErr) return Response.json({ error: pinErr }, { status: 403 });
     db.prepare("UPDATE shops SET philosophy_status = 'approved' WHERE id = ?").run(shop.id);

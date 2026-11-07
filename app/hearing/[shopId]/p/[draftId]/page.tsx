@@ -2,8 +2,8 @@
 
 // パートナー：商品の「2) 法律チェックと修正」と「3) リリース」
 //   写真の撮り直し・追加・並べ替え、文や価格の修正、AIへの一言修正
-//   保存すると法律チェックをやり直し、店主さんの確認待ちに戻る（公開中でも、もう一度確認してもらう）
-//   リリースは店主さんだけ：スマホを渡して、お店の暗証番号を押してもらう
+//   保存すると法律チェックをやり直し、事業者さんの確認待ちに戻る（公開中でも、もう一度確認してもらう）
+//   リリースは事業者さんだけ：スマホを渡して、事業者さんの暗証番号を押してもらう
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -38,7 +38,7 @@ type Draft = {
 };
 type Rates = { effective: number; goods: number; service: number };
 
-const STATUS = { draft: "店主さんの確認待ち", published: "公開中", rejected: "却下" };
+const STATUS = { draft: "事業者さんの確認待ち", published: "公開中", rejected: "却下" };
 
 async function toPicked(urls: string[]): Promise<PickedPhoto[]> {
   return Promise.all(
@@ -160,7 +160,7 @@ function EditInner() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← お店のページ</Link>
+        <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← 事業者のページ</Link>
         <h1 className="text-xl font-bold mt-1">{draft.status === "published" ? "商品を修正" : "法律チェックと修正・リリース"}</h1>
         <p className="text-xs text-black/50">いまの状態：{STATUS[draft.status]}</p>
       </div>
@@ -177,17 +177,17 @@ function EditInner() {
 
       {draft.status === "draft" && (
         <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-leaf/40 space-y-2">
-          <div className="text-sm font-bold text-leaf">3) リリース（店主さんだけ）</div>
+          <div className="text-sm font-bold text-leaf">3) リリース（事業者さんだけ）</div>
           {blocked ? (
             <p className="text-sm text-red-600">「このままでは販売できない」ので、まだリリースできません。下の赤いところを直して保存してください。</p>
           ) : unsaved ? (
             <p className="text-sm text-amber-700">直したところがあります。先に下の「保存して、法律チェック」を押してください。</p>
           ) : (
-            <p className="text-sm">店主さんに、写真と文を上から下まで見てもらってください。よければ、お店の暗証番号で公開します。</p>
+            <p className="text-sm">事業者さんに、写真と文を上から下まで見てもらってください。よければ、事業者さんの暗証番号で公開します。</p>
           )}
           <OwnerApprove
-            button="店主さんに見てもらって、リリースする"
-            label="店主さん：お店の暗証番号"
+            button="事業者さんに見てもらって、リリースする"
+            label="事業者さん：事業者さんの暗証番号"
             onPin={release}
             disabled={blocked || unsaved || busy !== ""}
             workingText="公開しています"
@@ -215,7 +215,7 @@ function EditInner() {
       {draft.kind === "service" ? (
         <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-1 text-sm">
           <div className="font-bold text-leaf">お届け</div>
-          <p>サービスなので送りません（送料なし）。申し込んだ人には、お店からメールで案内（配信の URL など）を送ってください。申し込んだ人のメールアドレスは、お店のページの「注文」に出ます。</p>
+          <p>サービスなので送りません（送料なし）。申し込んだ人には、事業者さんからメールで案内（配信の URL など）を送ってください。申し込んだ人のメールアドレスは、事業者のページの「注文」に出ます。</p>
         </section>
       ) : (
       <PackageCard
@@ -242,7 +242,7 @@ function EditInner() {
           {busy === "save" ? <Working text="保存して、法律チェックをやり直しています" est={45} /> : "保存して、法律チェック"}
         </button>
         <p className="text-xs text-black/50">
-          保存すると、直した文のまま Claude が法律チェックをやり直します（写真を変えたときは新しいラベルも読みます）。そのあと店主さんにもう一度確認してもらいます。
+          保存すると、直した文のまま Claude が法律チェックをやり直します（写真を変えたときは新しいラベルも読みます）。そのあと事業者さんにもう一度確認してもらいます。
         </p>
       </div>
 
@@ -251,7 +251,7 @@ function EditInner() {
         <TodoNoteButton legal={legal} setNote={setNote} />
         <textarea
           className={`${input} min-h-20`}
-          placeholder="例：店主さんが『もっと素朴に』と言っていた。容量は300gに変わった。"
+          placeholder="例：事業者さんが『もっと素朴に』と言っていた。容量は300gに変わった。"
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
@@ -316,7 +316,7 @@ function RateCard({ draftId, kind, rates, custom, onSaved }: { draftId: number; 
           </button>
         </span>
       </div>
-      <p className="text-xs">いま：{pct(effective)}。1万円売れると、お店 {ex.owner.toLocaleString()}円・YMM {ex.ymm.toLocaleString()}円・パートナー {ex.partner.toLocaleString()}円（手数料 3.6%・パートナーへ半分の場合）</p>
+      <p className="text-xs">いま：{pct(effective)}。1万円売れると、事業者 {ex.owner.toLocaleString()}円・YMM {ex.ymm.toLocaleString()}円・パートナー {ex.partner.toLocaleString()}円（手数料 3.6%・パートナーへ半分の場合）</p>
       {msg && <p className="text-xs text-sky-800">{msg}</p>}
     </section>
   );

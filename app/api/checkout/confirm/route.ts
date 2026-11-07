@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const session = await stripe().checkout.sessions.retrieve(sessionId);
     const r = recordOrder(session);
     const paid = session.payment_status === "paid";
-    // お店に一言送るページの合言葉（払われた注文だけ）
+    // 事業者さんに一言送るページの合言葉（払われた注文だけ）
     const letter = paid ? letterTokenForSession(session.id) : null;
     return Response.json({ paid, amount: session.amount_total, created: r.created, letter });
   } catch (e) {

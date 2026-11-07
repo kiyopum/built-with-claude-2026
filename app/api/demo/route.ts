@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { getDb, letterTokenOf } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 
-// 見本の一覧：それぞれの機能を開くための番号（管理者は全部のお店、パートナーは担当のお店から選ぶ）
+// 見本の一覧：それぞれの機能を開くための番号（管理者は全部の事業者、パートナーは担当の事業者さんから選ぶ）
 export async function GET() {
   await connection();
   const u = await requireUser();

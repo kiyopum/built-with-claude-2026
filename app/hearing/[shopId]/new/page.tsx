@@ -82,9 +82,9 @@ function NewProductInner() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← お店のページ</Link>
+        <Link href={`/hearing/${shopId}`} className="text-sm text-leaf">← 事業者のページ</Link>
         <h1 className="text-xl font-bold mt-1">{service ? "サービスを追加" : "商品を追加"}</h1>
-        {service && <p className="text-sm text-black/60">ライブ配信・オンライン講座・教室・体験など、ものを送らないもの。申し込んだ人には、お店からメールで案内を送ります。</p>}
+        {service && <p className="text-sm text-black/60">ライブ配信・オンライン講座・教室・体験など、ものを送らないもの。申し込んだ人には、事業者さんからメールで案内を送ります。</p>}
       </div>
 
       {idea && (
@@ -92,7 +92,7 @@ function NewProductInner() {
           <div className="text-xs font-bold text-leaf">🌱 提案から始めます（{idea.form}）</div>
           <div className="font-bold">{idea.name}</div>
           <p className="text-sm">{idea.what}</p>
-          <p className="text-xs text-black/60">これは案です。日時・値段・中身は、店主さんのお話で決まります。聞いたとおりに申し込みページを作ります。</p>
+          <p className="text-xs text-black/60">これは案です。日時・値段・中身は、事業者さんのお話で決まります。聞いたとおりに申し込みページを作ります。</p>
           {idea.check && <p className="text-xs text-amber-700">出す前に確かめること：{idea.check}</p>}
         </section>
       )}

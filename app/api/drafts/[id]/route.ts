@@ -24,7 +24,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   });
 }
 
-// 店主の確認：
+// 事業者さんの確認：
 //   publish（このまま公開）/ reject（却下）
 //   edit（手で直す → 文はそのまま、法律チェックだけやり直す）
 //   revise（AIに作り直してもらう → 文も法律チェックも作り直す）
@@ -37,16 +37,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const d = db.prepare("SELECT * FROM drafts WHERE id = ?").get(Number(id)) as Draft | undefined;
   if (!d) return Response.json({ error: "下書きが見つかりません" }, { status: 404 });
 
-  // リリースと却下は店主さんだけ。パートナーのスマホで、店主さんがお店の暗証番号を入れて押す
+  // リリースと却下は事業者さんだけ。パートナーのスマホで、事業者さんが事業者さんの暗証番号を入れて押す
   const pinErr = (body.action === "publish" || body.action === "reject") && shopPinError(g.shop, body.shopPin);
   if (pinErr) return Response.json({ error: pinErr }, { status: 403 });
 
   if (body.action === "publish") {
-    // 送料：商品の大きさ・重さ（＋お店の都道府県）で送料込みにするか、お店の全国一律の送料のどちらかが要る
+    // 送料：商品の大きさ・重さ（＋事業者の都道府県）で送料込みにするか、事業者の全国一律の送料のどちらかが要る
     // サービス（ライブ配信・講座など）は送らないので、送料は要らない
     if (d.kind !== "service" && !isIncluded(d, g.shop) && g.shop.shipping_yen == null) {
       return Response.json(
-        { error: "送料が決まっていません。この商品の「送り方（大きさと重さ）」を選ぶか、お店のページで送料を入れてください。" },
+        { error: "送料が決まっていません。この商品の「送り方（大きさと重さ）」を選ぶか、事業者のページで送料を入れてください。" },
         { status: 400 },
       );
     }
@@ -73,7 +73,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return Response.json({ ok: true });
   }
 
-  // ここから先は Claude を使う：お店・ヒアリング・ラベル・法律の調査をそろえる
+  // ここから先は Claude を使う：事業者・ヒアリング・ラベル・法律の調査をそろえる
   const { c, current } = loadProductContext(d);
 
   try {
@@ -94,7 +94,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         `UPDATE drafts SET name = ?, description = ?, price_yen = ?, recommend_reason = ?, target_customer = ?, legal_json = ?,
          status = 'draft', revision_note = ?, stripe_product_id = NULL, stripe_price_id = NULL,
          updated_at = datetime('now','localtime') WHERE id = ?`,
-      ).run(next.name, next.description, next.price_yen, next.recommend_reason, next.target_customer, JSON.stringify(legal), body.by === "partner" ? "（パートナーが修正）" : "（店主が手で修正）", d.id);
+      ).run(next.name, next.description, next.price_yen, next.recommend_reason, next.target_customer, JSON.stringify(legal), body.by === "partner" ? "（パートナーが修正）" : "（事業者さんが手で修正）", d.id);
       return Response.json({ ok: true });
     }
 

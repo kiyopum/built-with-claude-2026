@@ -1,8 +1,8 @@
 import { getDb, letterTokenOf } from "@/lib/db";
 import { shopPinError, guardShop } from "@/lib/auth";
 
-// 店主さん向け：このお店の注文と届け先。届け先はお客さまの個人情報なので、店主さんの暗証番号で開く
-//   ありがとうの往復便：注文ごとのカードの合言葉と、お客さまからのお便り。返事も暗証番号つきで書く（返事は店主さんのことば）
+// 事業者さん向け：この事業者の注文と届け先。届け先はお客さまの個人情報なので、事業者さんの暗証番号で開く
+//   ありがとうの往復便：注文ごとのカードの合言葉と、お客さまからのお便り。返事も暗証番号つきで書く（返事は事業者さんのことば）
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const g = await guardShop(id);

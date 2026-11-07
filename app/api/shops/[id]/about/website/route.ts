@@ -5,16 +5,16 @@ import { findShopWebsite, readShopWebsite } from "@/lib/claude";
 // SNS は中身がログインの向こうにあって読めないので、今までどおりヒアリングで聞く
 const SNS_HOSTS = ["instagram.com", "facebook.com", "x.com", "twitter.com", "tiktok.com", "line.me", "threads.net"];
 
-// お店のホームページを Claude に読んでもらう（あれば。ヒアリングは補足になる）
+// 事業者のホームページを Claude に読んでもらう（あれば。ヒアリングは補足になる）
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const g = await guardShop(id);
   if (g instanceof Response) return g;
   const db = getDb();
   const shop = db.prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
-  if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
+  if (!shop) return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
   const body = (await req.json().catch(() => ({}))) as { url?: string; clear?: boolean; search?: boolean };
-  // お店の名前と地域で候補を探すだけ（どれを読むかはパートナーが選ぶ）
+  // 事業者の名前と地域で候補を探すだけ（どれを読むかはパートナーが選ぶ）
   if (body.search) {
     try {
       return Response.json({ candidates: await findShopWebsite(shop) });
@@ -41,7 +41,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const host = url.hostname.replace(/^www\./, "");
   if (SNS_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) {
     return Response.json(
-      { error: "Instagram などの SNS は、ログインしないと中身が読めません。SNS だけのお店は、今までどおりヒアリングでお話を聞いてください。" },
+      { error: "Instagram などの SNS は、ログインしないと中身が読めません。SNS だけの事業者は、今までどおりヒアリングでお話を聞いてください。" },
       { status: 400 },
     );
   }

@@ -66,7 +66,7 @@ export async function saveAudios(form: FormData, prefix: string): Promise<{ file
   return out;
 }
 
-// お店を消すとき：その商品の写真とヒアリングの録音のファイルを消す（行は呼び出し側が消す）
+// 事業者を消すとき：その商品の写真とヒアリングの録音のファイルを消す（行は呼び出し側が消す）
 export function removeShopFiles(shopId: number) {
   const db = getDb();
   const photos = db.prepare("SELECT p.file FROM product_photos p JOIN drafts d ON d.id = p.draft_id WHERE d.shop_id = ?").all(shopId) as { file: string }[];

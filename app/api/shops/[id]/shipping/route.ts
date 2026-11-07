@@ -4,8 +4,8 @@ import { parseShipDays, prefOf } from "@/lib/shipping";
 
 // 送料の設定
 //   yen：全国一律の送料（大きさ・重さを入れていない商品で使う。0 円なら送料込み）
-//   prefecture：お店から送り出す都道府県（送料込みの商品で、届け先との距離で送料を出すのに要る）
-//   pickup_ok：お店での受け取りができるか（受け取りなら送料 0 円）
+//   prefecture：事業者さんから送り出す都道府県（送料込みの商品で、届け先との距離で送料を出すのに要る）
+//   pickup_ok：事業者のところでの受け取りができるか（受け取りなら送料 0 円）
 //   online_label：ネットで宛名ラベルを作る送り方（クリックポスト）も使うか
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;

@@ -1,6 +1,6 @@
 "use client";
 
-// パートナー：お店を選ぶ／新しく登録する
+// パートナー：事業者を選ぶ／新しく登録する
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -34,8 +34,8 @@ export default function HearingTop() {
       <Link href="/me" className="block rounded-2xl bg-leaf/5 p-3 text-sm">
         🌱 <b>わたしの歩み</b>：これまでしてきたこと・今月のお休み →
       </Link>
-      <h1 className="text-xl font-bold">担当のお店</h1>
-      {shops?.length === 0 && <p className="text-sm text-black/60">まだ担当のお店がありません。下から登録するか、YMM にお店を割り当ててもらってください。</p>}
+      <h1 className="text-xl font-bold">担当の事業者</h1>
+      {shops?.length === 0 && <p className="text-sm text-black/60">まだ担当の事業者さんがありません。下から登録するか、YMM に事業者を割り当ててもらってください。</p>}
       {shops === null && <p className="text-black/50">読み込み中…</p>}
       <div className="grid gap-3">
         {shops?.map((s) => (
@@ -55,12 +55,12 @@ export default function HearingTop() {
 
       {!adding ? (
         <button className="w-full rounded-2xl border-2 border-dashed border-leaf/50 text-leaf py-4 font-bold" onClick={() => setAdding(true)}>
-          ＋ 新しいお店を登録する
+          ＋ 新しい事業者を登録する
         </button>
       ) : (
         <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
-          <div className="text-sm font-bold text-leaf">新しいお店</div>
-          <input className="w-full rounded-xl border border-black/15 p-3 text-base" placeholder="店名" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <div className="text-sm font-bold text-leaf">新しい事業者</div>
+          <input className="w-full rounded-xl border border-black/15 p-3 text-base" placeholder="事業者名" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <input
             className="w-full rounded-xl border border-black/15 p-3 text-base"
             placeholder="業種（例：手作り味噌と漬物の店）"
@@ -74,13 +74,13 @@ export default function HearingTop() {
           </label>
           <input
             className="w-full rounded-xl border border-black/15 p-3 text-base"
-            placeholder="お店のホームページ（知っていれば）"
+            placeholder="事業者のホームページ（知っていれば）"
             inputMode="url"
             value={form.website_url}
             onChange={(e) => setForm({ ...form, website_url: e.target.value })}
           />
           <p className="rounded-xl bg-leaf/5 p-3 text-xs text-black/70">
-            📮 訪問の予定日を入れて早めに登録すると、<b>事務局がお店のホームページと法律を先に調べて、質問も用意しておきます</b>。パートナーさんは、当日は商品のことに専念できます。すぐに始めるときは、今までどおりその場で Claude が調べます。
+            📮 訪問の予定日を入れて早めに登録すると、<b>事務局が事業者のホームページと法律を先に調べて、質問も用意しておきます</b>。パートナーさんは、当日は商品のことに専念できます。すぐに始めるときは、今までどおりその場で Claude が調べます。
           </p>
           {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
           <div className="flex gap-2">

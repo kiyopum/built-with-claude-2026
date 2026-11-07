@@ -3,7 +3,7 @@
 // YMM の管理画面
 //   止まっている商品（法律チェックで販売できない）→ YMM が手助けに入る先
 //   パートナー：登録・止める・暗証番号の再発行
-//   お店：担当パートナーの割り当て・店主さんの暗証番号のリセット
+//   事業者：担当パートナーの割り当て・事業者さんの暗証番号のリセット
 //   注文と届け先・支払期日（契約条件）
 //   売上・取り分・分け方の設定は「明細」へ
 import Link from "next/link";
@@ -94,9 +94,9 @@ export default function AdminPage() {
 
       <UsersCard users={data.users} meId={data.me.id} act={act} />
 
-      {/* お店 */}
+      {/* 事業者 */}
       <section className={card}>
-        <div className="font-bold">お店と担当パートナー</div>
+        <div className="font-bold">事業者と担当パートナー</div>
         <ul className="space-y-2">
           {data.shops.map((s) => (
             <li key={s.id} className="rounded-xl bg-black/[0.03] p-3 space-y-2 text-sm">
@@ -109,7 +109,7 @@ export default function AdminPage() {
                 </span>
               </div>
               <div className="text-xs text-black/60">
-                送料 {s.shipping_yen == null ? <span className="text-red-600">未設定</span> : `${s.shipping_yen.toLocaleString()}円`}・店主さんの暗証番号{" "}
+                送料 {s.shipping_yen == null ? <span className="text-red-600">未設定</span> : `${s.shipping_yen.toLocaleString()}円`}・事業者さんの暗証番号{" "}
                 {s.has_pin ? "設定済み" : <span className="text-red-600">未設定</span>}
               </div>
               <div className="flex gap-2 items-center">
@@ -149,9 +149,9 @@ export default function AdminPage() {
               {s.has_pin && (
                 <button
                   className="text-xs text-black/50 underline"
-                  onClick={() => act({ action: "resetShopPin", shopId: s.id }, `${s.name} の暗証番号を消しました。次にお店のページを開いたとき、店主さんに決め直してもらってください`)}
+                  onClick={() => act({ action: "resetShopPin", shopId: s.id }, `${s.name} の暗証番号を消しました。次に事業者のページを開いたとき、事業者さんに決め直してもらってください`)}
                 >
-                  店主さんが暗証番号を忘れたとき：消して決め直してもらう
+                  事業者さんが暗証番号を忘れたとき：消して決め直してもらう
                 </button>
               )}
               <DeleteShop shop={s} act={act} />
@@ -291,7 +291,7 @@ function NudgeDays({ initial, act }: { initial: number; act: (b: Record<string, 
   return (
     <section className={card}>
       <div className="font-bold">🌱 次の小さな一歩を出すまでの日数</div>
-      <p className="text-xs text-black/50">公開からこの日数のあいだ注文のない商品に、お店のページで「もっと届くように、次の小さな一歩」を出します。0 にすると、注文のない公開中の商品すべてに出ます（デモ用）。</p>
+      <p className="text-xs text-black/50">公開からこの日数のあいだ注文のない商品に、事業者のページで「もっと届くように、次の小さな一歩」を出します。0 にすると、注文のない公開中の商品すべてに出ます（デモ用）。</p>
       <div className="flex gap-2 items-center">
         <input className={input} inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value.replace(/\D/g, ""))} />
         <span className="shrink-0">日</span>
@@ -319,7 +319,7 @@ function PaymentTerms({ initial, act }: { initial: string; act: (b: Record<strin
   );
 }
 
-// 事前調査：訪問の予定が入ったお店を、事務局がローカルの Claude Code で先に調べる（API を使わない）。手順書は docs/事務局_事前調査.md
+// 事前調査：訪問の予定が入った事業者を、事務局がローカルの Claude Code で先に調べる（API を使わない）。手順書は docs/事務局_事前調査.md
 type PrepReq = { id: number; name: string; category: string; area: string; visit_on: string; partner_name: string | null };
 function PrepCard() {
   const [reqs, setReqs] = useState<PrepReq[] | null>(null);
@@ -373,10 +373,10 @@ function PrepCard() {
   return (
     <section className={card}>
       <div className="font-bold">
-        事前調査を待っているお店 <span className="text-leaf">{reqs?.length ?? "…"}件</span>
+        事前調査を待っている事業者 <span className="text-leaf">{reqs?.length ?? "…"}件</span>
       </div>
       <p className="text-xs text-black/60">
-        パートナーさんが訪問の予定日を入れて登録したお店です。手元の Mac の Claude Code で調べて取り込むと、当日はお店の質問・ホームページ・法律の調査に Claude の API を使いません（お店1つで約95円＋ホームページを読む分が浮きます）。
+        パートナーさんが訪問の予定日を入れて登録した事業者です。手元の Mac の Claude Code で調べて取り込むと、当日は事業者の質問・ホームページ・法律の調査に Claude の API を使いません（事業者1つで約95円＋ホームページを読む分が浮きます）。
         やり方は <code>docs/事務局_事前調査.md</code> にあります。
       </p>
       {reqs && reqs.length > 0 && (
@@ -417,19 +417,19 @@ function PrepCard() {
   );
 }
 
-// お店を消す（テストや登録のやり直し用）。押し間違いを防ぐため2段階。注文のあるお店は API が断る
+// 事業者を消す（テストや登録のやり直し用）。押し間違いを防ぐため2段階。注文のある事業者は API が断る
 function DeleteShop({ shop, act }: { shop: Shop; act: (body: Record<string, unknown>, done?: string) => Promise<boolean> }) {
   const [arm, setArm] = useState(false);
   if (!arm) {
     return (
       <button className="text-xs text-black/50 underline" onClick={() => setArm(true)}>
-        このお店を消す（テストややり直しのとき）
+        この事業者を消す（テストややり直しのとき）
       </button>
     );
   }
   return (
     <div className="rounded-lg bg-red-50 p-2 space-y-2">
-      <p className="text-xs text-red-700">{shop.name} を消します。商品・写真・ヒアリング・録音・提案も消えて、戻せません。注文のあるお店は消せません。</p>
+      <p className="text-xs text-red-700">{shop.name} を消します。商品・写真・ヒアリング・録音・提案も消えて、戻せません。注文のある事業者は消せません。</p>
       <div className="flex gap-2">
         <button className="flex-1 rounded-lg bg-red-600 text-white py-2 font-bold" onClick={async () => { if (!(await act({ action: "deleteShop", shopId: shop.id }, `${shop.name} を消しました`))) setArm(false); }}>
           本当に消す

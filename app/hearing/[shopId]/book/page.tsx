@@ -1,6 +1,6 @@
 "use client";
 
-// お店の言葉の本：印刷して（PDF に保存して）店主さんに渡す。A4 たて
+// 事業者の言葉の本：印刷して（PDF に保存して）事業者さんに渡す。A4 たて
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Working } from "@/components/Working";
@@ -41,9 +41,9 @@ function BookInner() {
     <div className="space-y-5">
       <style>{`@media print { header, footer, .no-print { display: none !important; } main { padding: 0 !important; max-width: none !important; } body { background: #fff !important; } @page { size: A4; margin: 18mm; } .book section { break-inside: avoid; } }`}</style>
       <div className="no-print space-y-2">
-        <h1 className="text-xl font-bold">📖 お店の言葉の本</h1>
+        <h1 className="text-xl font-bold">📖 事業者の言葉の本</h1>
         <p className="text-sm text-black/70">
-          お店のヒアリング・ホームページ・商品・みんなの声・お客さまへのお返事から、Claude が「このお店が大事にしてきたこと」を1冊にまとめます。売るためではなく、後を継ぐ人や家族、新しく入る人に、お店の考えを渡すための本です。
+          事業者のヒアリング・ホームページ・商品・みんなの声・お客さまへのお返事から、Claude が「この事業者さんが大事にしてきたこと」を1冊にまとめます。売るためではなく、後を継ぐ人や家族、新しく入る人に、事業者の考えを渡すための本です。
         </p>
         <div className="flex gap-2">
           <button className="flex-1 rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" onClick={make} disabled={busy}>
@@ -55,7 +55,7 @@ function BookInner() {
             </button>
           )}
         </div>
-        {data.book_at && <p className="text-xs text-black/50">{data.book_at} にまとめました。店主さんに読んでもらい、直したいところは店主さんの言葉で聞いて、ヒアリングに足してから作り直してください。</p>}
+        {data.book_at && <p className="text-xs text-black/50">{data.book_at} にまとめました。事業者さんに読んでもらい、直したいところは事業者さんの言葉で聞いて、ヒアリングに足してから作り直してください。</p>}
         {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
       </div>
 
@@ -82,7 +82,7 @@ function BookInner() {
           </section>
           {b.quotes.length > 0 && (
             <section className="space-y-3">
-              <h3 className="font-bold text-leaf">店主さんの言葉</h3>
+              <h3 className="font-bold text-leaf">事業者さんの言葉</h3>
               {b.quotes.map((q, i) => (
                 <blockquote key={i} className="border-l-4 border-carrot/60 pl-3">
                   <p className="text-lg">「{q.quote}」</p>
@@ -109,7 +109,7 @@ function BookInner() {
             </section>
           )}
           <section className="space-y-1">
-            <h3 className="font-bold text-leaf">次にこのお店を担う人へ</h3>
+            <h3 className="font-bold text-leaf">次にこの事業を担う人へ</h3>
             <p className="whitespace-pre-wrap">{b.to_next}</p>
           </section>
           <p className="text-xs text-black/40 text-right pt-4 border-t border-black/10">

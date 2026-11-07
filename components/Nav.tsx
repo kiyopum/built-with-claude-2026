@@ -36,7 +36,7 @@ export function Nav() {
       <nav className="flex flex-wrap justify-end gap-1 text-[13px] whitespace-nowrap">
         {me ? (
           <>
-            {pill("/hearing", "お店")}
+            {pill("/hearing", "事業者")}
             {pill("/everyone", "みんなの商品")}
             {pill("/statement", "明細")}
             {pill("/voices", "みんなの声")}

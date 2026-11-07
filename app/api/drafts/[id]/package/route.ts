@@ -3,7 +3,7 @@ import { guardDraft } from "@/lib/auth";
 import { sizeClassOf } from "@/lib/shipping";
 
 // 送り方：大きさ（絵で選ぶ区分）・重さ・1箱に入る数。送料込みの値段はここから自動で決まる
-//   商品ページの文ではないので、法律チェックのやり直しや店主さんの確認待ちには戻さない
+//   商品ページの文ではないので、法律チェックのやり直しや事業者さんの確認待ちには戻さない
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const g = await guardDraft(id);

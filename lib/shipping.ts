@@ -3,7 +3,7 @@
 //   2) 届け先の地域（距離）で送料を変える（近いほど安い）
 //   3) お客さまには「送料込み ○円」の1つの数字で見せる（消費者庁は「送料無料」より「送料込み」などの表示を促している
 //      https://www.caa.go.jp/policies/policy/consumer_policy/other/free_shipping ）
-// 料金は lib/shipping-data.ts（公式サイトから取った表）だけを使う。割引（持込割引など）は入れていない＝お店が損をしない側
+// 料金は lib/shipping-data.ts（公式サイトから取った表）だけを使う。割引（持込割引など）は入れていない＝事業者さんが損をしない側
 // 画面（ブラウザ）とサーバーの両方で使う
 import {
   COMPACT_BOX_YEN,
@@ -32,7 +32,7 @@ export function prefOf(s: string | null | undefined): Pref | null {
   const t = s.trim();
   return (PREFS as readonly string[]).find((p) => t === p || t === fullPref(p)) as Pref | undefined ?? null;
 }
-// 住所の書き出しが都道府県名ならそれを返す（お店の都道府県の初期値にだけ使う。最後は人が選んで保存する）
+// 住所の書き出しが都道府県名ならそれを返す（事業者の都道府県の初期値にだけ使う。最後は人が選んで保存する）
 export function prefFromAddress(addr: string | null | undefined): Pref | null {
   if (!addr) return null;
   const t = addr.replace(/^〒?\s*\d{3}-?\d{4}\s*/, "").trim();
@@ -57,7 +57,7 @@ export function sizeClassOf(key: unknown): SizeClass | undefined {
   return SIZE_CLASSES.find((s) => s.key === key);
 }
 
-// method：お客さまにも見せる送り方の名前／note：お店向けの補足（お客さまには見せない）
+// method：お客さまにも見せる送り方の名前／note：事業者向けの補足（お客さまには見せない）
 export type Quote = { yen: number; method: string; note?: string };
 
 function idx(p: Pref) {
@@ -73,7 +73,7 @@ function compact(from: Pref, to: Pref): Quote {
 }
 
 // この大きさ・重さで使える送り方の候補（重さの上限を超えるものは外す）
-// onlineLabel：ネットで宛名ラベルを作る送り方（クリックポスト）を使うか。お店ごとに選ぶ（2026-11-04 きよさん：案B）。
+// onlineLabel：ネットで宛名ラベルを作る送り方（クリックポスト）を使うか。事業者ごとに選ぶ（2026-11-04 きよさん：案B）。
 //   Yahoo! か Amazon のアカウント・ネットでのカード払い・ラベルの印刷が要るので、初めは使わない
 export type QuoteOpts = { onlineLabel?: boolean };
 function candidates(sizeKey: string, weightG: number, from: Pref, to: Pref, opts: QuoteOpts = {}): Quote[] {
@@ -116,12 +116,12 @@ export function quotesByPref(sizeKey: string, weightG: number, from: Pref, opts:
   return out;
 }
 
-// 何個買うと何箱になるか（1箱に入る数はお店が決める。初めは1個＝まとめない）
+// 何個買うと何箱になるか（1箱に入る数は事業者さんが決める。初めは1個＝まとめない）
 export function boxesFor(quantity: number, perBox: number): number {
   return Math.ceil(quantity / Math.max(1, Math.floor(perBox || 1)));
 }
 
-// 送料込みで売る商品か（大きさと重さが入っていて、お店の都道府県が決まっている）
+// 送料込みで売る商品か（大きさと重さが入っていて、事業者の都道府県が決まっている）
 export function isIncluded(d: { size_class?: string | null; weight_g?: number | null }, shop: { prefecture?: string | null }): boolean {
   return !!sizeClassOf(d.size_class) && !!d.weight_g && d.weight_g > 0 && !!prefOf(shop.prefecture);
 }

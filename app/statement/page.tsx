@@ -3,7 +3,7 @@
 // 画面3：成果明細
 //   パートナー：自分の取り分（担当分・紹介分）と、契約条件（フリーランス新法で明示が必要な3点）
 //   YMM 管理：
-//   ・売れた合計と、店主・パートナー・YMM・決済手数料の取り分
+//   ・売れた合計と、事業者さん・パートナー・YMM・決済手数料の取り分
 //   ・注文ごとの明細（記録した時の料率で計算済み）
 //   ・分け方のシミュレーション：料率・月の売上・作業時間・サーバー代を動かして、三方良しになる設定を探す
 // 分配の送金はアプリの外（本番は Stripe Connect）。ここは記録と確認だけ。
@@ -65,7 +65,7 @@ type PartnerData = {
 type Data = AdminData | PartnerData;
 
 const PARTS = [
-  { key: "owner", label: "店主", color: "bg-carrot", text: "text-carrot" },
+  { key: "owner", label: "事業者さん", color: "bg-carrot", text: "text-carrot" },
   { key: "partner", label: "パートナー", color: "bg-leaf", text: "text-leaf" },
   { key: "ymm", label: "YMM", color: "bg-sky-600", text: "text-sky-700" },
   { key: "fee", label: "決済手数料", color: "bg-black/30", text: "text-black/50" },
@@ -117,7 +117,7 @@ export default function StatementPage() {
           <div className="text-xs text-black/50">{t.count}件</div>
         </div>
         <div className="text-3xl font-bold">{yen(t.amount)}</div>
-        {t.shipping > 0 && <div className="text-xs text-black/50">うち送料 {yen(t.shipping)}（店主さんへ）</div>}
+        {t.shipping > 0 && <div className="text-xs text-black/50">うち送料 {yen(t.shipping)}（事業者さんへ）</div>}
         <SplitBar v={t} />
         <dl className="grid grid-cols-2 gap-2">
           {PARTS.map((p) => (
@@ -172,7 +172,7 @@ export default function StatementPage() {
                 パートナー：
                 {o.owner_partner_name ? `担当 ${o.owner_partner_name} ${yen(o.owner_partner_yen)}` : "担当なし"}
                 {o.referrer_name && o.referrer_yen > 0 && `／紹介 ${o.referrer_name} ${yen(o.referrer_yen)}`}
-                {o.shipping_yen > 0 && `／送料 ${yen(o.shipping_yen)}（店主さんへ・手数料は送料から）`}
+                {o.shipping_yen > 0 && `／送料 ${yen(o.shipping_yen)}（事業者さんへ・手数料は送料から）`}
               </div>
               <div className="text-[11px] text-black/40">
                 この注文の料率：YMM {pct(o.ymm_rate)}・パートナー（手数料を引いた残りの）{pct(o.partner_share)}
@@ -184,7 +184,7 @@ export default function StatementPage() {
 
       {data.byShop.length > 1 && (
         <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
-          <div className="text-sm font-bold">お店ごと</div>
+          <div className="text-sm font-bold">事業者ごと</div>
           {data.byShop.map((s) => (
             <div key={s.shop_name} className="flex justify-between text-sm border-t border-black/5 pt-1">
               <span>{s.shop_name}（{s.count}件）</span>
@@ -230,7 +230,7 @@ function PartnerStatement({ data }: { data: PartnerData }) {
       <div>
         <h1 className="text-xl font-bold">わたしの報酬</h1>
         <p className="text-xs text-black/50">
-          {data.me.name} さん（パートナー番号 {data.me.code}）。担当のお店で売れた分と、紹介して売れた分です。
+          {data.me.name} さん（パートナー番号 {data.me.code}）。担当の事業者で売れた分と、紹介して売れた分です。
         </p>
       </div>
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-2">
@@ -284,7 +284,7 @@ function Contract({ settings }: { settings: Settings }) {
       <dl className="space-y-2">
         <div>
           <dt className="text-xs font-bold text-black/60">業務の内容</dt>
-          <dd>お店でのヒアリング、商品ページの作成と修正の手伝い、商品の紹介（SNS など）。</dd>
+          <dd>事業者でのヒアリング、商品ページの作成と修正の手伝い、商品の紹介（SNS など）。</dd>
         </div>
         <div>
           <dt className="text-xs font-bold text-black/60">報酬の計算方法</dt>
@@ -294,7 +294,7 @@ function Contract({ settings }: { settings: Settings }) {
             <br />
             ライブ配信・講座・体験などのサービスは、売上の {pct(settings.ymm_rate_service)} から決済手数料を引いた残りの {pct(settings.partner_share)}。1,000円売れると {yen(per1000s.partner)}。（サービスごとに YMM が割合を決めることがあります。その場合は注文ごとの料率に出ます）
             <br />
-            ほかのパートナーが紹介して売れたときは、お店の担当と紹介した人で半分ずつ（1円の端数は担当へ）。自分の担当の商品を自分で紹介したとき、担当のいないお店の商品を紹介したときは全部。
+            ほかのパートナーが紹介して売れたときは、事業者の担当と紹介した人で半分ずつ（1円の端数は担当へ）。自分の担当の商品を自分で紹介したとき、担当のいない事業者の商品を紹介したときは全部。
           </dd>
         </div>
         <div>
@@ -388,7 +388,7 @@ function Simulator({ settings, onSaved }: { settings: Settings; onSaved: () => v
             <table className="w-full text-sm">
               <tbody>
                 <tr className="border-t border-black/5">
-                  <th className="text-left font-bold text-carrot py-1.5">店主</th>
+                  <th className="text-left font-bold text-carrot py-1.5">事業者さん</th>
                   <td className="text-right font-bold">{yen(monthly.owner)}</td>
                   <td className="text-right text-xs text-black/50 w-28">1,000円で {yen(per1000.owner)}</td>
                 </tr>

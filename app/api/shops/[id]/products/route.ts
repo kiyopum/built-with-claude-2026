@@ -12,7 +12,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (g instanceof Response) return g;
   const db = getDb();
   const shop = db.prepare("SELECT * FROM shops WHERE id = ?").get(Number(id)) as Shop | undefined;
-  if (!shop) return Response.json({ error: "お店が見つかりません" }, { status: 404 });
+  if (!shop) return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
 
   const form = await req.formData();
   const transcript = String(form.get("transcript") ?? "").trim();

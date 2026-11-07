@@ -88,8 +88,8 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
 
       {!from ? (
         <p className="rounded-xl bg-amber-50 text-amber-800 p-3 text-sm">
-          先に、お店のページの「送料」で<b>送り出す都道府県</b>を選んでください。選ぶと、ここに送料込みの値段が出ます。
-          {shopFlatYen != null && "（それまでは、お店の全国一律の送料で売ります）"}
+          先に、事業者のページの「送料」で<b>送り出す都道府県</b>を選んでください。選ぶと、ここに送料込みの値段が出ます。
+          {shopFlatYen != null && "（それまでは、事業者の全国一律の送料で売ります）"}
         </p>
       ) : size && w > 0 && !quotes ? (
         <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">この大きさ・重さで送れる方法が見つかりません（重すぎるかもしれません。箱は25kgまで）。</p>
@@ -107,7 +107,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
               全国では {(price + Math.min(...yens)).toLocaleString()}〜{(price + Math.max(...yens)).toLocaleString()}円（遠いほど送料が高くなります）
             </div>
           )}
-          <div className="text-xs text-black/50">送料の分はお店に入ります（決済手数料だけ引かれます）。料金は割引なしの基本の運賃です（{RATES_AS_OF}）。</div>
+          <div className="text-xs text-black/50">送料の分は事業者さんに入ります（決済手数料だけ引かれます）。料金は割引なしの基本の運賃です（{RATES_AS_OF}）。</div>
         </div>
       ) : null}
 

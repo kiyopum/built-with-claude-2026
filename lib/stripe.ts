@@ -54,7 +54,7 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
   const partnerShare = getSetting("partner_share");
   const feeRate = getSetting("stripe_fee_rate");
   const s = splitAmount(subtotal, ymmRate, feeRate, partnerShare);
-  // 送料は店主さんに渡る。送料にかかる決済手数料も送料から引く（店主さんが持つ）
+  // 送料は事業者さんに渡る。送料にかかる決済手数料も送料から引く（事業者さんが持つ）
   const shippingFee = Math.round(shipping * feeRate);
 
   // パートナーの取り分：担当のパートナーと、紹介したパートナーで分ける
@@ -70,8 +70,8 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
   const a = ship?.address;
   const pickup = session.metadata?.dest === "pickup";
   const service = d.kind === "service";
-  const address = service ? "オンライン（お店からメールでご案内）" : pickup ? "お店で受け取り" : a ? [a.postal_code ? `〒${a.postal_code}` : "", a.state, a.city, a.line1, a.line2].filter(Boolean).join(" ") : null;
-  // 先に選んだ届け先の都道府県と、決済画面で入れた住所が違うとき（送料が変わるので、店主さんと YMM が確かめる）
+  const address = service ? "オンライン（事業者さんからメールでご案内）" : pickup ? "事業者のところで受け取り" : a ? [a.postal_code ? `〒${a.postal_code}` : "", a.state, a.city, a.line1, a.line2].filter(Boolean).join(" ") : null;
+  // 先に選んだ届け先の都道府県と、決済画面で入れた住所が違うとき（送料が変わるので、事業者さんと YMM が確かめる）
   const chosen = pickup || service ? null : prefOf(session.metadata?.dest);
   const actual = prefOf(a?.state);
   const warning = chosen && a?.state && actual !== chosen ? `届け先を「${fullPref(chosen)}」で選びましたが、住所は「${a.state}」です。送料が違う可能性があります` : null;
@@ -84,14 +84,14 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     session.id, d.id, d.shop_id, quantity, total, s.owner + shipping - shippingFee, s.ymm, s.partner, s.fee + shippingFee, ymmRate, partnerShare, refCode || null,
-    // お店で受け取るときは住所を聞かないので、決済画面のお名前（なければメール）で、だれが来るか分かるようにする
+    // 事業者のところで受け取るときは住所を聞かないので、決済画面のお名前（なければメール）で、だれが来るか分かるようにする
     shipping, shippingFee, ship?.name ?? session.customer_details?.name ?? session.customer_details?.email ?? null, address, p.ownerPartnerId, p.ownerPartnerYen, p.referrerId, p.referrerYen,
     chosen, service ? "メールでご案内" : session.metadata?.ship_method || null, pickup ? 1 : 0, warning, session.customer_details?.email ?? null,
   );
   return { created: true };
 }
 
-// 決済の番号から、ありがとうの往復便の合言葉を出す（決済完了ページで「お店に一言」に使う）
+// 決済の番号から、ありがとうの往復便の合言葉を出す（決済完了ページで「事業者さんに一言」に使う）
 export function letterTokenForSession(sessionId: string): string | null {
   const o = getDb().prepare("SELECT id FROM orders WHERE stripe_session_id = ?").get(sessionId) as { id: number } | undefined;
   return o ? letterTokenOf(o.id) : null;

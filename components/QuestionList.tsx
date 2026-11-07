@@ -1,8 +1,8 @@
 // 聞くことリスト（質問の種類ごとに色の札をつける）
-export type Question = { group: "お店" | "商品" | "表示・法律"; question: string; why: string };
+export type Question = { group: "事業者" | "商品" | "表示・法律"; question: string; why: string };
 
 const GROUP_STYLE: Record<Question["group"], string> = {
-  お店: "bg-black/5 text-black/60",
+  事業者: "bg-black/5 text-black/60",
   商品: "bg-leaf/10 text-leaf",
   "表示・法律": "bg-red-50 text-red-700",
 };

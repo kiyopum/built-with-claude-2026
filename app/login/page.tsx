@@ -1,6 +1,6 @@
 "use client";
 
-// ログイン：自分の名前を押して、暗証番号4けた。店主さんはログインしません
+// ログイン：自分の名前を押して、暗証番号4けた。事業者さんはログインしません
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
@@ -92,7 +92,7 @@ function LoginInner() {
               </button>
             ))}
           </div>
-          <p className="text-xs text-black/50">店主さんはログインしません。リリースのときだけ、パートナーのスマホでお店の暗証番号を入れます。</p>
+          <p className="text-xs text-black/50">事業者さんはログインしません。リリースのときだけ、パートナーのスマホで事業者さんの暗証番号を入れます。</p>
         </>
       ) : (
         <>

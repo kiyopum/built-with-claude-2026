@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db";
 import { guardShop, hashPin, isPin } from "@/lib/auth";
 
-// 店主さんの暗証番号（リリース用）を決める。まだ決まっていないお店だけ。変えるときは YMM の管理画面で
+// 事業者さんの暗証番号（リリース用）を決める。まだ決まっていない事業者だけ。変えるときは YMM の管理画面で
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const g = await guardShop(id);

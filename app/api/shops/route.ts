@@ -3,7 +3,7 @@ import { getDb, type Shop } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { thisMonth } from "@/lib/checkin";
 
-// パートナーが担当するお店の一覧（管理者は全部）
+// パートナーが担当する事業者の一覧（管理者は全部）
 export async function GET() {
   await connection();
   const u = await requireUser();
@@ -22,13 +22,13 @@ export async function GET() {
   return Response.json({ shops });
 }
 
-// お店を登録する。担当は登録したパートナー。リリース用の暗証番号は、あとでお店のページで店主さんに決めてもらう
+// 事業者を登録する。担当は登録したパートナー。リリース用の暗証番号は、あとで事業者のページで事業者さんに決めてもらう
 export async function POST(req: Request) {
   const u = await requireUser();
   if (u instanceof Response) return u;
   const { name, category, area, visit_on, website_url } = (await req.json()) as Partial<Shop>;
   if (!name?.trim() || !category?.trim()) {
-    return Response.json({ error: "店名と業種を入れてください" }, { status: 400 });
+    return Response.json({ error: "事業者名と業種を入れてください" }, { status: 400 });
   }
   // 訪問の予定日とホームページ（どちらもなくてよい）。予定日があると、事務局が先に調べる（事前調査）
   const visit = visit_on && /^\d{4}-\d{2}-\d{2}$/.test(visit_on) ? visit_on : null;

@@ -1,7 +1,7 @@
 "use client";
 
 // ありがとうの往復便（お客さま向け）：箱に入っていたカードの QR から開く。
-//   お店に一言送る → 店主さんがお返事する → 同じ QR を開くとお返事が読める
+//   事業者さんに一言送る → 事業者さんがお返事する → 同じ QR を開くとお返事が読める
 import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Working } from "@/components/Working";
@@ -47,7 +47,7 @@ function LetterInner() {
         <div className="text-sm text-black/50">{data.product_name}</div>
         <h1 className="text-2xl font-bold">📮 {data.shop_name}への、ひとこと</h1>
         <p className="text-sm text-black/70">
-          {data.kind === "service" ? "受けてみて" : "届いて、使ってみて"}、感じたことをそのまま書いてください。うれしかったことも、「こうだったらもっといい」も、どちらも大歓迎です。お店の人が読んで、お返事します。
+          {data.kind === "service" ? "受けてみて" : "届いて、使ってみて"}、感じたことをそのまま書いてください。うれしかったことも、「こうだったらもっといい」も、どちらも大歓迎です。事業者の人が読んで、お返事します。
         </p>
       </section>
 
@@ -65,7 +65,7 @@ function LetterInner() {
                   <p className="whitespace-pre-wrap">{l.owner_reply}</p>
                 </div>
               ) : (
-                <p className="text-xs text-black/50 ml-6">お店に届きました。お返事は、このページで読めます（あとで同じ QR を開いてください）。</p>
+                <p className="text-xs text-black/50 ml-6">事業者さんに届きました。お返事は、このページで読めます（あとで同じ QR を開いてください）。</p>
               )}
             </li>
           ))}
@@ -82,10 +82,10 @@ function LetterInner() {
             onChange={(e) => setText(e.target.value)}
           />
           <button className="w-full rounded-2xl bg-leaf text-white py-4 text-lg font-bold disabled:opacity-50" onClick={send} disabled={busy || !text.trim()}>
-            {busy ? <Working text="お店に届けています" /> : sent ? "もう一言とどける" : "お店にとどける"}
+            {busy ? <Working text="事業者さんに届けています" /> : sent ? "もう一言とどける" : "事業者さんにとどける"}
           </button>
           <p className="text-xs text-black/50">
-            お名前や連絡先は書かなくて大丈夫です。お店の人は、書いたままの言葉を読みます。YaoBiz のスタッフにも、名前や連絡先を消して、やさしい形に整えた文で分け合います。
+            お名前や連絡先は書かなくて大丈夫です。事業者の人は、書いたままの言葉を読みます。YaoBiz のスタッフにも、名前や連絡先を消して、やさしい形に整えた文で分け合います。
           </p>
           {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
         </section>

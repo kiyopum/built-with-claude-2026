@@ -1,7 +1,7 @@
 // Instagram カルーセル用の画像を、端末の中（canvas）で作る。1080×1350（縦 4:5）を4枚。
 //   1) 表紙：メインの写真＋ひとこと・商品名・価格
 //   2) こだわり：写真＋見出し・本文
-//   3) お店の思い：店主の言葉
+//   3) 事業者の思い：事業者さんの言葉
 //   4) 買い方：QR コード（パートナー番号つきのリンク）
 import QRCode from "qrcode";
 
@@ -171,7 +171,7 @@ export async function renderCarousel(input: SlideInput): Promise<Blob[]> {
     // 写真は上の部分に。下の文字と重ならないようにする（写真の文字や商品が文字の下に隠れないように）
     if (main) {
       blurred(ctx, main, 0, 0, W, H, "rgba(0,0,0,0.3)");
-      photo(ctx, main, 0, 130, W, H - 480 - 130, "rgba(0,0,0,0.25)"); // 上は店名と PR、下は文字の場所
+      photo(ctx, main, 0, 130, W, H - 480 - 130, "rgba(0,0,0,0.25)"); // 上は事業者名と PR、下は文字の場所
     }
     const g = ctx.createLinearGradient(0, H - 560, 0, H);
     g.addColorStop(0, "rgba(0,0,0,0)");
@@ -208,12 +208,12 @@ export async function renderCarousel(input: SlideInput): Promise<Blob[]> {
     out.push(await toBlob(c));
   }
 
-  // 3) お店の思い
+  // 3) 事業者の思い
   {
     const [c, ctx] = canvas();
     ctx.fillStyle = LEAF;
     ctx.fillRect(0, 0, W, H);
-    drawText(ctx, "お店の思い", W / 2, 200, { size: 40, weight: 700, color: "rgba(255,255,255,0.8)", maxWidth: W - 160, align: "center" });
+    drawText(ctx, "事業者の思い", W / 2, 200, { size: 40, weight: 700, color: "rgba(255,255,255,0.8)", maxWidth: W - 160, align: "center" });
     ctx.fillStyle = "rgba(255,255,255,0.25)";
     ctx.font = `800 220px ${FONT}`;
     ctx.textAlign = "left";

@@ -1,11 +1,11 @@
 "use client";
 
-// パートナー：お店のページ
-//   はじめに：店主さんの暗証番号（リリース用）を店主さんに決めてもらう
-//   お店の理念（1回だけ聞く）→ 店主さんが読んで公開OK
+// パートナー：事業者のページ
+//   はじめに：事業者さんの暗証番号（リリース用）を事業者さんに決めてもらう
+//   事業者の理念（1回だけ聞く）→ 事業者さんが読んで公開OK
 //   販売者の情報・送料（全国一律）
 //   商品の一覧と「＋商品を追加」。公開中の商品は Instagram で紹介
-//   注文と届け先（店主さん用・暗証番号で開く）
+//   注文と届け先（事業者さん用・暗証番号で開く）
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -57,7 +57,7 @@ type Data = {
 
 type Proposal = { name: string; form: string; what: string; who: string; unit?: string; why_here: string; quote: string; start_small: string; ask: string; check: string };
 
-const STATUS = { draft: "店主さんの確認待ち", published: "公開中", rejected: "却下" } as Record<string, string>;
+const STATUS = { draft: "事業者さんの確認待ち", published: "公開中", rejected: "却下" } as Record<string, string>;
 const VERDICT = {
   販売できる: "text-leaf",
   直せば販売できる: "text-amber-600",
@@ -71,8 +71,8 @@ async function post(url: string, body: unknown): Promise<{ error: string; json: 
 }
 
 // 次の商品を提案する（2026-11-05 きよさん）
-//   ものを売る1割は入り口。お店の話の中にある「送らない商品」のたねを Claude が案にし、パートナーが店主さんに見せて相談する。
-//   取り分は、明細の画面と同じ今の決まりで計算する（値段は店主さんが決めるので、金額は「たとえば」）
+//   ものを売る1割は入り口。事業者の話の中にある「送らない商品」のたねを Claude が案にし、パートナーが事業者さんに見せて相談する。
+//   取り分は、明細の画面と同じ今の決まりで計算する（値段は事業者さんが決めるので、金額は「たとえば」）
 function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -96,9 +96,9 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
     <section className="rounded-2xl bg-white p-4 shadow-sm border-2 border-leaf/30 space-y-3">
       <div className="font-bold text-leaf">🌱 次の商品を提案する</div>
       <p className="text-sm">
-        ものを売るのは、入り口です。売上が少しでも、店主さんとの話のたねになります。お店の話の中には、<b>送らない商品</b>（配信・教室・動画・レシピなど）のたねがあります。Claude は、申し込みがまとまりやすい形から案を出します。よさそうな案を店主さんに見せて、相談してみてください。
+        ものを売るのは、入り口です。売上が少しでも、事業者さんとの話のたねになります。事業者の話の中には、<b>送らない商品</b>（配信・教室・動画・レシピなど）のたねがあります。Claude は、申し込みがまとまりやすい形から案を出します。よさそうな案を事業者さんに見せて、相談してみてください。
       </p>
-      <p className="text-xs text-black/60">出すかどうかを決めるのは、店主さんです。提案は、してもしなくても大丈夫です。</p>
+      <p className="text-xs text-black/60">出すかどうかを決めるのは、事業者さんです。提案は、してもしなくても大丈夫です。</p>
 
       <div className="rounded-xl bg-leaf/10 p-3 text-sm space-y-2">
         <div className="text-xs font-bold text-leaf">あなたの取り分（今の決まり）</div>
@@ -111,7 +111,7 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
           <b className="shrink-0 text-carrot">{yen(service(1000).partner)}</b>
         </div>
         <div className="border-t border-leaf/20 pt-2 text-xs text-black/70 space-y-1">
-          <div>たとえば（値段は店主さんが決めます）</div>
+          <div>たとえば（値段は事業者さんが決めます）</div>
           {[
             { a: 5000, label: `${yen(5000)} の申し込み1つで` },
             { a: 20000, label: `4人ひと組 ${yen(20000)} の申し込み1つで` },
@@ -119,7 +119,7 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
             <div key={a}>
               <div>{label}</div>
               <div className="text-right">
-                あなたに <b className="text-sm">{yen(service(a).partner)}</b>・店主さんに {yen(service(a).owner)}
+                あなたに <b className="text-sm">{yen(service(a).partner)}</b>・事業者さんに {yen(service(a).owner)}
               </div>
             </div>
           ))}
@@ -128,10 +128,10 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
       </div>
 
       {!shop.can_propose ? (
-        <p className="rounded-xl bg-black/[0.03] p-3 text-sm">お店のヒアリングか、商品を1つ作ったあとで、Claude が案を出せます（お店の話が材料になります）。</p>
+        <p className="rounded-xl bg-black/[0.03] p-3 text-sm">事業者のヒアリングか、商品を1つ作ったあとで、Claude が案を出せます（事業者の話が材料になります）。</p>
       ) : shop.proposals.length === 0 ? (
         <button className="w-full rounded-xl bg-leaf text-white py-3 font-bold disabled:opacity-50" onClick={make} disabled={busy}>
-          {busy ? <Working text="Claude がお店の話から案を考えています" est={25} /> : "このお店の案を、Claude に出してもらう"}
+          {busy ? <Working text="Claude が事業者の話から案を考えています" est={25} /> : "この事業者の案を、Claude に出してもらう"}
         </button>
       ) : (
         <>
@@ -159,16 +159,16 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
                       </div>
                     )}
                     <div>
-                      <dt className="text-black/50">このお店に合う理由</dt>
+                      <dt className="text-black/50">この事業者さんに合う理由</dt>
                       <dd>{p.why_here}</dd>
-                      {p.quote && <dd className="mt-0.5 border-l-2 border-leaf/40 pl-2 text-black/70">お店の話から：「{p.quote}」</dd>}
+                      {p.quote && <dd className="mt-0.5 border-l-2 border-leaf/40 pl-2 text-black/70">事業者の話から：「{p.quote}」</dd>}
                     </div>
                     <div>
                       <dt className="text-black/50">小さく試すなら</dt>
                       <dd>{p.start_small}</dd>
                     </div>
                     <div className="rounded-lg bg-carrot/10 p-2">
-                      <dt className="text-carrot font-bold">店主さんへの聞き方</dt>
+                      <dt className="text-carrot font-bold">事業者さんへの聞き方</dt>
                       <dd className="text-sm">「{p.ask}」</dd>
                     </div>
                     {p.check && (
@@ -179,7 +179,7 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
                     )}
                   </dl>
                   <Link href={`/hearing/${shop.id}/new?kind=service&seed=${i}`} className="block text-center rounded-xl bg-carrot text-white py-2.5 font-bold">
-                    店主さんが「やってみたい」なら、この案で作る
+                    事業者さんが「やってみたい」なら、この案で作る
                   </Link>
                 </div>
               ))}
@@ -224,7 +224,7 @@ function ShopPageInner() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/hearing" className="text-sm text-leaf">← お店の一覧</Link>
+        <Link href="/hearing" className="text-sm text-leaf">← 事業者の一覧</Link>
         <h1 className="text-xl font-bold mt-1">{shop.name}</h1>
         {shop.partner_resting && <p className="mt-1 rounded-lg bg-leaf/10 p-2 text-xs">🌿 担当の方は今月お休み中です。そのあいだ、みんなで見守っています。</p>}
         <p className="text-sm text-black/60">{shop.category}</p>
@@ -284,8 +284,8 @@ function ShopPageInner() {
       <OrdersCard shopId={shop.id} hasPin={shop.has_pin} shipDays={shop.ship_days} />
 
       <Link href={`/hearing/${shop.id}/book`} className="block rounded-2xl bg-white p-4 shadow-sm border border-black/5">
-        <div className="font-bold">📖 お店の言葉の本</div>
-        <div className="text-sm text-black/60">店主さんが大事にしてきたことを1冊にまとめて、印刷して渡します（後を継ぐ人・家族へ）</div>
+        <div className="font-bold">📖 事業者の言葉の本</div>
+        <div className="text-sm text-black/60">事業者さんが大事にしてきたことを1冊にまとめて、印刷して渡します（後を継ぐ人・家族へ）</div>
       </Link>
     </div>
   );
@@ -345,7 +345,7 @@ function NudgeCard({ shopId, draftId, initial, at }: { shopId: number; draftId: 
   );
 }
 
-// ---------- 店主さんの暗証番号（まだ決まっていないお店だけ） ----------
+// ---------- 事業者さんの暗証番号（まだ決まっていない事業者だけ） ----------
 
 function SetShopPin({ shopId, onDone }: { shopId: number; onDone: () => void }) {
   const [first, setFirst] = useState("");
@@ -376,23 +376,23 @@ function SetShopPin({ shopId, onDone }: { shopId: number; onDone: () => void }) 
 
   return (
     <section className="rounded-2xl border-2 border-carrot bg-carrot/5 p-4 space-y-3">
-      <div className="font-bold text-carrot">はじめに：店主さんの暗証番号を決める</div>
+      <div className="font-bold text-carrot">はじめに：事業者さんの暗証番号を決める</div>
       <p className="text-sm">
-        商品を公開（リリース）できるのは店主さんだけです。📱 スマホを店主さんに渡して、数字4けたを決めてもらってください。パートナーさんは見ないでください。
+        商品を公開（リリース）できるのは事業者さんだけです。📱 スマホを事業者さんに渡して、数字4けたを決めてもらってください。パートナーさんは見ないでください。
       </p>
       {busy ? (
         <div className="py-6 text-center text-leaf font-bold">
           <Working text="保存しています" />
         </div>
       ) : (
-        <PinPad label={first ? "確認のため、もう一度" : "店主さん：数字4けたを決める"} onDone={done} />
+        <PinPad label={first ? "確認のため、もう一度" : "事業者さん：数字4けたを決める"} onDone={done} />
       )}
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm text-center">{error}</p>}
     </section>
   );
 }
 
-// ---------- お店の理念・思い ----------
+// ---------- 事業者の理念・思い ----------
 
 function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () => void }) {
   const [mode, setMode] = useState<"" | "edit" | "revise">("");
@@ -400,7 +400,7 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const label = { none: "まだ聞いていません", draft: "店主さんの確認待ち", approved: "公開OK" }[shop.philosophy_status];
+  const label = { none: "まだ聞いていません", draft: "事業者さんの確認待ち", approved: "公開OK" }[shop.philosophy_status];
 
   async function act(action: "edit" | "revise") {
     setError("");
@@ -416,11 +416,11 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-bold text-leaf">お店の理念・思い</div>
+        <div className="text-sm font-bold text-leaf">事業者の理念・思い</div>
         <span className={`text-xs ${shop.philosophy_status === "draft" ? "text-carrot font-bold" : "text-black/50"}`}>{label}</span>
       </div>
       {!shop.philosophy_text ? (
-        <p className="text-sm text-black/60">最初に一度だけ、お店を始めたきっかけや大事にしていることを聞きます。商品の紹介文にも生かされます。</p>
+        <p className="text-sm text-black/60">最初に一度だけ、事業を始めたきっかけや大事にしていることを聞きます。商品の紹介文にも生かされます。</p>
       ) : mode === "edit" ? (
         <textarea className="w-full min-h-48 rounded-xl border border-black/15 p-3 text-base leading-relaxed" value={text} onChange={(e) => setText(e.target.value)} />
       ) : (
@@ -430,9 +430,9 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
       {shop.philosophy_status === "draft" && mode === "" && (
         <div className="space-y-2">
           <OwnerApprove
-            button="店主さんに読んでもらって、公開OK"
-            label="店主さん：お店の暗証番号"
-            note="公開OKにすると、このお店の商品ページの下に表示されます。"
+            button="事業者さんに読んでもらって、公開OK"
+            label="事業者さん：事業者さんの暗証番号"
+            note="公開OKにすると、この事業者の商品ページの下に表示されます。"
             onPin={async (pin) => {
               const { error } = await post(`/api/shops/${shop.id}/about/review`, { action: "approve", shopPin: pin });
               if (!error) onChanged();
@@ -484,14 +484,14 @@ function PhilosophyCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: ()
           href={`/hearing/${shop.id}/about`}
           className={`block text-center rounded-xl py-3 font-bold ${shop.philosophy_text ? "border border-leaf/40 text-leaf" : "bg-leaf text-white"}`}
         >
-          {shop.philosophy_text ? "聞き直す" : "お店のヒアリングを始める"}
+          {shop.philosophy_text ? "聞き直す" : "事業者のヒアリングを始める"}
         </Link>
       )}
     </section>
   );
 }
 
-// ---------- 発送する曜日（2026-11-05 きよさん：近所のお店で出す日をそろえると、集荷が1回で済む） ----------
+// ---------- 発送する曜日（2026-11-05 きよさん：近所の事業者で出す日をそろえると、集荷が1回で済む） ----------
 
 function ShipDaysCard({ shopId, days, neighbors, prefecture, onSaved }: { shopId: number; days: number[]; neighbors: Record<string, number>; prefecture: string | null; onSaved: () => void }) {
   const [error, setError] = useState("");
@@ -522,9 +522,9 @@ function ShipDaysCard({ shopId, days, neighbors, prefecture, onSaved }: { shopId
         決めると、商品ページに「発送は毎週{days.length ? shipDaysLabel(days) : "○曜"}」と出て、注文には次の発送日が出ます。
         {prefecture
           ? best
-            ? ` オレンジの数字は、${fullPref(prefecture)}で同じ曜日に出しているほかのお店の数です。近所で出す日をそろえると、運ぶ人の集荷が1回で済むかもしれません（まとめて集荷できるかは、運送会社の営業所に相談してください）。`
-            : ` ${fullPref(prefecture)}で、ほかに発送する曜日を決めたお店はまだありません。`
-          : " 送り出す都道府県を決めると、同じ県で同じ曜日に出しているお店の数が出ます。"}
+            ? ` オレンジの数字は、${fullPref(prefecture)}で同じ曜日に出しているほかの事業者の数です。近所で出す日をそろえると、運ぶ人の集荷が1回で済むかもしれません（まとめて集荷できるかは、運送会社の営業所に相談してください）。`
+            : ` ${fullPref(prefecture)}で、ほかに発送する曜日を決めた事業者はまだありません。`
+          : " 送り出す都道府県を決めると、同じ県で同じ曜日に出している事業者の数が出ます。"}
       </p>
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-2 text-xs">{error}</p>}
     </section>
@@ -533,7 +533,7 @@ function ShipDaysCard({ shopId, days, neighbors, prefecture, onSaved }: { shopId
 
 // ---------- 送料 ----------
 //   送り出す都道府県：商品ごとに大きさ・重さを選ぶと、届け先との距離でいちばん安い「送料込み」の値段になる
-//   お店で受け取り：近所の人は送料なしで買える
+//   事業者のところで受け取り：近所の人は送料なしで買える
 //   全国一律：大きさ・重さをまだ選んでいない商品で使う（今までの形）
 
 function OriginCard({ shopId, prefecture, hint, pickupOk, onlineLabel, onSaved }: { shopId: number; prefecture: string | null; hint: string | null; pickupOk: boolean; onlineLabel: boolean; onSaved: () => void }) {
@@ -548,7 +548,7 @@ function OriginCard({ shopId, prefecture, hint, pickupOk, onlineLabel, onSaved }
   return (
     <div className="space-y-3">
       <div className="space-y-1">
-        <div className="text-sm font-bold">お店から送り出す都道府県</div>
+        <div className="text-sm font-bold">事業者さんから送り出す都道府県</div>
         <div className="flex gap-2">
           <select className="flex-1 rounded-xl border border-black/15 bg-white p-3 text-base" value={pref} onChange={(e) => setPref(e.target.value)}>
             <option value="">選んでください</option>
@@ -572,7 +572,7 @@ function OriginCard({ shopId, prefecture, hint, pickupOk, onlineLabel, onSaved }
       </div>
       <label className="flex items-center justify-between gap-3 rounded-xl bg-black/[0.03] p-3">
         <span className="text-sm">
-          <b>お店で受け取り</b>もできる
+          <b>事業者のところで受け取り</b>もできる
           <span className="block text-xs text-black/50">近所の方は送料なしで買えます</span>
         </span>
         <button
@@ -657,17 +657,17 @@ function ShippingCard({
               保存
             </button>
           </div>
-          <p className="text-xs text-black/50">商品代とは別に、お客さまが払います。送料はそのまま店主さんに渡ります。お店が送料を持つなら 0。</p>
+          <p className="text-xs text-black/50">商品代とは別に、お客さまが払います。送料はそのまま事業者さんに渡ります。事業者さんが送料を持つなら 0。</p>
         </>
       ) : (
-        <p className="text-lg font-bold">{initial === 0 ? "0円（お店が負担）" : `${initial?.toLocaleString()}円`}</p>
+        <p className="text-lg font-bold">{initial === 0 ? "0円（事業者さんが負担）" : `${initial?.toLocaleString()}円`}</p>
       )}
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
     </section>
   );
 }
 
-// ---------- 注文と届け先（店主さん用） ----------
+// ---------- 注文と届け先（事業者さん用） ----------
 
 type Order = {
   id: number;
@@ -687,7 +687,7 @@ type Order = {
   letters: { id: number; original: string; owner_reply: string | null; replied_at: string | null; created_at: string; title: string | null; kind: string | null }[];
 };
 
-// ありがとうの往復便：お客さまからのお便りと、店主さんのお返事
+// ありがとうの往復便：お客さまからのお便りと、事業者さんのお返事
 function LetterThread({ o, onReply }: { o: Order; onReply: (letterId: number, text: string) => Promise<string> }) {
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
@@ -713,7 +713,7 @@ function LetterThread({ o, onReply }: { o: Order; onReply: (letterId: number, te
             <div className="space-y-2">
               <textarea
                 className="w-full min-h-20 rounded-lg border border-black/20 p-2 text-base"
-                placeholder="店主さんのお返事（お客さまが同じ QR を開くと読めます）"
+                placeholder="事業者さんのお返事（お客さまが同じ QR を開くと読めます）"
                 value={drafts[l.id] ?? ""}
                 onChange={(e) => setDrafts((d) => ({ ...d, [l.id]: e.target.value }))}
               />
@@ -746,12 +746,12 @@ function OrdersCard({ shopId, hasPin, shipDays }: { shopId: number; hasPin: bool
   if (!hasPin) return null;
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
-      <div className="text-sm font-bold text-leaf">注文と届け先（店主さん用）</div>
+      <div className="text-sm font-bold text-leaf">注文と届け先（事業者さん用）</div>
       {orders === null ? (
         <OwnerApprove
-          button="店主さん：注文を見る"
-          label="店主さん：お店の暗証番号"
-          note="お客さまの住所が入っているので、店主さんの暗証番号で開きます。"
+          button="事業者さん：注文を見る"
+          label="事業者さん：事業者さんの暗証番号"
+          note="お客さまの住所が入っているので、事業者さんの暗証番号で開きます。"
           onPin={async (p) => {
             const { error, json } = await post(`/api/shops/${shopId}/orders`, { shopPin: p });
             if (!error) {
@@ -787,13 +787,13 @@ function OrdersCard({ shopId, hasPin, shipDays }: { shopId: number; hasPin: bool
                   </div>
                 )}
                 {o.ship_method && <div className="text-xs">送り方：{o.ship_method}</div>}
-                {o.kind !== "service" && o.ship_method !== "お店で受け取り" && shipDays.length > 0 && (() => {
+                {o.kind !== "service" && !o.ship_method?.includes("受け取り") && shipDays.length > 0 && (() => {
                   const d = nextShipDate(new Date(o.created_at.replace(" ", "T")), shipDays);
                   return d && <div className="text-xs">📅 次の発送日：{d.getMonth() + 1}/{d.getDate()}（{WEEKDAYS[d.getDay()]}）</div>;
                 })()}
                 {o.ship_warning && <div className="rounded-lg bg-amber-50 text-amber-800 p-2 text-xs">⚠️ {o.ship_warning}</div>}
                 <div className="text-xs">
-                  お支払い {o.amount_yen.toLocaleString()}円{o.kind !== "service" && `（うち送料 ${o.shipping_yen.toLocaleString()}円）`}／ 店主さんの受け取り <b>{o.owner_yen.toLocaleString()}円</b>
+                  お支払い {o.amount_yen.toLocaleString()}円{o.kind !== "service" && `（うち送料 ${o.shipping_yen.toLocaleString()}円）`}／ 事業者さんの受け取り <b>{o.owner_yen.toLocaleString()}円</b>
                 </div>
                 {o.kind !== "service" && (
                   <Link href={`/hearing/${shopId}/card?t=${o.letter_token}`} className="inline-block text-xs text-leaf underline">

@@ -1,5 +1,5 @@
 // 費用の見積もり用：Claude を呼ぶ部品を1回ずつ動かし、使った量を YAOBIZ_USAGE_LOG に記録する。
-// 手元のダミーのデータ（お店3・商品10）だけを使う。データベースには書き込まない。
+// 手元のダミーのデータ（事業者3・商品10）だけを使う。データベースには書き込まない。
 //   YAOBIZ_USAGE_LOG=/path/usage.jsonl npx tsx scripts/measure-usage.ts
 import { readFileSync, existsSync } from "node:fs";
 import { getDb, type Draft, type Shop } from "@/lib/db";
@@ -60,7 +60,7 @@ const want = (n: string) => !only || only.includes(n);
   if (want("readCheckin"))
     await step("readCheckin", () =>
       C.readCheckin("テスト", [
-        { q: "今月、お店の人と話して心に残ったことは？", a: "店主さんが味噌の仕込みの話をうれしそうにしてくれた" },
+        { q: "今月、事業者の人と話して心に残ったことは？", a: "事業者さんが味噌の仕込みの話をうれしそうにしてくれた" },
         { q: "YaoBiz の考え方で、うまく説明できないところは？", a: "取り分の分け方" },
         { q: "来月やってみたいことは？", a: "写真を撮り直す" },
         { q: "よく眠れていますか", a: "まあまあ" },
@@ -73,6 +73,6 @@ const want = (n: string) => !only || only.includes(n);
     await step("makeShopBook", () =>
       C.makeShopBook({ shop, ownerWords: [transcript], products: [{ name: current.name, reason: current.recommend_reason, description: current.description }], voices: ["味噌がおいしかった"], replies: [] }),
     );
-  if (want("makeCareerNote")) await step("makeCareerNote", () => C.makeCareerNote("テスト", "ヒアリングしたお店: 2\n作った商品ページ: 5\n公開した商品: 3\n紹介の投稿: 2"));
+  if (want("makeCareerNote")) await step("makeCareerNote", () => C.makeCareerNote("テスト", "ヒアリングした事業者: 2\n作った商品ページ: 5\n公開した商品: 3\n紹介の投稿: 2"));
   console.log(JSON.stringify(results));
 })();

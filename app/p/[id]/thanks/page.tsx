@@ -35,8 +35,8 @@ function ThanksPageInner() {
           <p className="text-sm text-black/60">デモのため、テスト用の決済です。商品は届きません。</p>
           {letter && (
             <Link href={`/t/${letter}`} className="block rounded-2xl bg-white border-2 border-leaf p-4 text-left">
-              <div className="font-bold text-leaf">📮 お店に一言とどける</div>
-              <div className="text-sm text-black/70">届いたあとでも大丈夫です。お店の人が読んで、お返事します。お返事は、このページ（とカードの QR）で読めます。</div>
+              <div className="font-bold text-leaf">📮 事業者さんに一言とどける</div>
+              <div className="text-sm text-black/70">届いたあとでも大丈夫です。事業者の人が読んで、お返事します。お返事は、このページ（とカードの QR）で読めます。</div>
             </Link>
           )}
         </>

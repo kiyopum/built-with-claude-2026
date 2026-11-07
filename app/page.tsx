@@ -8,13 +8,13 @@ export default function Home() {
         <p className="text-black/70">パートナーのスマホ1台で、3つのステップ。</p>
         <ol className="grid gap-2 text-sm">
           <li className="rounded-xl bg-white p-3 border border-black/5">
-            <b className="text-leaf">1) ヒアリング</b>　お店と商品の話を聞き、写真を撮る（Claude が商品ページを書く）
+            <b className="text-leaf">1) ヒアリング</b>　事業者と商品の話を聞き、写真を撮る（Claude が商品ページを書く）
           </li>
           <li className="rounded-xl bg-white p-3 border border-black/5">
             <b className="text-leaf">2) 法律チェックと修正</b>　問題の言葉をその場で直す
           </li>
           <li className="rounded-xl bg-white p-3 border border-black/5">
-            <b className="text-leaf">3) リリース</b>　店主さんが見て、お店の暗証番号で公開する
+            <b className="text-leaf">3) リリース</b>　事業者さんが見て、事業者さんの暗証番号で公開する
           </li>
         </ol>
       </section>
@@ -28,7 +28,7 @@ export default function Home() {
           <div className="text-lg font-bold">商品を見る</div>
         </Link>
       </div>
-      <p className="text-xs text-black/50">デモのため、店名・商品・金額はすべて架空です。</p>
+      <p className="text-xs text-black/50">デモのため、事業者名・商品・金額はすべて架空です。</p>
     </div>
   );
 }

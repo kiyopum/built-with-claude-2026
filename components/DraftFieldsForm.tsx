@@ -1,6 +1,6 @@
 "use client";
 
-// 商品ページの文を手で直すフォーム（店主の画面とパートナーの修正画面で共通）
+// 商品ページの文を手で直すフォーム（事業者さんの画面とパートナーの修正画面で共通）
 // 法律チェックで「直すところ」を上にまとめ、問題の言葉が入っている欄の真下にも出す。
 // 問題の言葉を消すと、その場で「文から消えました」に変わる（保存すると Claude が確かめ直す）。
 import type { Legal } from "@/components/LegalPanel";
@@ -88,14 +88,14 @@ export function LegalTodo({ legal, f }: { legal: Legal | null; f: FieldValues })
               <div className="text-black/70">{i.detail}</div>
               {at && <div className="text-xs font-bold text-red-600">↓ {FIELD_LABEL[at]}の「{i.quote}」</div>}
               {gone && <div className="text-xs font-bold text-leaf">✓ 文から消えました（保存すると確かめ直します）</div>}
-              {!i.quote?.trim() && i.status === "missing" && <div className="text-xs text-black/50">→ 店主さんに確かめて、分かったことを文に入れるか、AI への一言で伝えてください</div>}
+              {!i.quote?.trim() && i.status === "missing" && <div className="text-xs text-black/50">→ 事業者さんに確かめて、分かったことを文に入れるか、AI への一言で伝えてください</div>}
             </li>
           );
         })}
         {missingLabels.length > 0 && (
           <li>
             <span className="font-bold text-black/60">？ 要確認</span> <span className="font-bold">表示がそろっていない項目</span>
-            <div className="text-black/70">{missingLabels.map((l) => l.name).join("、")} が分かっていません。ラベルを撮り直すか、店主さんに確かめてください。</div>
+            <div className="text-black/70">{missingLabels.map((l) => l.name).join("、")} が分かっていません。ラベルを撮り直すか、事業者さんに確かめてください。</div>
           </li>
         )}
       </ul>

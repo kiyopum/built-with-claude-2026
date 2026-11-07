@@ -36,14 +36,14 @@ export default function EveryonePage() {
       <div>
         <h1 className="text-xl font-bold">みんなの商品</h1>
         <p className="text-sm text-black/60">
-          ほかのパートナーさんのお店の商品も紹介できます。「これはいい！」と思ったら紹介してください。売れたら、報酬を担当の人と半分ずつ受け取れます（担当のいないお店なら全部）。
+          ほかのパートナーさんの事業者の商品も紹介できます。「これはいい！」と思ったら紹介してください。売れたら、報酬を担当の人と半分ずつ受け取れます（担当のいない事業者なら全部）。
         </p>
       </div>
       <div className="grid grid-cols-3 gap-1 text-sm font-bold">
         {(
           [
             ["all", "ぜんぶ"],
-            ["others", "ほかの人のお店"],
+            ["others", "ほかの人の事業者"],
             ["mine", "自分の担当"],
           ] as const
         ).map(([k, t]) => (

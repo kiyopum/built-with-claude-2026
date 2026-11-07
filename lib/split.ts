@@ -1,5 +1,5 @@
 // 取り分の計算（C案・2026-11-03 きよさん決定）。サーバー（注文の記録）と明細画面のシミュレーションで同じものを使う。
-//   売上の ymmRate（物販は1割、サービスは既定5割）が YMM の取り分。そこから決済手数料を先に払い、残りをパートナーと YMM で分ける。残りが店主。
+//   売上の ymmRate（物販は1割、サービスは既定5割）が YMM の取り分。そこから決済手数料を先に払い、残りをパートナーと YMM で分ける。残りが事業者さん。
 //   手数料を先に引くので、いくら売れても YMM が手数料で赤字にならない。1円未満は切り捨て（手数料は四捨五入）。
 export function splitAmount(amount: number, ymmRate: number, feeRate: number, partnerShare: number) {
   const ymmGross = Math.floor(amount * ymmRate);
@@ -9,8 +9,8 @@ export function splitAmount(amount: number, ymmRate: number, feeRate: number, pa
   return { owner: amount - ymmGross, fee, partner, ymm: rest - partner };
 }
 
-// パートナーの取り分を、お店の担当と紹介した人で分ける（2026-11-03 きよさん決定：半分ずつ）
-//   自分の担当の商品を自分で紹介 → 全部担当に。紹介なし → 全部担当に。担当がいないお店 → 全部紹介者に
+// パートナーの取り分を、事業者の担当と紹介した人で分ける（2026-11-03 きよさん決定：半分ずつ）
+//   自分の担当の商品を自分で紹介 → 全部担当に。紹介なし → 全部担当に。担当がいない事業者 → 全部紹介者に
 //   1円の端数は担当に（合計がずれないように）
 export function splitPartner(partner: number, ownerPartnerId: number | null, referrerId: number | null) {
   if (referrerId && ownerPartnerId && referrerId !== ownerPartnerId) {

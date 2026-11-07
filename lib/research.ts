@@ -1,9 +1,9 @@
-// 法律の調査を、お店ごとに1回だけ行って使い回す。
+// 法律の調査を、事業者ごとに1回だけ行って使い回す。
 // 質問リストを作った時点で裏で始め、ヒアリングが終わるころには調べ終わっている、という流れにする。
 //
 // いつ調べ直すか（2026-11-05 きよさん）：法律は国のサイトに「○年○月施行」と書いてあり、急には変わらない。
 //   だから日数で区切らず、調査に書かれた「施行予定: YYYY-MM-DD」のいちばん早い日が来たら調べ直す。施行予定がなければ調べ直さない。
-// 同じ材料なら同じ法律（2026-11-05 きよさん）：ほかのお店の調査で、売る物の種類が同じ（またはその一部）なら、それを使う。
+// 同じ材料なら同じ法律（2026-11-05 きよさん）：ほかの事業者の調査で、売る物の種類が同じ（またはその一部）なら、それを使う。
 import { getDb, type Shop } from "@/lib/db";
 import { findSameLaw, researchLaw, type LegalResearch } from "@/lib/claude";
 
@@ -30,7 +30,7 @@ function save(shopId: number, r: LegalResearch, nextCheck: string | null, fromSh
     .run(JSON.stringify(r), nextCheck, fromShop, shopId);
 }
 
-// ほかのお店の、まだ有効な調査から使えるものを探す（業種の文字が同じならそのまま、違えば Claude に「売る物の種類が同じか」を聞く）
+// ほかの事業者の、まだ有効な調査から使えるものを探す（業種の文字が同じならそのまま、違えば Claude に「売る物の種類が同じか」を聞く）
 async function borrow(shop: Shop): Promise<boolean> {
   const rows = (getDb().prepare("SELECT id, category, legal_research, law_next_check FROM shops WHERE id != ? AND legal_research IS NOT NULL ORDER BY legal_researched_at DESC").all(shop.id) as Row[]).filter(stillValid);
   const norm = (s: string) => s.replace(/[\s　（）()]/g, "");
