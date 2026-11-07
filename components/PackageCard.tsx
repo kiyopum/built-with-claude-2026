@@ -20,6 +20,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
   const [size, setSize] = useState(initial.size_class ?? "");
   const [weight, setWeight] = useState(initial.weight_g ? String(initial.weight_g) : "");
   const [perBox, setPerBox] = useState(initial.per_box || 1);
+  const [custom, setCustom] = useState((initial.per_box || 1) > 5 ? String(initial.per_box) : ""); // 6個以上の欄の文字
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -76,29 +77,36 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
-              onClick={() => (setPerBox(n), setSaved(false))}
-              className={`w-12 h-12 rounded-xl border-2 text-lg font-bold ${perBox === n ? "border-carrot bg-carrot/5 text-carrot" : "border-black/10"}`}
+              onClick={() => {
+                setPerBox(n);
+                setCustom("");
+                setSaved(false);
+              }}
+              className={`w-12 h-12 rounded-xl border-2 text-lg font-bold ${perBox === n && !custom ? "border-carrot bg-carrot/5 text-carrot" : "border-black/10"}`}
             >
               {n}
             </button>
           ))}
-          {/* 6個以上（クッキー20枚など）は数字で入れる。2026-11-07 きよさん */}
+          {/* 6個以上（クッキー20枚など）は数字で入れる。2026-11-07 きよさん。
+              入れている途中の文字（"2" など）はそのまま欄に残す（前は 5 以下だと欄が空に戻り、"20" が打てなかった） */}
           <label className="flex items-center gap-1 text-sm">
             <input
-              type="number"
+              type="text"
               inputMode="numeric"
-              min={1}
-              max={PER_BOX_MAX}
+              pattern="[0-9]*"
+              maxLength={3}
               placeholder="6〜"
-              value={perBox > 5 ? perBox : ""}
+              value={custom}
               onChange={(e) => {
-                const n = Math.floor(Number(e.target.value));
-                if (n >= 1 && n <= PER_BOX_MAX) {
+                const v = e.target.value.replace(/\D/g, "");
+                setCustom(v);
+                const n = Number(v);
+                if (v && n >= 1 && n <= PER_BOX_MAX) {
                   setPerBox(n);
                   setSaved(false);
                 }
               }}
-              className={`w-20 h-12 rounded-xl border-2 text-lg font-bold text-center ${perBox > 5 ? "border-carrot bg-carrot/5 text-carrot" : "border-black/10"}`}
+              className={`w-20 h-12 rounded-xl border-2 text-lg font-bold text-center ${custom && perBox === Number(custom) ? "border-carrot bg-carrot/5 text-carrot" : "border-black/10"}`}
             />
             <span className="text-black/60">個</span>
           </label>
