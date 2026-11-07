@@ -22,42 +22,10 @@ type Product = {
   photos: string[];
   shop_intro: string | null;
   shipping: ShippingInfo;
-  made: { heard: boolean; photos: boolean; legal: boolean; sns: boolean; pin: boolean };
   ship_days: string | null;
 };
 
-// この商品ができるまで（2026-11-05 きよさん：AI を怖いと思う人にも「決めているのは人」と見えるように）
-//   記録があることだけを書く。パートナーの名前はお客さまに出さない
-function MadeBy({ made, svc }: { made: Product["made"]; svc: boolean }) {
-  const ai = [
-    made.heard && "お話から、紹介文の下書きを書きました",
-    made.legal && "表示や言葉が法律に合っているか、確かめる手伝いをしました",
-    made.sns && "紹介の投稿の下書きを書きました",
-  ].filter(Boolean) as string[];
-  const human = [
-    made.heard && `YaoBiz のパートナーが、事業者の方から${svc ? "サービス" : "商品"}のお話を聞きました`,
-    made.photos && "写真を撮りました",
-    made.pin ? "事業者の方が中身を読んで確かめ、自分の暗証番号で公開しました" : "事業者の方が中身を確かめて、公開しました",
-  ].filter(Boolean) as string[];
-  return (
-    <section className="rounded-2xl bg-white p-4 border border-black/5 space-y-3">
-      <h2 className="font-bold">この{svc ? "サービス" : "商品"}のページができるまで</h2>
-      <div className="grid gap-3 sm:grid-cols-2 text-sm">
-        <div className="rounded-xl bg-leaf/5 p-3">
-          <div className="font-bold text-leaf mb-1">🙋 人がしたこと</div>
-          <ul className="list-disc pl-5 space-y-1">{human.map((t) => <li key={t}>{t}</li>)}</ul>
-        </div>
-        {ai.length > 0 && (
-          <div className="rounded-xl bg-black/[0.03] p-3">
-            <div className="font-bold text-black/70 mb-1">🤖 AI（Claude）がしたこと</div>
-            <ul className="list-disc pl-5 space-y-1">{ai.map((t) => <li key={t}>{t}</li>)}</ul>
-          </div>
-        )}
-      </div>
-      <p className="text-xs text-black/60">AI は手伝いをしました。出すかどうかを決めたのは、事業者の方です。</p>
-    </section>
-  );
-}
+// 「この商品のページができるまで（人がしたこと／AI がしたこと）」は、お客さまには見せない（2026-11-07 きよさん）。商品の管理ページ（components/MadeBy.tsx）に移した
 
 function ProductPageInner() {
   const { id } = useParams<{ id: string }>();
@@ -247,7 +215,6 @@ function ProductPageInner() {
         事業者の方へ：この商品を事業者の Instagram で紹介する
       </Link>
 
-      <MadeBy made={p.made} svc={svc} />
 
       {p.shop_intro && (
         <section className="rounded-2xl bg-leaf/5 p-4 space-y-2">

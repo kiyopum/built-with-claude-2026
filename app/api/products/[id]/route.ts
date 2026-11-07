@@ -9,8 +9,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     .prepare(
       `SELECT d.id, d.name, d.description, d.price_yen, d.recommend_reason, d.target_customer, d.legal_json,
               d.size_class, d.weight_g, d.per_box, d.kind, d.sns_json,
-              (SELECT COUNT(*) FROM product_photos ph WHERE ph.draft_id = d.id) AS photo_count,
-              (SELECT length(h.transcript) FROM hearings h WHERE h.id = d.hearing_id) AS hearing_len, s.name AS shop_name, s.area AS shop_area, s.shipping_yen, s.prefecture, s.pickup_ok, s.online_label, s.ship_days, s.release_pin_hash IS NOT NULL AS has_pin,
+              s.name AS shop_name, s.area AS shop_area, s.shipping_yen, s.prefecture, s.pickup_ok, s.online_label, s.ship_days,
               CASE WHEN s.philosophy_status = 'approved' THEN s.philosophy_text END AS shop_intro
        FROM drafts d JOIN shops s ON s.id = d.shop_id WHERE d.id = ? AND d.status = 'published'`,
     )
@@ -19,20 +18,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   // お客さまには、法律の判定ではなく「商品の表示（分かっているものだけ）」を見せる
   const legal = p.legal_json ? (JSON.parse(p.legal_json) as { label_items?: { name: string; value: string | null }[] }) : null;
   const labels = (legal?.label_items ?? []).filter((l) => l.value);
-  // この商品ができるまで（AI がしたこと・人がしたこと）。文ではなく、記録があるかどうかだけで決める
-  const q = p as Partial<Draft> & { photo_count?: number; hearing_len?: number | null };
-  const made = {
-    heard: (q.hearing_len ?? 0) > 0,
-    photos: (q.photo_count ?? 0) > 0,
-    legal: !!p.legal_json,
-    sns: !!p.sns_json,
-    pin: !!(q as { has_pin?: number }).has_pin,
-  };
-  delete (q as { has_pin?: number }).has_pin;
   delete p.legal_json;
   delete p.sns_json;
-  delete q.photo_count;
-  delete q.hearing_len;
   const shipping = shippingInfo(p as Draft, p as unknown as Shop);
-  return Response.json({ product: { ...p, labels, photos: photoUrls(Number(id)), shipping, made } });
+  return Response.json({ product: { ...p, labels, photos: photoUrls(Number(id)), shipping } });
 }

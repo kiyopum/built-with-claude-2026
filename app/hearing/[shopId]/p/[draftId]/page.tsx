@@ -14,6 +14,8 @@ import { Working } from "@/components/Working";
 import { OwnerApprove } from "@/components/OwnerApprove";
 import { apiFetch } from "@/lib/api";
 import { PackageCard } from "@/components/PackageCard";
+import { MadeBy } from "@/components/MadeBy";
+import type { Made } from "@/lib/made";
 import { splitAmount } from "@/lib/split";
 
 type Draft = {
@@ -60,6 +62,7 @@ function EditInner() {
   const [busy, setBusy] = useState<"" | "save" | "revise">("");
   const [error, setError] = useState("");
   const [rates, setRates] = useState<Rates | null>(null); // YMM 管理のときだけ届く
+  const [made, setMade] = useState<Made | null>(null); // 公開したあとの記録（人がしたこと／AI がしたこと）
 
   // 送り方を保存したあとに、送り方の欄だけ読み直す（写真や入力中の文は消さない）
   const reloadPackage = () =>
@@ -70,10 +73,11 @@ function EditInner() {
   useEffect(() => {
     fetch(`/api/drafts/${draftId}`)
       .then((r) => r.json())
-      .then(async (j: { draft: Draft; rates: Rates | null }) => {
+      .then(async (j: { draft: Draft; rates: Rates | null; made: Made | null }) => {
         const d = j.draft;
         setDraft(d);
         setRates(j.rates);
+        setMade(j.made);
         setFields({
           name: d.name,
           price_yen: String(d.price_yen),
@@ -194,6 +198,8 @@ function EditInner() {
           />
         </section>
       )}
+
+      {draft.status === "published" && made && <MadeBy made={made} svc={draft.kind === "service"} />}
 
       <section className="rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3">
         <div className="text-sm font-bold text-leaf">写真（撮り直し・追加・メインの入れ替え）</div>

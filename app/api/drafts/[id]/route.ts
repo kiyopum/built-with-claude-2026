@@ -5,6 +5,7 @@ import { reviseDraft, recheckLegal, type Legal, type DraftFields } from "@/lib/c
 import { loadProductContext } from "@/lib/context";
 import { ensureStripePrice } from "@/lib/stripe";
 import { loadPhotos, photoUrls } from "@/lib/files";
+import { madeOf } from "@/lib/made";
 
 // パートナーの修正画面用：商品1件（写真つき）
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -19,6 +20,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const admin = g.user.role === "admin";
   return Response.json({
     draft: { ...d, photos: photoUrls(d.id), ymm_rate: admin ? d.ymm_rate : undefined, revise_left: Math.max(0, REVISE_LIMIT - (d.revise_count ?? 0)) },
+    made: d.status === "published" ? madeOf(d.id) : null, // 公開したあと、こちら側で「決めたのは人」を確かめる記録
     is_admin: admin,
     rates: admin ? { effective: ymmRateOf(d), goods: getSetting("ymm_rate"), service: getSetting("ymm_rate_service") } : null,
   });
