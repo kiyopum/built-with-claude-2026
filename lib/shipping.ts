@@ -117,6 +117,9 @@ export function quotesByPref(sizeKey: string, weightG: number, from: Pref, opts:
 }
 
 // 何個買うと何箱になるか（1箱に入る数は事業者さんが決める。初めは1個＝まとめない）
+// 1箱に入る数の上限（クッキー20枚のような商品があるので、5より大きくてもよい）
+export const PER_BOX_MAX = 200;
+
 export function boxesFor(quantity: number, perBox: number): number {
   return Math.ceil(quantity / Math.max(1, Math.floor(perBox || 1)));
 }

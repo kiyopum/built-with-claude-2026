@@ -4,7 +4,7 @@
 //   （2026-11-04 物流の社長さんの助言：大きさと重さが大事・安い配達会社を自動で選ぶ・距離で料金を変える）
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { RATES_AS_OF, SIZE_CLASSES, cheapest, prefOf, quotesByPref, fullPref } from "@/lib/shipping";
+import { PER_BOX_MAX, RATES_AS_OF, SIZE_CLASSES, cheapest, prefOf, quotesByPref, fullPref } from "@/lib/shipping";
 
 type Props = {
   draftId: number;
@@ -72,7 +72,7 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
       </label>
       <div className="space-y-1">
         <div className="text-sm font-bold">1つの箱（袋）に、いくつまで入りますか？</div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
@@ -82,6 +82,26 @@ export function PackageCard({ draftId, price, initial, shopPrefecture, shopFlatY
               {n}
             </button>
           ))}
+          {/* 6個以上（クッキー20枚など）は数字で入れる。2026-11-07 きよさん */}
+          <label className="flex items-center gap-1 text-sm">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={PER_BOX_MAX}
+              placeholder="6〜"
+              value={perBox > 5 ? perBox : ""}
+              onChange={(e) => {
+                const n = Math.floor(Number(e.target.value));
+                if (n >= 1 && n <= PER_BOX_MAX) {
+                  setPerBox(n);
+                  setSaved(false);
+                }
+              }}
+              className={`w-20 h-12 rounded-xl border-2 text-lg font-bold text-center ${perBox > 5 ? "border-carrot bg-carrot/5 text-carrot" : "border-black/10"}`}
+            />
+            <span className="text-black/60">個</span>
+          </label>
         </div>
         <p className="text-xs text-black/50">2つ以上入るなら、まとめて買った人は、その数までは送料1回分で届きます。</p>
       </div>
