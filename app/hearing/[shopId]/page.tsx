@@ -139,7 +139,7 @@ function ProposalCard({ shop, onChanged }: { shop: Data["shop"]; onChanged: () =
         </table>
         <div className="text-xs text-black/70 space-y-1">
           <div>事業者さんには、物販は {Math.round((1 - s.goods) * 10)}割、サービスは {Math.round((1 - s.service) * 10)}割（{yen(5000)} なら {yen(service(5000).owner)}）。値段は事業者さんが決めます。</div>
-          <div className="text-black/50">サービスごとに、YMM が割合を決めることがあります。</div>
+          <div className="text-black/50">商品ごとに、YMM が割合（または 1個あたりの営業費用）を決めることがあります。</div>
         </div>
       </div>
 

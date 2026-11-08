@@ -248,6 +248,8 @@ function open(): DatabaseSync {
   // 種類：goods（もの）/ service（ライブ配信・講座・体験など。送らない）。ymm_rate：この商品だけの YMM の取り分（空なら種類ごとの既定。変えられるのは YMM 管理だけ）
   if (!cols.includes("kind")) db.exec("ALTER TABLE drafts ADD COLUMN kind TEXT NOT NULL DEFAULT 'goods'");
   if (!cols.includes("ymm_rate")) db.exec("ALTER TABLE drafts ADD COLUMN ymm_rate REAL");
+  // partner_fixed_yen：割合でなく「1個あたりの営業費用（円）」でパートナーに渡す商品（2026-11-08 きよさん：AI経理＝66,000円のうち 11,000円）。空なら割合
+  if (!cols.includes("partner_fixed_yen")) db.exec("ALTER TABLE drafts ADD COLUMN partner_fixed_yen INTEGER");
   // 公開した日（updated_at は修正で動くので別に持つ）・次の小さな一歩（Claude が考えたもの・考えた日）
   if (!cols.includes("published_at")) {
     db.exec("ALTER TABLE drafts ADD COLUMN published_at TEXT");
@@ -285,6 +287,8 @@ function open(): DatabaseSync {
   if (!ucols.includes("email")) db.exec("ALTER TABLE users ADD COLUMN email TEXT");
   const ocols2 = (db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name);
   for (const c of ["partner_seen_at", "notice_json", "owner_seen_at"]) if (!ocols2.includes(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} TEXT`);
+  // 固定額で分けた注文の記録（1個あたりの営業費用。空なら割合で分けた注文）
+  if (!ocols2.includes("partner_fixed_yen")) db.exec("ALTER TABLE orders ADD COLUMN partner_fixed_yen INTEGER");
   // 事業者さん専用ページ（2026-11-07 きよさん）：メールのリンク（長い合言葉）＋事業者さんの暗証番号で、注文と届け先を自分で見る。ログインなし
   const scols2 = (db.prepare("PRAGMA table_info(shops)").all() as { name: string }[]).map((c) => c.name);
   if (!scols2.includes("owner_token")) db.exec("ALTER TABLE shops ADD COLUMN owner_token TEXT");
@@ -377,6 +381,7 @@ export type Draft = {
   per_box?: number;
   kind?: "goods" | "service";
   ymm_rate?: number | null;
+  partner_fixed_yen?: number | null;
   created_at: string;
   updated_at: string;
   revise_count: number;

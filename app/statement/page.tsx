@@ -24,6 +24,7 @@ type Order = {
   fee_yen: number;
   ymm_rate: number;
   partner_share: number;
+  partner_fixed_yen: number | null;
   product_name: string;
   shop_name: string;
   ref: string | null;
@@ -176,7 +177,9 @@ export default function StatementPage() {
                 {o.shipping_yen > 0 && `／送料 ${yen(o.shipping_yen)}（事業者さんへ・手数料は送料から）`}
               </div>
               <div className="text-[11px] text-black/40">
-                この注文の料率：YMM {pct(o.ymm_rate)}・パートナー（手数料を引いた残りの）{pct(o.partner_share)}
+                {o.partner_fixed_yen != null
+                  ? `この注文の分け方：固定額（1個あたりの営業費用 ${yen(o.partner_fixed_yen)}。決済手数料は事業者さんの側から・YMM の取り分なし）`
+                  : `この注文の料率：YMM ${pct(o.ymm_rate)}・そこから決済手数料を引いた残りの ${pct(o.partner_share)} がパートナー`}
               </div>
             </div>
           ))}
@@ -290,10 +293,12 @@ function Contract({ settings }: { settings: Settings }) {
         <div>
           <dt className="text-xs font-bold text-black/60">報酬の計算方法</dt>
           <dd>
-            売上（商品代。送料は除く）の {pct(settings.ymm_rate)} から決済手数料 {pct(settings.stripe_fee_rate)} を引いた残りの {pct(settings.partner_share)}。
-            1,000円売れると {yen(per1000.partner)}。
+            物販：売上（商品代。送料は除く）の {pct(settings.ymm_rate)} が YMM の取り分。そこから、売上の {pct(settings.stripe_fee_rate)} にあたる決済手数料を払い、残り（売上の {pct(settings.ymm_rate - settings.stripe_fee_rate)}）の {pct(settings.partner_share)} がパートナー、{pct(1 - settings.partner_share)} が YMM。
+            1,000円売れると パートナー {yen(per1000.partner)}。
             <br />
-            ライブ配信・講座・体験などのサービスは、売上の {pct(settings.ymm_rate_service)} から決済手数料を引いた残りの {pct(settings.partner_share)}。1,000円売れると {yen(per1000s.partner)}。（商品ごとに YMM が割合を決めることがあります。その場合は注文ごとの料率に出ます）
+            サービス（ライブ配信・講座・体験など）：売上の {pct(settings.ymm_rate_service)} が YMM の取り分。同じように決済手数料を払った残り（売上の {pct(settings.ymm_rate_service - settings.stripe_fee_rate)}）の {pct(settings.partner_share)} がパートナー。1,000円売れると {yen(per1000s.partner)}。
+            <br />
+            商品ごとに YMM が割合を決めること、割合でなく「1個あたりの営業費用（固定額）」で決めることがあります。その場合は注文ごとの分け方に出ます。
             <br />
             ほかのパートナーが紹介して売れたときは、事業者の担当と紹介した人で半分ずつ（1円の端数は担当へ）。自分の担当の商品を自分で紹介したとき、担当のいない事業者の商品を紹介したときは全部。
           </dd>

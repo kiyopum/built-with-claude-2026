@@ -43,7 +43,7 @@ export async function GET() {
   const orders = db
     .prepare(
       `SELECT o.id, o.created_at, o.draft_id, o.quantity, o.amount_yen, o.shipping_yen, o.owner_yen, o.partner_yen, o.ymm_yen, o.fee_yen,
-              o.ymm_rate, o.partner_share, o.ref, o.owner_partner_yen, o.referrer_yen,
+              o.ymm_rate, o.partner_share, o.partner_fixed_yen, o.ref, o.owner_partner_yen, o.referrer_yen,
               op.name AS owner_partner_name, rp.name AS referrer_name,
               d.name AS product_name, s.name AS shop_name
        FROM orders o JOIN drafts d ON d.id = o.draft_id JOIN shops s ON s.id = o.shop_id

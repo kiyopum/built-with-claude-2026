@@ -51,7 +51,7 @@ export async function GET() {
   // 商品ごとの分け方（公開中と確認待ちの商品。ymm_rate が空なら種類ごとの既定）
   const products = db
     .prepare(
-      `SELECT d.id, d.shop_id, d.name, d.kind, d.price_yen, d.status, d.ymm_rate, s.name AS shop_name
+      `SELECT d.id, d.shop_id, d.name, d.kind, d.price_yen, d.status, d.ymm_rate, d.partner_fixed_yen, s.name AS shop_name
        FROM drafts d JOIN shops s ON s.id = d.shop_id
        WHERE d.status IN ('published', 'draft') ORDER BY s.id DESC, d.id DESC`,
     )
@@ -99,6 +99,21 @@ export async function POST(req: Request) {
       const r = Number(b.rate);
       if (!Number.isFinite(r) || r < ITEM_RATE_LIMIT.min || r > ITEM_RATE_LIMIT.max) return bad(`割合は ${ITEM_RATE_LIMIT.min * 100}〜${ITEM_RATE_LIMIT.max * 100}% で入れてください`);
       db.prepare("UPDATE drafts SET ymm_rate = ? WHERE id = ?").run(r, id);
+      return Response.json({ ok: true });
+    }
+    case "setDraftFixed": {
+      // 割合でなく、1個あたりの営業費用（円）でパートナーに渡す（空＝割合に戻す）。これからの注文に使う
+      const id = Number(b.draftId);
+      const d = db.prepare("SELECT price_yen FROM drafts WHERE id = ?").get(id) as { price_yen: number } | undefined;
+      if (!d) return bad("商品が見つかりません");
+      if (b.yen == null) {
+        db.prepare("UPDATE drafts SET partner_fixed_yen = NULL WHERE id = ?").run(id);
+        return Response.json({ ok: true });
+      }
+      const yen = Number(b.yen);
+      if (!Number.isInteger(yen) || yen < 0) return bad("営業費用は 0 以上の整数（円）で入れてください");
+      if (yen > d.price_yen) return bad(`営業費用は 1個の値段（${d.price_yen.toLocaleString()}円）までで入れてください`);
+      db.prepare("UPDATE drafts SET partner_fixed_yen = ? WHERE id = ?").run(yen, id);
       return Response.json({ ok: true });
     }
     case "assignShop": {

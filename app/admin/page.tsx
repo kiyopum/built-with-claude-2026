@@ -10,13 +10,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { splitAmount } from "@/lib/split";
+import { splitAmount, splitFixed } from "@/lib/split";
 
 type User = { id: number; name: string; role: string; active: number; code: string; resting: boolean; email: string | null };
 type Shop = { id: number; name: string; category: string; partner_id: number | null; cover_partner_id: number | null; shipping_yen: number | null; has_pin: boolean; published: number; waiting: number };
 type Blocked = { id: number; shop_id: number; name: string; shop_name: string; partner_name: string | null; updated_at: string; reasons: string[] };
 type Order = { id: number; created_at: string; amount_yen: number; shipping_yen: number; ship_name: string | null; ship_address: string | null; ship_method: string | null; ship_warning: string | null; customer_email: string | null; product_name: string; shop_name: string };
-type Product = { id: number; shop_id: number; name: string; kind: "goods" | "service"; price_yen: number; status: "draft" | "published"; ymm_rate: number | null; shop_name: string };
+type Product = { id: number; shop_id: number; name: string; kind: "goods" | "service"; price_yen: number; status: "draft" | "published"; ymm_rate: number | null; partner_fixed_yen: number | null; shop_name: string };
 type Split = { goods: number; service: number; share: number; fee: number; item: { min: number; max: number } };
 type Data = { me: { id: number }; users: User[]; shops: Shop[]; blocked: Blocked[]; orders: Order[]; products: Product[]; split: Split; payment_terms: string; nudge_days: number; notify_email: string; mail_ready: boolean };
 
@@ -212,8 +212,9 @@ function RatesCard({ products, split, act }: { products: Product[]; split: Split
     <section className={card}>
       <div className="font-bold">商品ごとの分け方（YMM の取り分）</div>
       <p className="text-xs text-black/60">
-        既定は 物販 {pct(split.goods)}・サービス {pct(split.service)}。商品ごとに {pct(split.item.min)}〜{pct(split.item.max)} の間で決められます。YMM の取り分から決済手数料 {pct(split.fee)} を引いた残りの {pct(split.share)} がパートナーへ。
-        変えた割合は、これからの注文に使います（これまでの注文はそのまま）。
+        割合：売上の {pct(split.goods)}（物販）／{pct(split.service)}（サービス）が YMM の取り分。そこから売上の {pct(split.fee)} にあたる決済手数料を払い、残りの {pct(split.share)} がパートナー、{pct(1 - split.share)} が YMM。商品ごとに {pct(split.item.min)}〜{pct(split.item.max)} の間で変えられます。
+        固定額：割合でなく「1個あたりの営業費用（円）」をパートナーに渡す決め方（AI経理の 66,000円→11,000円 の形）。
+        変えた分け方は、これからの注文に使います（これまでの注文はそのまま）。
       </p>
       {products.length === 0 ? (
         <p className="text-sm text-black/60">商品がまだありません。</p>
@@ -230,11 +231,17 @@ function RatesCard({ products, split, act }: { products: Product[]; split: Split
 
 function RateRow({ p, split, act }: { p: Product; split: Split; act: (b: Record<string, unknown>, done?: string) => Promise<boolean> }) {
   const pct = (r: number) => `${Math.round(r * 1000) / 10}%`;
+  const yen = (n: number) => `${n.toLocaleString()}円`;
   const def = p.kind === "service" ? split.service : split.goods;
   const effective = p.ymm_rate ?? def;
+  const fixed = p.partner_fixed_yen;
   const [other, setOther] = useState("");
-  const ex = splitAmount(p.price_yen, effective, split.fee, split.share);
-  const save = (rate: number | null) => act({ action: "setDraftRate", draftId: p.id, rate }, `「${p.name}」の分け方を変えました。これからの注文に使います`);
+  const [fixedIn, setFixedIn] = useState("");
+  const [mode, setMode] = useState<"rate" | "fixed">(fixed != null ? "fixed" : "rate");
+  const ex = fixed != null ? splitFixed(p.price_yen, 1, fixed, split.fee) : splitAmount(p.price_yen, effective, split.fee, split.share);
+  const saveRate = (rate: number | null) => act({ action: "setDraftRate", draftId: p.id, rate }, `「${p.name}」の分け方を変えました。これからの注文に使います`);
+  const saveFixed = (y: number | null) => act({ action: "setDraftFixed", draftId: p.id, yen: y }, `「${p.name}」の分け方を変えました。これからの注文に使います`);
+  const tab = (on: boolean) => `rounded-lg px-3 py-1.5 text-xs font-bold border ${on ? "bg-ai text-white border-ai" : "border-black/15 bg-white"}`;
   return (
     <li className="rounded-xl bg-black/[0.03] p-3 text-sm space-y-2">
       <div className="flex justify-between gap-2">
@@ -246,37 +253,90 @@ function RateRow({ p, split, act }: { p: Product; split: Split; act: (b: Record<
         </span>
       </div>
       <div className="text-xs text-black/60">
-        {p.shop_name}・1個 {p.price_yen.toLocaleString()}円
+        {p.shop_name}・1個 {yen(p.price_yen)}
       </div>
       <div className="text-xs">
-        いま <b className="text-ai">{pct(effective)}</b>
-        {p.ymm_rate == null ? `（${p.kind === "service" ? "サービス" : "物販"}の既定）` : "（この商品だけの割合）"}
-        ：1個売れると 事業者 {ex.owner.toLocaleString()}円・YMM {ex.ymm.toLocaleString()}円・パートナー {ex.partner.toLocaleString()}円
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          className="w-16 rounded-lg border border-black/15 p-2 text-right bg-white"
-          inputMode="decimal"
-          placeholder={String(Math.round(def * 1000) / 10)}
-          value={other}
-          onChange={(e) => setOther(e.target.value.replace(/[^\d.]/g, ""))}
-        />
-        <span className="text-xs">%</span>
-        <button
-          className="rounded-lg bg-ai text-white px-3 py-2 text-xs font-bold disabled:opacity-40"
-          disabled={!other}
-          onClick={async () => {
-            if (await save(Math.round(Number(other) * 10) / 1000)) setOther("");
-          }}
-        >
-          この割合にする
-        </button>
-        {p.ymm_rate != null && (
-          <button className="text-xs text-black/50 underline" onClick={() => save(null)}>
-            既定に戻す
-          </button>
+        いま{" "}
+        {fixed != null ? (
+          <>
+            <b className="text-ai">固定額 {yen(fixed)}</b>（1個あたりの営業費用）
+          </>
+        ) : (
+          <>
+            <b className="text-ai">{pct(effective)}</b>
+            {p.ymm_rate == null ? `（${p.kind === "service" ? "サービス" : "物販"}の既定）` : "（この商品だけの割合）"}
+          </>
         )}
+        ：1個売れると 事業者 {yen(ex.owner)}・YMM {yen(ex.ymm)}・パートナー {yen(ex.partner)}・決済手数料 {yen(ex.fee)}
       </div>
+      <div className="flex gap-2">
+        <button className={tab(mode === "rate")} onClick={() => setMode("rate")}>
+          割合で
+        </button>
+        <button className={tab(mode === "fixed")} onClick={() => setMode("fixed")}>
+          固定額で（営業費用）
+        </button>
+      </div>
+      {mode === "rate" ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            className="w-16 rounded-lg border border-black/15 p-2 text-right bg-white"
+            inputMode="decimal"
+            placeholder={String(Math.round(def * 1000) / 10)}
+            value={other}
+            onChange={(e) => setOther(e.target.value.replace(/[^\d.]/g, ""))}
+          />
+          <span className="text-xs">%</span>
+          <button
+            className="rounded-lg bg-ai text-white px-3 py-2 text-xs font-bold disabled:opacity-40"
+            disabled={!other}
+            onClick={async () => {
+              // 固定額が入っていたら外して、割合に戻す
+              if (fixed != null && !(await saveFixed(null))) return;
+              if (await saveRate(Math.round(Number(other) * 10) / 1000)) setOther("");
+            }}
+          >
+            この割合にする
+          </button>
+          {(p.ymm_rate != null || fixed != null) && (
+            <button
+              className="text-xs text-black/50 underline"
+              onClick={async () => {
+                if (fixed != null && !(await saveFixed(null))) return;
+                if (p.ymm_rate != null) await saveRate(null);
+              }}
+            >
+              既定（{pct(def)}）に戻す
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs">1個あたり</span>
+            <input
+              className="w-24 rounded-lg border border-black/15 p-2 text-right bg-white"
+              inputMode="numeric"
+              placeholder={fixed != null ? String(fixed) : "11000"}
+              value={fixedIn}
+              onChange={(e) => setFixedIn(e.target.value.replace(/[^\d]/g, ""))}
+            />
+            <span className="text-xs">円 をパートナーへ</span>
+            <button
+              className="rounded-lg bg-ai text-white px-3 py-2 text-xs font-bold disabled:opacity-40"
+              disabled={!fixedIn}
+              onClick={async () => {
+                if (await saveFixed(Number(fixedIn))) setFixedIn("");
+              }}
+            >
+              この固定額にする
+            </button>
+          </div>
+          <p className="text-[11px] text-black/50">
+            例：66,000円の商品で 11,000円 → 1個売れるごとに 11,000円 をパートナーに。決済手数料（{pct(split.fee)}）は事業者さんの側から払い、YMM の取り分はなし（YMM 自身の商品向け）。
+          </p>
+        </div>
+      )}
     </li>
   );
 }

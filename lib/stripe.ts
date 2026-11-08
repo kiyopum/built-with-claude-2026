@@ -2,7 +2,7 @@
 import { fullPref, prefOf } from "@/lib/shipping";
 import Stripe from "stripe";
 import { getDb, getSetting, letterTokenOf, ymmRateOf, type Draft } from "@/lib/db";
-import { splitAmount, splitPartner } from "@/lib/split";
+import { splitAmount, splitFixed, splitPartner } from "@/lib/split";
 import { idOfCode } from "@/lib/auth";
 
 let client: Stripe | null = null;
@@ -53,7 +53,9 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
   const ymmRate = ymmRateOf(d); // 物販は1割、サービスは既定5割（商品ごとに YMM 管理が変えられる）
   const partnerShare = getSetting("partner_share");
   const feeRate = getSetting("stripe_fee_rate");
-  const s = splitAmount(subtotal, ymmRate, feeRate, partnerShare);
+  // 固定額の商品（1個あたりの営業費用）は割合でなく固定額で分ける。記録の料率は YMM 0・パートナー 100%（固定額を別の欄に残す）
+  const fixed = d.partner_fixed_yen ?? null;
+  const s = fixed != null ? splitFixed(subtotal, quantity, fixed, feeRate) : splitAmount(subtotal, ymmRate, feeRate, partnerShare);
   // 送料は事業者さんに渡る。送料にかかる決済手数料も送料から引く（事業者さんが持つ）
   const shippingFee = Math.round(shipping * feeRate);
 
@@ -80,13 +82,13 @@ export function recordOrder(session: Stripe.Checkout.Session): { created: boolea
     `INSERT OR IGNORE INTO orders
      (stripe_session_id, draft_id, shop_id, quantity, amount_yen, owner_yen, ymm_yen, partner_yen, fee_yen, ymm_rate, partner_share, ref,
       shipping_yen, shipping_fee_yen, ship_name, ship_address, owner_partner_id, owner_partner_yen, referrer_id, referrer_yen,
-      ship_pref, ship_method, pickup, ship_warning, customer_email)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ship_pref, ship_method, pickup, ship_warning, customer_email, partner_fixed_yen)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
-    session.id, d.id, d.shop_id, quantity, total, s.owner + shipping - shippingFee, s.ymm, s.partner, s.fee + shippingFee, ymmRate, partnerShare, refCode || null,
+    session.id, d.id, d.shop_id, quantity, total, s.owner + shipping - shippingFee, s.ymm, s.partner, s.fee + shippingFee, fixed != null ? 0 : ymmRate, fixed != null ? 1 : partnerShare, refCode || null,
     // 事業者のところで受け取るときは住所を聞かないので、決済画面のお名前（なければメール）で、だれが来るか分かるようにする
     shipping, shippingFee, ship?.name ?? session.customer_details?.name ?? session.customer_details?.email ?? null, address, p.ownerPartnerId, p.ownerPartnerYen, p.referrerId, p.referrerYen,
-    chosen, service ? "メールでご案内" : session.metadata?.ship_method || null, pickup ? 1 : 0, warning, session.customer_details?.email ?? null,
+    chosen, service ? "メールでご案内" : session.metadata?.ship_method || null, pickup ? 1 : 0, warning, session.customer_details?.email ?? null, fixed,
   );
   if (!ins.changes) return { created: false }; // 同時に2回呼ばれたときの保険（UNIQUE で2回目は入らない）
   return { created: true, orderId: Number(ins.lastInsertRowid) };

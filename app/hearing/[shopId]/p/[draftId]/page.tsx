@@ -36,6 +36,7 @@ type Draft = {
   shop_online_label: number;
   kind: "goods" | "service";
   ymm_rate?: number | null;
+  partner_fixed_yen?: number | null;
   revise_left: number;
 };
 type Rates = { effective: number; goods: number; service: number };
@@ -235,7 +236,13 @@ function EditInner() {
       />
       )}
 
-      {rates && <RateCard draftId={draft.id} kind={draft.kind} rates={rates} custom={draft.ymm_rate ?? null} onSaved={(r) => setRates(r)} />}
+      {rates && draft.partner_fixed_yen != null && (
+        <section className="rounded-2xl bg-biz-50 p-4 border border-biz-200 text-sm space-y-1">
+          <div className="font-bold text-biz-800">分け方（YMM 管理だけに見えています）</div>
+          <p>この商品は固定額：1個売れるごとに、営業費用 {draft.partner_fixed_yen.toLocaleString()}円 をパートナーに渡します（決済手数料は事業者さんの側から・YMM の取り分なし）。変えるのは管理画面の「商品ごとの分け方」で。</p>
+        </section>
+      )}
+      {rates && draft.partner_fixed_yen == null && <RateCard draftId={draft.id} kind={draft.kind} rates={rates} custom={draft.ymm_rate ?? null} onSaved={(r) => setRates(r)} />}
 
       {error && <p className="rounded-xl bg-red-50 text-red-700 p-3 text-sm">{error}</p>}
 
@@ -309,7 +316,7 @@ function RateCard({ draftId, kind, rates, custom, onSaved }: { draftId: number; 
   return (
     <section className="rounded-2xl bg-biz-50 p-4 border border-biz-200 space-y-2 text-sm">
       <div className="font-bold text-biz-800">分け方（YMM 管理だけに見えています）</div>
-      <p className="text-xs text-black/60">YMM の取り分の割合。そこから決済手数料を引いた残りを、YMM とパートナーで半分ずつ。</p>
+      <p className="text-xs text-black/60">売上に対する YMM の取り分の割合。そこから売上の 3.6% にあたる決済手数料を払い、残りを YMM とパートナーで半分ずつ。</p>
       <div className="flex flex-wrap gap-2">
         <button className={btn(cur === null)} onClick={() => set(null)}>
           {kind === "service" ? "サービスの既定" : "物販の既定"}（{pct(def)}）
