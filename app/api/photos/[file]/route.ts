@@ -9,6 +9,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ file: string }
   const full = path.join(PHOTO_DIR, file);
   if (!fs.existsSync(full)) return new Response("not found", { status: 404 });
   return new Response(fs.readFileSync(full), {
-    headers: { "Content-Type": file.endsWith(".png") ? "image/png" : "image/jpeg", "Cache-Control": "public, max-age=31536000, immutable" },
+    headers: { "Content-Type": file.endsWith(".png") ? "image/png" : "image/jpeg", "Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" },
   });
 }

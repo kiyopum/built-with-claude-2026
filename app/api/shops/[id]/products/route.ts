@@ -16,7 +16,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   const form = await req.formData();
   const transcript = String(form.get("transcript") ?? "").trim();
-  const labelRead = JSON.parse(String(form.get("label_read") ?? "[]"));
+  // ラベルの読み取り結果（name と value の並び）。形が違うものは受け付けない
+  let labelRead: { name: string; value: string | null }[] = [];
+  try {
+    const raw: unknown = JSON.parse(String(form.get("label_read") ?? "[]"));
+    if (!Array.isArray(raw)) throw new Error("not array");
+    labelRead = raw.map((r) => ({ name: String((r as { name?: unknown })?.name ?? "").slice(0, 100), value: (r as { value?: unknown })?.value == null ? null : String((r as { value?: unknown }).value).slice(0, 500) })).filter((r) => r.name);
+  } catch {
+    return Response.json({ error: "ラベルの読み取り結果の形が正しくありません" }, { status: 400 });
+  }
   const kind = form.get("kind") === "service" ? "service" : "goods";
   if (!transcript) return Response.json({ error: "ヒアリング内容が空です" }, { status: 400 });
   // パートナーの提案から生まれたサービスか（どの案からかを残す）

@@ -7,6 +7,8 @@
 //                               → generateProductDraft（商品ページ1件＋法律チェック）
 //   事業者さんの確認 … reviseDraft（AIに作り直してもらう）／ recheckLegal（手で直したあと法律チェックだけやり直す）
 //   法律の調査 … researchLaw（国の公式サイトだけ検索。事業者ごとに使い回す）
+import { isPublicHost } from "@/lib/net";
+import { getDb } from "@/lib/db";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
@@ -43,7 +45,19 @@ const FALLBACK = {
 
 type UserContent = string | Anthropic.Beta.BetaContentBlockParam[];
 
+// 1日に呼べる回数の上限（お金の守り）。settings に日付ごとの回数を持つ。超えたら呼ばずに止める
+//   上限は .env の CLAUDE_DAILY_LIMIT（既定 400 回。1回 20〜80円なので、最悪でも1日数万円で止まる）
+function countCall(): void {
+  const limit = Number(process.env.CLAUDE_DAILY_LIMIT) || 400;
+  const key = `claude_calls_${new Date().toISOString().slice(0, 10)}`;
+  const r = getDb()
+    .prepare("INSERT INTO settings (key, value) VALUES (?, '1') ON CONFLICT(key) DO UPDATE SET value = CAST(CAST(value AS INTEGER) + 1 AS TEXT) RETURNING CAST(value AS INTEGER) AS n")
+    .get(key) as { n: number };
+  if (r.n > limit) throw new Error("今日の Claude の利用が上限に達しました。YMM に連絡してください（明日になると戻ります）");
+}
+
 async function ask<T extends z.ZodType>(schema: T, system: string, user: UserContent): Promise<z.infer<T>> {
+  countCall();
   const res = await client.beta.messages.parse({
     model: MODEL,
     max_tokens: 16000,
@@ -180,13 +194,20 @@ const WEBSITE_SYSTEM = `あなたは、地域の小さな事業者のホーム�
 export type WebsiteNotes = { notes: string; pages: string[] };
 
 // 入れられた URL が別のアドレスに転送されるとき（例：古いドメイン → 新しいドメイン）、転送先を先に調べる。
-// web_fetch は allowed_domains の外を読まないので、転送先のドメインも許可に入れる（2026-11-07 camecame30.com → camecame30.grain-grain.net で読めなかった）
+// web_fetch は allowed_domains の外を読まないので、転送先のドメインも許可に入れる（2026-11-07 自分のドメインから別のドメインへ転送しているホームページが読めなかった）
+//   転送は1回ずつ自分で追い、行く先ごとに「外から見えるホストか」を確かめる（サーバーの内側のアドレスを取りに行かせないため）
 async function resolveRedirect(url: string): Promise<string> {
   try {
-    const res = await fetch(url, { method: "GET", redirect: "follow", signal: AbortSignal.timeout(10000), headers: { "user-agent": "Mozilla/5.0 (YaoBiz)" } });
-    await res.body?.cancel();
-    const u = new URL(res.url || url);
-    return ["http:", "https:"].includes(u.protocol) ? u.toString() : url;
+    let cur = new URL(url);
+    for (let hop = 0; hop < 5; hop++) {
+      if (!["http:", "https:"].includes(cur.protocol) || !(await isPublicHost(cur.hostname))) return url;
+      const res = await fetch(cur, { method: "GET", redirect: "manual", signal: AbortSignal.timeout(10000), headers: { "user-agent": "Mozilla/5.0 (YaoBiz)" } });
+      await res.body?.cancel();
+      const loc = res.headers.get("location");
+      if (res.status < 300 || res.status >= 400 || !loc) return cur.toString();
+      cur = new URL(loc, cur);
+    }
+    return url;
   } catch {
     return url; // 調べられなければ、入れられた URL のまま Claude に渡す
   }
@@ -201,6 +222,7 @@ export async function readShopWebsite(shop: { name: string; category: string }, 
   const pages = new Set<string>();
   let notes = "";
   for (let i = 0; i < 4; i++) {
+    countCall();
     const res = await client.beta.messages.create({
       model: MODEL,
       max_tokens: 8000,
@@ -249,6 +271,7 @@ const SITE_SEARCH_SYSTEM = `あなたは、地域の小さな事業者のホー�
 - 見つからなければ candidates を空にする`;
 
 export async function findShopWebsite(shop: { name: string; category: string; area?: string | null }): Promise<SiteCandidate[]> {
+  countCall();
   const res = await client.beta.messages.parse({
     model: MODEL,
     max_tokens: 8000,
@@ -381,6 +404,7 @@ export async function researchLaw(shop: { name: string; category: string }, tran
 
   // 検索が長引くと途中で一度止まる（pause_turn）ので、続きを頼む。最大4回まで
   for (let i = 0; i < 4; i++) {
+    countCall();
     const res = await client.beta.messages.create({
       model: MODEL,
       max_tokens: 16000,

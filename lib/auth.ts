@@ -34,23 +34,35 @@ export function toUser(r: { id: number; name: string; role: string }): User {
   return { id: r.id, name: r.name, role: r.role === "admin" ? "admin" : "partner", code: codeOf(r.id) };
 }
 
+// 待ち時間：5回間違えるごとに 5分→10分→20分…と倍にする（最長1日）。4けたの総当たりを現実的でなくする
+//   lockCount＝これまでに止めた回数（成功したら 0 に戻る）
+export function lockUntil(lockCount: number): string {
+  const minutes = Math.min(5 * 2 ** Math.min(lockCount, 10), 24 * 60);
+  return new Date(Date.now() + minutes * 60_000).toISOString();
+}
+export function waitText(until: string): string {
+  const min = Math.max(1, Math.ceil((new Date(until).getTime() - Date.now()) / 60_000));
+  return min >= 60 ? `${Math.ceil(min / 60)}時間ほど` : `${min}分ほど`;
+}
+
 // 暗証番号を確かめる（間違いの回数と待ち時間つき）。成功したらクッキーを付ける
 export async function login(userId: number, pin: string): Promise<{ user?: User; error?: string }> {
   const db = getDb();
   const u = db.prepare("SELECT * FROM users WHERE id = ? AND active = 1").get(userId) as
-    | { id: number; name: string; role: string; pin_hash: string; failed: number; locked_until: string | null }
+    | { id: number; name: string; role: string; pin_hash: string; failed: number; locked_until: string | null; lock_count: number }
     | undefined;
   if (!u) return { error: "この名前ではログインできません" };
   if (u.locked_until && new Date(u.locked_until) > new Date()) {
-    return { error: "暗証番号を何回も間違えたので、5分ほど待ってからもう一度どうぞ" };
+    return { error: `暗証番号を何回も間違えたので、${waitText(u.locked_until)}待ってからもう一度どうぞ` };
   }
   if (!isPin(pin) || !checkPin(pin, u.pin_hash)) {
     const failed = u.failed + 1;
-    const lock = failed >= 5 ? new Date(Date.now() + 5 * 60_000).toISOString() : null;
-    db.prepare("UPDATE users SET failed = ?, locked_until = ? WHERE id = ?").run(lock ? 0 : failed, lock, u.id);
-    return { error: lock ? "5回間違えたので、5分ほど待ってからもう一度どうぞ" : "暗証番号がちがいます" };
+    const lock = failed >= 5 ? lockUntil(u.lock_count) : null;
+    db.prepare("UPDATE users SET failed = ?, locked_until = ?, lock_count = lock_count + ? WHERE id = ?").run(lock ? 0 : failed, lock, lock ? 1 : 0, u.id);
+    return { error: lock ? `5回間違えたので、${waitText(lock)}待ってからもう一度どうぞ` : "暗証番号がちがいます" };
   }
-  db.prepare("UPDATE users SET failed = 0, locked_until = NULL WHERE id = ?").run(u.id);
+  db.prepare("UPDATE users SET failed = 0, locked_until = NULL, lock_count = 0 WHERE id = ?").run(u.id);
+  db.prepare("DELETE FROM sessions WHERE expires_at <= ?").run(new Date().toISOString()); // 期限切れの行を掃除
   const token = randomBytes(32).toString("hex");
   const expires = new Date(Date.now() + SESSION_DAYS * 86400_000);
   db.prepare("INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)").run(token, u.id, expires.toISOString());
@@ -100,16 +112,16 @@ export function canEditShop(u: User, shop: Pick<Shop, "partner_id"> & Partial<Pi
 export function shopPinError(shop: Pick<Shop, "id" | "release_pin_hash">, pin: unknown): string {
   if (!shop.release_pin_hash) return "先に事業者のページで、事業者さんの暗証番号を決めてください";
   const db = getDb();
-  const row = db.prepare("SELECT pin_failed, pin_locked_until FROM shops WHERE id = ?").get(shop.id) as { pin_failed: number; pin_locked_until: string | null };
-  if (row.pin_locked_until && new Date(row.pin_locked_until) > new Date()) return "暗証番号を何回も間違えたので、5分ほど待ってからもう一度どうぞ";
+  const row = db.prepare("SELECT pin_failed, pin_locked_until, pin_lock_count FROM shops WHERE id = ?").get(shop.id) as { pin_failed: number; pin_locked_until: string | null; pin_lock_count: number };
+  if (row.pin_locked_until && new Date(row.pin_locked_until) > new Date()) return `暗証番号を何回も間違えたので、${waitText(row.pin_locked_until)}待ってからもう一度どうぞ`;
   if (isPin(pin) && checkPin(pin, shop.release_pin_hash)) {
-    db.prepare("UPDATE shops SET pin_failed = 0, pin_locked_until = NULL WHERE id = ?").run(shop.id);
+    db.prepare("UPDATE shops SET pin_failed = 0, pin_locked_until = NULL, pin_lock_count = 0 WHERE id = ?").run(shop.id);
     return "";
   }
   const failed = row.pin_failed + 1;
-  const lock = failed >= 5 ? new Date(Date.now() + 5 * 60_000).toISOString() : null;
-  db.prepare("UPDATE shops SET pin_failed = ?, pin_locked_until = ? WHERE id = ?").run(lock ? 0 : failed, lock, shop.id);
-  return lock ? "5回間違えたので、5分ほど待ってからもう一度どうぞ" : "事業者さんの暗証番号がちがいます";
+  const lock = failed >= 5 ? lockUntil(row.pin_lock_count) : null;
+  db.prepare("UPDATE shops SET pin_failed = ?, pin_locked_until = ?, pin_lock_count = pin_lock_count + ? WHERE id = ?").run(lock ? 0 : failed, lock, lock ? 1 : 0, shop.id);
+  return lock ? `5回間違えたので、${waitText(lock)}待ってからもう一度どうぞ` : "事業者さんの暗証番号がちがいます";
 }
 
 // 事業者の API の入口：ログイン＋その事業者の担当か管理者か

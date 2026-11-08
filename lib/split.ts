@@ -33,7 +33,7 @@ export const RATE_LIMITS = {
 // 商品ごとに YMM 管理が決める取り分の範囲
 export const ITEM_RATE_LIMIT = { min: 0.05, max: 0.7 } as const;
 
-// 固定額の分け方（2026-11-08 きよさん：AI経理は 66,000円のうち営業費用として 11,000円を渡す、という決め方）
+// 固定額の分け方（2026-11-08 きよさん：66,000円の商品のうち営業費用として 11,000円を渡す、という決め方）
 //   1個あたりの営業費用（円）をパートナーに渡す。決済手数料は事業者さんの側から払う。YMM の取り分はなし（YMM 自身の商品を想定）
 //   営業費用が「商品代 − 手数料」を超えるときは、そこまで（事業者さんがマイナスにならない）
 export function splitFixed(amount: number, quantity: number, fixedPerUnit: number, feeRate: number) {

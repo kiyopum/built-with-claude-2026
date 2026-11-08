@@ -66,8 +66,11 @@ export async function POST(req: Request) {
   const source = ["owner", "customer", "other"].includes(String(b.source)) ? String(b.source) : "other";
   let shop: { id: number; name: string } | undefined;
   if (b.shop_id) {
-    shop = db.prepare("SELECT id, name FROM shops WHERE id = ?").get(Number(b.shop_id)) as typeof shop;
-    if (!shop) return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
+    const row = db.prepare("SELECT id, name, partner_id, cover_partner_id FROM shops WHERE id = ?").get(Number(b.shop_id)) as { id: number; name: string; partner_id: number | null; cover_partner_id: number | null } | undefined;
+    if (!row) return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
+    // 自分の担当（見守り含む）か管理者だけが、その事業者の名前で声を入れられる
+    if (u.role !== "admin" && row.partner_id !== u.id && row.cover_partner_id !== u.id) return Response.json({ error: "担当の事業者だけ選べます" }, { status: 403 });
+    shop = { id: row.id, name: row.name };
   }
   try {
     const v = await reframeVoice({ source, shopName: shop?.name ?? null, text });

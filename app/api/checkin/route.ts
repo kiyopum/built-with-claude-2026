@@ -16,6 +16,8 @@ function monthQuestions(month: string): Promise<MonthQ[]> {
   const db = getDb();
   const row = db.prepare("SELECT questions_json FROM checkin_months WHERE month = ?").get(month) as { questions_json: string } | undefined;
   if (row) return Promise.resolve(JSON.parse(row.questions_json));
+  // 問いを新しく作る（Claude を呼ぶ）のは今月だけ。ほかの月を指定しても作らない（月の文字列を変えて何回も呼ばせないため）
+  if (month !== thisMonth()) return Promise.reject(new Error("その月の問いはありません"));
   const inFlight = making.get(month);
   if (inFlight) return inFlight;
   const previous = (db.prepare("SELECT questions_json FROM checkin_months ORDER BY month DESC LIMIT 3").all() as { questions_json: string }[]).flatMap(

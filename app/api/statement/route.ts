@@ -30,8 +30,8 @@ export async function GET() {
          WHERE o.owner_partner_id = ? OR o.referrer_id = ?
          ORDER BY o.id DESC`,
       )
-      .all(u.id, u.id, u.id, u.id) as { my_yen: number; owner_partner_id: number | null; referrer_id: number | null; amount_yen: number; shipping_yen: number }[];
-    const mine = orders.map((o) => ({
+      .all(u.id, u.id, u.id, u.id) as { my_yen: number; owner_partner_id: number | null; referrer_id: number | null; amount_yen: number; shipping_yen: number; owner_partner_yen: number; referrer_yen: number }[];
+    const mine = orders.map(({ owner_partner_yen: _a, referrer_yen: _b, ...o }) => ({
       ...o,
       role: o.owner_partner_id === u.id && o.referrer_id === u.id ? "担当・自分で紹介" : o.owner_partner_id === u.id ? (o.referrer_id ? "担当（ほかの人が紹介）" : "担当") : "紹介",
     }));

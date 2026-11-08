@@ -193,6 +193,10 @@ function open(): DatabaseSync {
   // 事業者さんの暗証番号も、続けて間違えたら少し待ってもらう（パートナーが総当たりできないように）
   if (!scols.includes("pin_failed")) db.exec("ALTER TABLE shops ADD COLUMN pin_failed INTEGER NOT NULL DEFAULT 0");
   if (!scols.includes("pin_locked_until")) db.exec("ALTER TABLE shops ADD COLUMN pin_locked_until TEXT");
+  // 待ち時間を回数で延ばす（5分→10分→20分…最長1日）。4けたの総当たりを現実的でなくするため（2026-11-08 公開前の点検）
+  if (!scols.includes("pin_lock_count")) db.exec("ALTER TABLE shops ADD COLUMN pin_lock_count INTEGER NOT NULL DEFAULT 0");
+  const ucols0 = (db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name);
+  if (!ucols0.includes("lock_count")) db.exec("ALTER TABLE users ADD COLUMN lock_count INTEGER NOT NULL DEFAULT 0");
   if (!scols.includes("legal_researched_at")) db.exec("ALTER TABLE shops ADD COLUMN legal_researched_at TEXT");
   // 事業者のヒアリング（理念・思い）。status: none（まだ）/ draft（事業者さんの確認待ち）/ approved（公開OK）
   if (!scols.includes("philosophy_transcript")) db.exec("ALTER TABLE shops ADD COLUMN philosophy_transcript TEXT");
@@ -248,7 +252,7 @@ function open(): DatabaseSync {
   // 種類：goods（もの）/ service（ライブ配信・講座・体験など。送らない）。ymm_rate：この商品だけの YMM の取り分（空なら種類ごとの既定。変えられるのは YMM 管理だけ）
   if (!cols.includes("kind")) db.exec("ALTER TABLE drafts ADD COLUMN kind TEXT NOT NULL DEFAULT 'goods'");
   if (!cols.includes("ymm_rate")) db.exec("ALTER TABLE drafts ADD COLUMN ymm_rate REAL");
-  // partner_fixed_yen：割合でなく「1個あたりの営業費用（円）」でパートナーに渡す商品（2026-11-08 きよさん：AI経理＝66,000円のうち 11,000円）。空なら割合
+  // partner_fixed_yen：割合でなく「1個あたりの営業費用（円）」でパートナーに渡す商品（2026-11-08 きよさん：例 66,000円の商品のうち 11,000円）。空なら割合
   if (!cols.includes("partner_fixed_yen")) db.exec("ALTER TABLE drafts ADD COLUMN partner_fixed_yen INTEGER");
   // 公開した日（updated_at は修正で動くので別に持つ）・次の小さな一歩（Claude が考えたもの・考えた日）
   if (!cols.includes("published_at")) {

@@ -213,7 +213,7 @@ function RatesCard({ products, split, act }: { products: Product[]; split: Split
       <div className="font-bold">商品ごとの分け方（YMM の取り分）</div>
       <p className="text-xs text-black/60">
         割合：売上の {pct(split.goods)}（物販）／{pct(split.service)}（サービス）が YMM の取り分。そこから売上の {pct(split.fee)} にあたる決済手数料を払い、残りの {pct(split.share)} がパートナー、{pct(1 - split.share)} が YMM。商品ごとに {pct(split.item.min)}〜{pct(split.item.max)} の間で変えられます。
-        固定額：割合でなく「1個あたりの営業費用（円）」をパートナーに渡す決め方（AI経理の 66,000円→11,000円 の形）。
+        固定額：割合でなく「1個あたりの営業費用（円）」をパートナーに渡す決め方（例：66,000円の商品で 11,000円）。
         変えた分け方は、これからの注文に使います（これまでの注文はそのまま）。
       </p>
       {products.length === 0 ? (

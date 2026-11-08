@@ -1,3 +1,4 @@
+import { appOrigin } from "@/lib/origin";
 import { getDb, type Draft, type Shop } from "@/lib/db";
 import { ensureStripePrice, stripe } from "@/lib/stripe";
 import { shippingForOrder, shippingInfo } from "@/lib/shipquote";
@@ -16,8 +17,8 @@ export async function POST(req: Request) {
   const unit = d.kind === "service" ? 1 : Math.max(1, d.per_box ?? 1);
   const qty = Math.ceil(qtyRaw / unit) * unit;
 
-  // 戻り先は、いま開いているページのアドレスから作る（Mac でも iPhone でも同じように戻れる）
-  const origin = req.headers.get("origin") ?? new URL(req.url).origin;
+  // 戻り先は、設定のアドレス（APP_BASE_URL）から作る。Origin ヘッダーは信用しない
+  const origin = appOrigin(req);
   const shop = getDb().prepare("SELECT shipping_yen, prefecture, pickup_ok, online_label FROM shops WHERE id = ?").get(d.shop_id) as Pick<Shop, "shipping_yen" | "prefecture" | "pickup_ok" | "online_label">;
   // 送料：送料込みの商品は届け先の都道府県で、そうでない商品は事業者の全国一律で。決まっていなければ買えない
   //   商品の値段（Stripe の価格）はそのまま。送料は注文ごとに1回（1箱に入る数で箱の数を出す）＝2個目からは送料分が安くなる

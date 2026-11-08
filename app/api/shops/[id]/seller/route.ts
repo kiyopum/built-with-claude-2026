@@ -11,6 +11,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!db.prepare("SELECT id FROM shops WHERE id = ?").get(Number(id))) {
     return Response.json({ error: "事業者が見つかりません" }, { status: 404 });
   }
+  // メールの宛先になるので、メールアドレスの形だけを受け付ける（複数の宛先や「名前 <addr>」の形で通知の宛先を増やせないように）
+  const email = String(body.seller_email ?? "").trim();
+  if (email && !/^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/.test(email)) return Response.json({ error: "メールアドレスの形で入れてください" }, { status: 400 });
   const values = sellerValues(body);
   db.prepare(`UPDATE shops SET ${SELLER_KEYS.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`).run(...values, Number(id));
   return Response.json({ ok: true });

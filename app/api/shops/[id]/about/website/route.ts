@@ -1,3 +1,4 @@
+import { isPublicHost } from "@/lib/net";
 import { guardShop } from "@/lib/auth";
 import { getDb, type Shop } from "@/lib/db";
 import { findShopWebsite, readShopWebsite } from "@/lib/claude";
@@ -38,6 +39,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!["http:", "https:"].includes(url.protocol) || !url.hostname.includes(".")) {
     return Response.json({ error: "ホームページのアドレス（https://〜）を入れてください" }, { status: 400 });
   }
+  if (!(await isPublicHost(url.hostname))) return Response.json({ error: "そのアドレスは読めません（インターネットに公開されているホームページだけ）" }, { status: 400 });
   const host = url.hostname.replace(/^www\./, "");
   if (SNS_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) {
     return Response.json(
