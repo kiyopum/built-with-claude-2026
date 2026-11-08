@@ -293,7 +293,7 @@ function Contract({ settings }: { settings: Settings }) {
             売上（商品代。送料は除く）の {pct(settings.ymm_rate)} から決済手数料 {pct(settings.stripe_fee_rate)} を引いた残りの {pct(settings.partner_share)}。
             1,000円売れると {yen(per1000.partner)}。
             <br />
-            ライブ配信・講座・体験などのサービスは、売上の {pct(settings.ymm_rate_service)} から決済手数料を引いた残りの {pct(settings.partner_share)}。1,000円売れると {yen(per1000s.partner)}。（サービスごとに YMM が割合を決めることがあります。その場合は注文ごとの料率に出ます）
+            ライブ配信・講座・体験などのサービスは、売上の {pct(settings.ymm_rate_service)} から決済手数料を引いた残りの {pct(settings.partner_share)}。1,000円売れると {yen(per1000s.partner)}。（商品ごとに YMM が割合を決めることがあります。その場合は注文ごとの料率に出ます）
             <br />
             ほかのパートナーが紹介して売れたときは、事業者の担当と紹介した人で半分ずつ（1円の端数は担当へ）。自分の担当の商品を自分で紹介したとき、担当のいない事業者の商品を紹介したときは全部。
           </dd>

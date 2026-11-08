@@ -4,17 +4,21 @@
 //   止まっている商品（法律チェックで販売できない）→ YMM が手助けに入る先
 //   パートナー：登録・止める・暗証番号の再発行
 //   事業者：担当パートナーの割り当て・事業者さんの暗証番号のリセット
+//   商品ごとの分け方（YMM の取り分を商品ごとに決める。登録済みの商品も一覧から変えられる）
 //   注文と届け先・支払期日（契約条件）
 //   売上・取り分・分け方の設定は「明細」へ
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { splitAmount } from "@/lib/split";
 
 type User = { id: number; name: string; role: string; active: number; code: string; resting: boolean; email: string | null };
 type Shop = { id: number; name: string; category: string; partner_id: number | null; cover_partner_id: number | null; shipping_yen: number | null; has_pin: boolean; published: number; waiting: number };
 type Blocked = { id: number; shop_id: number; name: string; shop_name: string; partner_name: string | null; updated_at: string; reasons: string[] };
 type Order = { id: number; created_at: string; amount_yen: number; shipping_yen: number; ship_name: string | null; ship_address: string | null; ship_method: string | null; ship_warning: string | null; customer_email: string | null; product_name: string; shop_name: string };
-type Data = { me: { id: number }; users: User[]; shops: Shop[]; blocked: Blocked[]; orders: Order[]; payment_terms: string; nudge_days: number; notify_email: string; mail_ready: boolean };
+type Product = { id: number; shop_id: number; name: string; kind: "goods" | "service"; price_yen: number; status: "draft" | "published"; ymm_rate: number | null; shop_name: string };
+type Split = { goods: number; service: number; share: number; fee: number; item: { min: number; max: number } };
+type Data = { me: { id: number }; users: User[]; shops: Shop[]; blocked: Blocked[]; orders: Order[]; products: Product[]; split: Split; payment_terms: string; nudge_days: number; notify_email: string; mail_ready: boolean };
 
 const card = "rounded-2xl bg-white p-4 shadow-sm border border-black/5 space-y-3";
 const input = "w-full rounded-xl border border-black/15 p-2.5 text-base";
@@ -160,6 +164,8 @@ export default function AdminPage() {
         </ul>
       </section>
 
+      <RatesCard products={data.products} split={data.split} act={act} />
+
       <PaymentTerms initial={data.payment_terms} act={act} />
       <NudgeDays initial={data.nudge_days} act={act} />
       <NotifyEmail initial={data.notify_email} ready={data.mail_ready} act={act} />
@@ -193,6 +199,85 @@ export default function AdminPage() {
         )}
       </section>
     </div>
+  );
+}
+
+// ---------- 商品ごとの分け方 ----------
+//   YMM の取り分の割合を、商品ごとに決める（空＝物販／サービスの既定）。そこから決済手数料を引いた残りを YMM とパートナーで分ける（割合は明細の設定）
+//   変えた割合は、これからの注文に使う。これまでの注文はそのまま（注文ごとに料率を記録している）
+
+function RatesCard({ products, split, act }: { products: Product[]; split: Split; act: (b: Record<string, unknown>, done?: string) => Promise<boolean> }) {
+  const pct = (r: number) => `${Math.round(r * 1000) / 10}%`;
+  return (
+    <section className={card}>
+      <div className="font-bold">商品ごとの分け方（YMM の取り分）</div>
+      <p className="text-xs text-black/60">
+        既定は 物販 {pct(split.goods)}・サービス {pct(split.service)}。商品ごとに {pct(split.item.min)}〜{pct(split.item.max)} の間で決められます。YMM の取り分から決済手数料 {pct(split.fee)} を引いた残りの {pct(split.share)} がパートナーへ。
+        変えた割合は、これからの注文に使います（これまでの注文はそのまま）。
+      </p>
+      {products.length === 0 ? (
+        <p className="text-sm text-black/60">商品がまだありません。</p>
+      ) : (
+        <ul className="space-y-2">
+          {products.map((p) => (
+            <RateRow key={p.id} p={p} split={split} act={act} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function RateRow({ p, split, act }: { p: Product; split: Split; act: (b: Record<string, unknown>, done?: string) => Promise<boolean> }) {
+  const pct = (r: number) => `${Math.round(r * 1000) / 10}%`;
+  const def = p.kind === "service" ? split.service : split.goods;
+  const effective = p.ymm_rate ?? def;
+  const [other, setOther] = useState("");
+  const ex = splitAmount(p.price_yen, effective, split.fee, split.share);
+  const save = (rate: number | null) => act({ action: "setDraftRate", draftId: p.id, rate }, `「${p.name}」の分け方を変えました。これからの注文に使います`);
+  return (
+    <li className="rounded-xl bg-black/[0.03] p-3 text-sm space-y-2">
+      <div className="flex justify-between gap-2">
+        <Link href={`/hearing/${p.shop_id}/p/${p.id}`} className="font-bold line-clamp-1 underline-offset-2 hover:underline">
+          {p.name}
+        </Link>
+        <span className="text-xs text-black/50 shrink-0">
+          {p.kind === "service" ? "サービス" : "物販"}・{p.status === "published" ? "公開中" : "確認待ち"}
+        </span>
+      </div>
+      <div className="text-xs text-black/60">
+        {p.shop_name}・1個 {p.price_yen.toLocaleString()}円
+      </div>
+      <div className="text-xs">
+        いま <b className="text-ai">{pct(effective)}</b>
+        {p.ymm_rate == null ? `（${p.kind === "service" ? "サービス" : "物販"}の既定）` : "（この商品だけの割合）"}
+        ：1個売れると 事業者 {ex.owner.toLocaleString()}円・YMM {ex.ymm.toLocaleString()}円・パートナー {ex.partner.toLocaleString()}円
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          className="w-16 rounded-lg border border-black/15 p-2 text-right bg-white"
+          inputMode="decimal"
+          placeholder={String(Math.round(def * 1000) / 10)}
+          value={other}
+          onChange={(e) => setOther(e.target.value.replace(/[^\d.]/g, ""))}
+        />
+        <span className="text-xs">%</span>
+        <button
+          className="rounded-lg bg-ai text-white px-3 py-2 text-xs font-bold disabled:opacity-40"
+          disabled={!other}
+          onClick={async () => {
+            if (await save(Math.round(Number(other) * 10) / 1000)) setOther("");
+          }}
+        >
+          この割合にする
+        </button>
+        {p.ymm_rate != null && (
+          <button className="text-xs text-black/50 underline" onClick={() => save(null)}>
+            既定に戻す
+          </button>
+        )}
+      </div>
+    </li>
   );
 }
 

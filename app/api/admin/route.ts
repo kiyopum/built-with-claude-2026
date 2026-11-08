@@ -48,7 +48,16 @@ export async function GET() {
        FROM orders o JOIN drafts d ON d.id = o.draft_id JOIN shops s ON s.id = o.shop_id ORDER BY o.id DESC LIMIT 50`,
     )
     .all();
-  return Response.json({ me: a, users, shops, blocked, orders, payment_terms: getText("payment_terms"), nudge_days: getSetting("nudge_days"), notify_email: getText("notify_email"), mail_ready: mailReady() });
+  // 商品ごとの分け方（公開中と確認待ちの商品。ymm_rate が空なら種類ごとの既定）
+  const products = db
+    .prepare(
+      `SELECT d.id, d.shop_id, d.name, d.kind, d.price_yen, d.status, d.ymm_rate, s.name AS shop_name
+       FROM drafts d JOIN shops s ON s.id = d.shop_id
+       WHERE d.status IN ('published', 'draft') ORDER BY s.id DESC, d.id DESC`,
+    )
+    .all();
+  const split = { goods: getSetting("ymm_rate"), service: getSetting("ymm_rate_service"), share: getSetting("partner_share"), fee: getSetting("stripe_fee_rate"), item: ITEM_RATE_LIMIT };
+  return Response.json({ me: a, users, shops, blocked, orders, products, split, payment_terms: getText("payment_terms"), nudge_days: getSetting("nudge_days"), notify_email: getText("notify_email"), mail_ready: mailReady() });
 }
 
 export async function POST(req: Request) {
