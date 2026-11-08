@@ -53,7 +53,7 @@
 - 実在の他社名・ドメインはコード・コメント・コミット文に書かない（ダミーの例にする）。
 
 ## GitHub
-- リポジトリ：kiyopum/built-with-claude-2026（提出まで非公開）。
+- リポジトリ：kiyopum/built-with-claude-2026（2026-11-08 公開済み。secret scanning と push protection 有効）。
 - コミットのメールは GitHub の noreply アドレス（公開時に本物のメールを出さないため）。
 - 公開に切り替える前に、キー・メールアドレス・お客さまの情報が含まれていないか確認する。
 
